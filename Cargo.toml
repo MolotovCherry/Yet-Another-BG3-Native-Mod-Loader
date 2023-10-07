@@ -1,0 +1,36 @@
+[package]
+name = "yet-another-bg3-mod-loader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4.20"
+simplelog = "0.12.1"
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.107"
+directories = "5.0.1"
+human-panic = "1.2.1"
+anyhow = "1.0.75"
+backtrace = "0.3.69"
+chrono = "0.4.31"
+winreg = "0.51.0"
+sysinfo = "0.29.10"
+windows-targets = "0.48.5"
+
+[dependencies.windows]
+version = "0.51.1"
+features = [
+    "Win32_Foundation",
+    "Win32_System_ApplicationInstallationAndServicing",
+
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Threading",
+    "Win32_System_Memory",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_LibraryLoader",
+
+    "Win32_Security",
+]
+
+[build-dependencies]
+winres = "0.1.12"
