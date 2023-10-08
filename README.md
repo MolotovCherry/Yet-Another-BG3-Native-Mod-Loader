@@ -19,6 +19,14 @@ The main features of this mod loader are:
 3. Run one of the launchers. You'll get a finish setup message the first time, read it and follow the instructions.
 4. **Read the FAQ. It's important!**
 
+# Config options
+| Option | Description |
+|-------------|------------|
+| `install_root` | The game's root installation directory, e.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3` |
+| `flags` | Extra command line flags to pass to the game upon startup |
+| `steam` | Use steam to launch the game, recommended to leave this enabled. If disabled, will directly launch the game exe, may launch the game twice |
+| `disabled` | An array of plugins to disable. Each entry is the plugins filename without extension, e.g. `FooBar.dll` should have an entry named `FooBar` |
+
 # FAQ
 ### Virus warning!!! What! Virus?!
 No, this is not a virus. The source code is right there for you to see and read. You can compile it yourself too if you want, it'll work the exact same way. This mod loader uses dll injection, and a lot of virus scanners just don't like that. This is the very thing that allows us to avoid modifying core game files!
