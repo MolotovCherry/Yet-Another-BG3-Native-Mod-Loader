@@ -1,0 +1,55 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  release:
+    types: [created]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    permissions: write-all
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ github.event_name == 'release' && 'prod' || 'dev' }}
+
+      - name: Build
+        env:
+          RELEASE: ${{ github.event_name == 'release' && '--release' || '' }}
+        run: cargo build $env:RELEASE
+
+      - name: Upload Artifacts
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: |
+            target/*/*.exe
+
+      - name: Zip files up
+        if: github.event_name == 'release'
+        run: |
+          Get-ChildItem -Path target/*/*.exe | Compress-Archive -CompressionLevel Optimal -DestinationPath "yet-another-bg3-mod-loader-x64.zip"
+
+      - name: Attach assets to release
+        if: github.event_name == 'release'
+        uses: xresloader/upload-to-github-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          file: "*.zip"
+          draft: false
+          release_id: ${{ github.event.release.id }}
