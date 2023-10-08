@@ -24,14 +24,19 @@ The main features of this mod loader are:
 |-------------|------------|
 | `install_root` | The game's root installation directory, e.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3` |
 | `flags` | Extra command line flags to pass to the game upon startup |
-| `steam` | Use steam to launch the game, recommended to leave this enabled. If disabled, will directly launch the game exe, may launch the game twice |
+| `steam` | Use steam to launch the game, recommended leaving this enabled. If disabled, will directly launch the game exe, may launch the game twice |
 | `disabled` | An array of plugins to disable. Each entry is the plugins filename without extension, e.g. `FooBar.dll` should have an entry named `FooBar` |
+
+# Building
+- [Install Rust](https://rustup.rs/)
+- Install [Visual Studio](https://visualstudio.microsoft.com/downloads/), build tools, and Desktop Development with C++
+- Run `cargo build` or `cargo build --release`
 
 # FAQ
 ### Virus warning!!! What! Virus?!
 No, this is not a virus. The source code is right there for you to see and read. You can compile it yourself too if you want, it'll work the exact same way. This mod loader uses dll injection, and a lot of virus scanners just don't like that. This is the very thing that allows us to avoid modifying core game files!
 ### Halp!! All my saves/data are now missing and got deleted!
-This mod loader _does not_ under any circumstances touch any of your data, saves, or profile(s). They _are not_ missing. Go to `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles` and delete any `Debug` profiles you see. The profile you are most likely using is the Public one. For some reason, there's a bug with the game and it sometimes creates/launches into the debug profile, which makes it look like all your settings, saves, everything was suddenly deleted. They _are not_ gone! It will be visible just fine once you game properly loads the public profile again. If you are using steam, try to manually load steam/larian laucher first after deleting the Debug priofile. It might work properly after that. I am hoping to get this reported soon so Larian will fix it asap.
+This mod loader _does not_ under any circumstances touch any of your data, saves, or profile(s). They _are not_ missing. Go to `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles` and delete any `Debug` profiles you see. The profile you are most likely using is the Public one. For some reason, there's a bug with the game and it sometimes creates/launches into the debug profile, which makes it look like all your settings, saves, everything was suddenly deleted. They _are not_ gone! It will be visible just fine once you game properly loads the public profile again. If you are using steam, try to manually load steam/larian launcher first after deleting the Debug profile. It might work properly after that. I am hoping to get this reported soon so Larian will fix it asap.
 
 ### Where do I place my plugins?
 Place your dll plugin files inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles`
