@@ -7,9 +7,9 @@ The main features of this mod loader are:
 - It does not modify any original game files or touch the installation directory
 - It does not need to be updated with any new BG3 releases (it stays working perpetually)
 - It is a launcher (there are 2 executables for Vulkan or Dx11 launching, just like in BG3)
-- - Which also means you can launch the game normally instead, and no dll plugins will load
+  - Which also means you can launch the game normally instead, and no dll plugins will load
 - It is completely compatible with any [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944) plugins
-- - This means you can develop your plugin using the NativeModLoader framework, or any other (for example, [libmem](https://github.com/rdbo/libmem) for Rust)
+  - This means you can develop your plugin using the NativeModLoader framework, or any other (for example, [libmem](https://github.com/rdbo/libmem) for Rust)
 - Has the ability to disable/enable any plugins in the config (useful for any mod managers)
 - Stores your plugins in the larian local data folder alongside the mod folder*
 
