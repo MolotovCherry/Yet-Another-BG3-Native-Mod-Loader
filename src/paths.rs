@@ -41,14 +41,17 @@ pub fn get_bg3_local_dir() -> anyhow::Result<PathBuf> {
     }
 }
 
-pub fn get_bg3_plugins_dir() -> anyhow::Result<PathBuf> {
+pub fn get_bg3_plugins_dir() -> anyhow::Result<(bool, PathBuf)> {
     let mut plugins_dir = get_bg3_local_dir()?;
     plugins_dir.push("Plugins");
+
+    let mut first_time = false;
 
     if !plugins_dir.exists() {
         info!("Plugin directory not found; creating it..");
 
         fs::create_dir(&plugins_dir)?;
+        first_time = true;
     }
 
     let log_dir = plugins_dir.join("logs");
@@ -56,7 +59,7 @@ pub fn get_bg3_plugins_dir() -> anyhow::Result<PathBuf> {
         fs::create_dir(plugins_dir.join("logs"))?;
     }
 
-    Ok(plugins_dir)
+    Ok((first_time, plugins_dir))
 }
 
 pub fn get_steam_exe() -> anyhow::Result<String> {

@@ -18,7 +18,11 @@ use simplelog::*;
 
 use crate::{panic::set_hook, paths::get_bg3_plugins_dir};
 
-use self::{config::get_config, loader::load};
+use self::{
+    config::get_config,
+    loader::load,
+    popup::{display_popup, MessageBoxIcon},
+};
 
 pub fn run() {
     // Nicely print any panic messages to the user
@@ -29,11 +33,26 @@ pub fn run() {
         homepage: "https://github.com/MolotovCherry/NativeModLauncher".into(),
     });
 
-    let plugins_dir = get_bg3_plugins_dir().expect("Failed to get Bg3 plugin directory");
+    let (first_time, plugins_dir) =
+        get_bg3_plugins_dir().expect("Failed to get Bg3 plugin directory");
+
     // start logger
     setup_logs(&plugins_dir).expect("Failed to set up logs");
 
+    // get/create config
     let config = get_config(plugins_dir.join("config.json")).expect("Failed to get config");
+
+    if first_time {
+        display_popup(
+            "Finish Setup",
+            &format!(
+                "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.json` in the plugins folder. If you installed Steam/BG3 to a non-default path, the install root in the config needs to be adjusted before launching again.",
+                plugins_dir.display()
+            ),
+            MessageBoxIcon::Information,
+        );
+        std::process::exit(0);
+    }
 
     load(config, plugins_dir).expect("Failed to load");
 }

@@ -53,7 +53,9 @@ fn write_msg<P: AsRef<Path>>(
     file_path: Option<P>,
     meta: &Metadata,
 ) -> std::fmt::Result {
-    let (_version, name, homepage) = (&meta.version, &meta.name, &meta.homepage);
+    let (_version, homepage) = (&meta.version, &meta.homepage);
+
+    let name = "Yet Another Mod Loader";
 
     writeln!(buffer, "Well, this is embarrassing.\n")?;
     writeln!(
@@ -64,13 +66,12 @@ fn write_msg<P: AsRef<Path>>(
     writeln!(
         buffer,
         "We have generated a report file at \"{}\".\n\nSubmit an \
-     issue with the subject of \"{} Crash Report\" and include the \
+     issue with the subject of \"Crash Report\" and include the \
      report as an attachment. You may also submit the relevant log file found in the plugins directory.\n",
         match file_path {
             Some(fp) => format!("{}", fp.as_ref().display()),
             None => "<Failed to store file to disk>".to_string(),
-        },
-        name
+        }
     )?;
 
     if !homepage.is_empty() {
