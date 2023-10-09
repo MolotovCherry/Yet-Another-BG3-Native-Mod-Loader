@@ -35,8 +35,9 @@ The main features of this mod loader are:
 - Run `cargo build` or `cargo build --release`
 
 # FAQ
-### Virus warning!!! What! Virus?!
-No, this is not a virus. The source code is right there for you to see and read. You can compile it yourself too if you want, it'll work the exact same way. This mod loader uses dll injection, and a lot of virus scanners just don't like that. This is the very thing that allows us to avoid modifying core game files!
+### Virus warning!!! Why?!
+No, this is not a virus. This mod loader uses dll injection, and virus scanners might not like that. This is the feature that allows us to avoid modifying core game files! The source code is freely available to all, and you may also compile it yourself using the build instructions.
+
 ### Halp!! All my saves/data are now missing and got deleted!
 This mod loader _DOES NOT_ under ANY circumstances touch your game files, game data, or game saves/profile(s). They _are not_ missing. For some reason, there's a bug with the game and it sometimes creates/launches into the debug profile, which makes it look like all your settings, saves, everything was suddenly deleted. They _are not_ gone! Go to `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles` and delete any `Debug` profiles you see. The profile you are most likely using is the Public one. It will be visible just fine once your game properly loads the public profile again. If you are using steam, try to manually load steam/larian launcher first after deleting the Debug profile. It might work properly after that. I hope Larian fixes this bug soon
 
