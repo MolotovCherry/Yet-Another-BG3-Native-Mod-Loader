@@ -1,0 +1,41 @@
+ _____          _                   _   _
+|_   _|        | |                 | | (_)
+  | | _ __  ___| |_ _ __ _   _  ___| |_ _  ___  _ __  ___
+  | || '_ \/ __| __| '__| | | |/ __| __| |/ _ \| '_ \/ __|
+ _| || | | \__ \ |_| |  | |_| | (__| |_| | (_) | | | \__ \
+ \___/_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/
+----------------------------------------------------------
+
+1. Place the bg3.exe and bg3_dx11.exe files wherever you want, maybe create shortcuts to them even
+   - These files directly correspond to bg3's files. bg3 is the vulkan launcher, bg3_dx11 is the dx11 launcher.
+     Each respective file will set the mode for the official launcher before starting the game, so the game
+     correctly starts in that mode.
+
+2. Run one of the launchers.
+   - You will see a popup with instructions, make sure to follow them.
+
+3. Check the `config.json` file inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+   - Edit as needed. It is recommended to leave `steam` option enabled. The game restarts twice while
+     launching otherwise. (That is normal game behavior, it is not a bug)
+   - If steam/the game was installed to a non-standard path, you must adjust this path to correct it.
+     It needs to point to the root directory of the games installation.
+     E.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3`
+
+4. Place any dll plugins you have inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+   - NativeModLoader plugins are compatible!
+
+5. If you wish to disable a mod, add an entry without extension to the `disabled` key
+   - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry looks like:
+     "disabled": ["FooBar", "FooBaz"]
+
+IMPORTANT: Read the FAQ!
+           BG3 has a bug which makes it look like your profile and saves got deleted.
+           They did not. This launcher DOES NOT touch ANY of your game files or game data.
+           This is merely a harmless (but annoying) game bug. If it happens to you,
+           go to `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles`
+           and delete any debug profiles you see. The main profile people generally use is `Public`.
+           Launching steam and the game launcher manually first might help so the game doesn't
+           recreate that, and launches into `Public` profile instead.
+           I hope Larian fixes this bug soon
+
+Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Mod-Loader
