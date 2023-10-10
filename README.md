@@ -9,7 +9,7 @@ The main features of this mod loader are:
 - It is a launcher (there are 2 executables for Vulkan or Dx11 launching, just like in BG3)
   - Which also means you can launch the game normally instead, and no dll plugins will load
 - It is completely compatible with any [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944) plugins
-  - This means you can develop your plugin using the NativeModLoader framework, or any other (for example, [libmem](https://github.com/rdbo/libmem) for Rust)
+  - This means you can develop your plugin using the [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)﻿﻿﻿'s [BG3 Plugin Template](https://github.com/gottyduke/BG3_PluginTemplate)﻿﻿, or my [Rust BG3 Plugin Template](https://github.com/MolotovCherry/BG3-Plugin-Template-Rust)
 - Has the ability to disable/enable any plugins in the config (useful for any mod managers)
 - Stores your plugins in the larian local data folder alongside the mod folder*
 
@@ -34,8 +34,8 @@ The main features of this mod loader are:
 - Install [Visual Studio](https://visualstudio.microsoft.com/downloads/), build tools, and Desktop Development with C++
 - Run `cargo build` or `cargo build --release`
 
-# Making a plugin
-You can use [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)'s [BG3 Plugin Template](https://github.com/gottyduke/PluginTemplate), or you can my [BG3 Plugin Template for Rust](https://github.com/MolotovCherry/BG3-Plugin-Template-Rust). What you use doesn't really matter much, just as long as it's a dll with a `DllMain` that does its hooking at runtime.
+# Making plugins
+You can use [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)'s [BG3 Plugin Template](https://github.com/gottyduke/PluginTemplate), or you can my [Rust BG3 Plugin Template](https://github.com/MolotovCherry/BG3-Plugin-Template-Rust). What you use doesn't really matter much, just as long as it's a dll with a `DllMain` that does its hooking at runtime.
 
 # FAQ
 ### Virus warning!!! Why?!
