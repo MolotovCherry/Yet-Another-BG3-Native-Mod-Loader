@@ -34,12 +34,12 @@ The main features of this mod loader are:
 - Install [Visual Studio](https://visualstudio.microsoft.com/downloads/), build tools, and Desktop Development with C++
 - Run `cargo build` or `cargo build --release`
 
+# Making a plugin
+You can use [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)'s [BG3 Plugin Template](https://github.com/gottyduke/PluginTemplate), or you can my [BG3 Plugin Template for Rust](https://github.com/MolotovCherry/BG3-Plugin-Template-Rust). What you use doesn't really matter much, just as long as it's a dll with a `DllMain` that does its hooking at runtime.
+
 # FAQ
 ### Virus warning!!! Why?!
 No, this is not a virus. This mod loader uses dll injection, and virus scanners might not like that. This is the feature that allows us to avoid modifying core game files! The source code is freely available to all, and you may also compile it yourself using the build instructions.
-
-### How do I develop plugins?
-You can use [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)'s [BG3 Plugin Template](https://github.com/gottyduke/PluginTemplate), or you can my [BG3 Plugin Template for Rust](https://github.com/MolotovCherry/BG3-Plugin-Template-Rust). What you use doesn't really matter much, just as long as it's a dll with a `DllMain` that does its hooking at runtime.
 
 ### Halp!! All my saves/data are now missing and got deleted!
 This mod loader _DOES NOT_ under ANY circumstances touch your game files, game data, or game saves/profile(s). They _are not_ missing. For some reason, there's a bug with the game and it sometimes creates/launches into the debug profile, which makes it look like all your settings, saves, everything was suddenly deleted. They _are not_ gone! Go to `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles` and delete any `Debug` profiles you see. The profile you are most likely using is the Public one. It will be visible just fine once your game properly loads the public profile again. If you are using steam, try to manually load steam/larian launcher first after deleting the Debug profile. It might work properly after that. I hope Larian fixes this bug soon
