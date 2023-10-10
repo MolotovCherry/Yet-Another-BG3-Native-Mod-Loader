@@ -50,6 +50,9 @@ This mod loader _DOES NOT_ under ANY circumstances touch your game files, game d
 ### Where do I place my plugins?
 Place your dll plugin files inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles`
 
+### How do I uninstall?
+This program does not install itself. To "uninstall" it, simply delete the launchers you downloaded.
+
 ### Is this compatible with NativeModLoader plugins
 100% compatible! Just as the mod didn't rely on any NativeModLoader specific behavior (if so, file an issue with the plugin author!)
 
