@@ -1,7 +1,7 @@
 # Yet-Another-BG3-Mod-Loader
 [![Build](https://github.com/MolotovCherry/Yet-Another-BG3-Mod-Loader/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/MolotovCherry/Yet-Another-BG3-Mod-Loader/actions/workflows/build.yml)
 
-This is a mod loader for Baldur's Gate 3
+This is a native mod loader for Baldur's Gate 3
 
 The main features of this mod loader are:
 - It does not modify any original game files or touch the installation directory
