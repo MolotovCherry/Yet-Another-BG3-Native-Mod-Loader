@@ -9,7 +9,7 @@ The main features of this mod loader are:
 - It is a launcher (there are 2 executables for Vulkan or Dx11 launching, just like in BG3)
   - Which also means you can launch the game normally instead, and no dll plugins will load
 - It is completely compatible with any [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944) plugins
-  - This means you can develop your plugin using the [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)﻿﻿﻿'s [BG3 Plugin Template](https://github.com/gottyduke/BG3_PluginTemplate)﻿﻿, or my [Rust BG3 Plugin Template](https://github.com/MolotovCherry/BG3-Plugin-Template-Rust)
+  - This means you can develop your plugin using my [Rust BG3 Plugin Template](https://github.com/MolotovCherry/BG3-Plugin-Template-Rust) or [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)﻿﻿﻿'s [BG3 Plugin Template](https://github.com/gottyduke/BG3_PluginTemplate)﻿﻿
 - Has the ability to disable/enable any plugins in the config (useful for any mod managers)
 - Stores your plugins in the larian local data folder alongside the mod folder*
 
