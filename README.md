@@ -39,7 +39,10 @@ You can use [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)'s
 
 # FAQ
 ### Virus warning!!! Why?!
-No, this is not a virus. This mod loader uses dll injection, and virus scanners might not like that. This is the feature that allows us to avoid modifying core game files! The source code is freely available to all, and you may also compile it yourself using the build instructions.
+No, this is not a virus. This mod loader uses dll injection, and virus scanners or browser download might not like that. This is the feature that allows us to avoid modifying core game files! The source code is freely available to all, and you may also compile it yourself using the build instructions.
+
+### I got a smartscreen warning, how do I remove it?
+If the files are not widely distributed yet, you may also receive a smartscreen popup on windows when you run it. You can remove it by following [these instructions﻿](https://www.windowscentral.com/how-disable-smartscreen-trusted-app-windows-10).
 
 ### Halp!! All my saves/data are now missing and got deleted!
 This mod loader _DOES NOT_ under ANY circumstances touch your game files, game data, or game saves/profile(s). They _are not_ missing. For some reason, there's a bug with the game and it sometimes creates/launches into the debug profile, which makes it look like all your settings, saves, everything was suddenly deleted. They _are not_ gone! Go to `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles` and delete any `Debug` profiles you see. The profile you are most likely using is the Public one. It will be visible just fine once your game properly loads the public profile again. If you are using steam, try to manually load steam/larian launcher first after deleting the Debug profile. It might work properly after that. I hope Larian fixes this bug soon
