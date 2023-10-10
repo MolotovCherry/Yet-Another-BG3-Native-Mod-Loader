@@ -51,7 +51,7 @@ This mod loader _DOES NOT_ under ANY circumstances touch your game files, game d
 Place your dll plugin files inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles`
 
 ### Is this compatible with NativeModLoader plugins
-100% compatible!
+100% compatible! Just as the mod didn't rely on any NativeModLoader specific behavior (if so, file an issue with the plugin author!)
 
 ### Halp!! I used plugin `<insert name here>` and it did something bad/doesn't work!
 This is not the mod loaders fault. The plugin itself needs to be fixed. You can report your bug/problem to the respective plugin authors page.
