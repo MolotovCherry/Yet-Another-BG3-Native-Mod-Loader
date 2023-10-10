@@ -35,7 +35,7 @@ The main features of this mod loader are:
 - Run `cargo build` or `cargo build --release`
 
 # Making plugins
-You can use [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)'s [BG3 Plugin Template](https://github.com/gottyduke/PluginTemplate), or you can my [Rust BG3 Plugin Template](https://github.com/MolotovCherry/BG3-Plugin-Template-Rust). What you use doesn't really matter much, just as long as it's a dll with a `DllMain` that does its hooking at runtime.
+You can use my [Rust BG3 Plugin Template](https://github.com/MolotovCherry/BG3-Plugin-Template-Rust) or [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)'s [BG3 Plugin Template](https://github.com/gottyduke/PluginTemplate). What you use doesn't really matter much, just as long as it's a dll with a `DllMain` that does its hooking at runtime.
 
 # FAQ
 ### Virus warning!!! Why?!
