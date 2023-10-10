@@ -16,6 +16,7 @@ chrono = "0.4.31"
 winreg = "0.51.0"
 sysinfo = "0.29.10"
 windows-targets = "0.48.5"
+bg3-plugin-lib = { git = "https://github.com/MolotovCherry/BG3-Plugin-Lib" }
 
 [dependencies.windows]
 version = "0.51.1"

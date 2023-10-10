@@ -31,12 +31,21 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
                 .to_str()
                 .unwrap_or_default();
 
+            let data = bg3_plugin_lib::get_plugin_data(&path);
+            let name = if let Ok(data) = data {
+                data.get_name()
+                    .map(|n| format!("{n} ({name}.dll)"))
+                    .unwrap_or(name.to_string())
+            } else {
+                name.to_string()
+            };
+
             if config.disabled.contains(&name.to_string()) {
-                info!("Skipping plugin \"{name}\"");
+                info!("Skipping plugin {name}");
                 continue;
             }
 
-            info!("Loading plugin \"{name}\"");
+            info!("Loading plugin {name}");
 
             let mut plugin_path = path
                 .to_str()
