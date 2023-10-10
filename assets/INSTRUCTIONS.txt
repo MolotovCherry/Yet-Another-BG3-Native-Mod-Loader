@@ -38,4 +38,4 @@ IMPORTANT: Read the FAQ!
            recreate that, and launches into `Public` profile instead.
            I hope Larian fixes this bug soon
 
-Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Mod-Loader
+Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
