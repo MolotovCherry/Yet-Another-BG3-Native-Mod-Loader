@@ -110,7 +110,7 @@ dependencies = [
 [[package]]
 name = "bg3-plugin-lib"
 version = "0.1.0"
-source = "git+https://github.com/MolotovCherry/BG3-Plugin-Lib#f8286889c0d731765054bbbf685c6a33e2dd6f66"
+source = "git+https://github.com/MolotovCherry/BG3-Plugin-Lib#dd10de4bfed1ff3fbb1b0be371ab26f950d3126c"
 dependencies = [
  "konst",
  "windows 0.51.1",
