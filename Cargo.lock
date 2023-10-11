@@ -110,8 +110,9 @@ dependencies = [
 [[package]]
 name = "bg3-plugin-lib"
 version = "0.1.0"
-source = "git+https://github.com/MolotovCherry/BG3-Plugin-Lib#6f4a90a2259bbb0a805c85310c2ca7de3a8680b5"
+source = "git+https://github.com/MolotovCherry/BG3-Plugin-Lib#f8286889c0d731765054bbbf685c6a33e2dd6f66"
 dependencies = [
+ "konst",
  "windows 0.51.1",
 ]
 
@@ -161,6 +162,12 @@ name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
+
+[[package]]
+name = "const_panic"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6051f239ecec86fde3410901ab7860d458d160371533842974fc61f96d15879b"
 
 [[package]]
 name = "core-foundation-sys"
@@ -326,6 +333,33 @@ checksum = "c5f195fe497f702db0f318b07fdd68edb16955aed830df8363d837542f8f935a"
 dependencies = [
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "konst"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "030400e39b2dff8beaa55986a17e0014ad657f569ca92426aafcb5e8e71faee7"
+dependencies = [
+ "const_panic",
+ "konst_kernel",
+ "konst_proc_macros",
+ "typewit",
+]
+
+[[package]]
+name = "konst_kernel"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3376133edc39f027d551eb77b077c2865a0ef252b2e7d0dd6b6dc303db95d8b5"
+dependencies = [
+ "typewit",
+]
+
+[[package]]
+name = "konst_proc_macros"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e28ab1dc35e09d60c2b8c90d12a9a8d9666c876c10a3739a3196db0103b6043"
 
 [[package]]
 name = "libc"
@@ -676,6 +710,21 @@ dependencies = [
  "toml_datetime",
  "winnow",
 ]
+
+[[package]]
+name = "typewit"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6779a69cc5f9a7388274a0a8a353eb1c9e45195f9ae74a26690b055a7cf9592a"
+dependencies = [
+ "typewit_proc_macros",
+]
+
+[[package]]
+name = "typewit_proc_macros"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e36a83ea2b3c704935a01b4642946aadd445cea40b10935e3f8bd8052b8193d6"
 
 [[package]]
 name = "unicode-ident"

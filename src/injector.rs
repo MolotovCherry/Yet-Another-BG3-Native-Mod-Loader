@@ -2,6 +2,7 @@ use std::path::Path;
 use std::{ffi::c_void, fs};
 
 use anyhow::{anyhow, bail};
+use bg3_plugin_lib::{Plugin, Version};
 use log::info;
 use windows::Win32::{
     Foundation::{CloseHandle, GetLastError},
@@ -33,11 +34,21 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
 
             let data = bg3_plugin_lib::get_plugin_data(&path);
             let name = if let Ok(data) = data {
+                let Plugin {
+                    version:
+                        Version {
+                            major,
+                            minor,
+                            patch,
+                        },
+                    ..
+                } = data;
+
                 data.get_name()
-                    .map(|n| format!("{n} ({name}.dll)"))
-                    .unwrap_or(name.to_string())
+                    .map(|n| format!("{n} v{major}.{minor}.{patch} ({name}.dll)"))
+                    .unwrap_or(format!("{name}.dll"))
             } else {
-                name.to_string()
+                format!("{name}.dll")
             };
 
             if config.disabled.contains(&name.to_string()) {
