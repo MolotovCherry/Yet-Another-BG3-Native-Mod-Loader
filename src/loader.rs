@@ -1,7 +1,7 @@
 use std::{os::windows::process::CommandExt, path::Path};
 use std::{process::Command, time::Duration};
 
-use anyhow::{anyhow, bail};
+use anyhow::anyhow;
 use log::info;
 use sysinfo::{PidExt, ProcessExt, ProcessRefreshKind, System, SystemExt};
 
@@ -10,6 +10,7 @@ use crate::{
     injector::inject_plugins,
     launcher_prefs::{get_launcher_preferences, save_launcher_preferences, Backend},
     paths::get_steam_exe,
+    popup::{display_popup, MessageBoxIcon},
 };
 
 pub fn load<P: AsRef<Path>>(mut config: Config, plugins_dir: P) -> anyhow::Result<()> {
@@ -98,7 +99,13 @@ fn get_game_pid(game_exe: &Path) -> anyhow::Result<u32> {
 
         // stop trying if game did not launch within timeout
         if time.elapsed() >= Duration::from_secs(10) {
-            bail!("Timed out waiting for game process to launch. Is your `install_root` config value correct?");
+            // display friendlier popup
+            display_popup(
+                "Process not found",
+                "The game process was not found. Is your `install_root` config value correct?",
+                MessageBoxIcon::Error,
+            );
+            std::process::exit(1);
         }
 
         // give it time to open
