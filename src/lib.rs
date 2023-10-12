@@ -30,7 +30,7 @@ pub fn run() {
         name: env!("CARGO_PKG_NAME").into(),
         version: env!("CARGO_PKG_VERSION").into(),
         authors: "Cherry".into(),
-        homepage: "https://github.com/MolotovCherry/NativeModLauncher".into(),
+        homepage: "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader".into(),
     });
 
     let (first_time, plugins_dir) =
