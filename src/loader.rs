@@ -35,7 +35,7 @@ pub fn load<P: AsRef<Path>>(mut config: Config, plugins_dir: P) -> anyhow::Resul
     };
 
     let mut prefs = get_launcher_preferences()?;
-    info!("Using backend {backend:?}");
+    info!("Using rendering backend {backend:?}");
     prefs.default_rendering_backend = backend;
     save_launcher_preferences(&prefs)?;
 
