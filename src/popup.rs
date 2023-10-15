@@ -40,9 +40,6 @@ pub fn display_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M, icon: M
 
 /// An error popup, except that the program exits after
 pub fn fatal_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M) -> ! {
-    let title = title.as_ref();
-    let message = message.as_ref();
-
     display_popup(title, message, MessageBoxIcon::Error);
     std::process::exit(1);
 }
