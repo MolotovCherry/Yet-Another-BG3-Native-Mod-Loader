@@ -30,7 +30,7 @@ pub fn set_hook(meta: Metadata) {
             }
         }
 
-        display_popup("Oh no :(", &message, MessageBoxIcon::Error);
+        display_popup("Oh no :(", message, MessageBoxIcon::Error);
     }));
 }
 

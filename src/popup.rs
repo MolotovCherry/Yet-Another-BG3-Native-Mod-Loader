@@ -19,7 +19,10 @@ impl From<MessageBoxIcon> for MESSAGEBOX_STYLE {
     }
 }
 
-pub fn display_popup(title: &str, message: &str, icon: MessageBoxIcon) {
+pub fn display_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M, icon: MessageBoxIcon) {
+    let title = title.as_ref();
+    let message = message.as_ref();
+
     // these must be explicitly assigned, otherwise they will be temporary and drop
     // and create an invalid pointer, causing corruption and UB
     let h_title = HSTRING::from(title);
@@ -33,4 +36,13 @@ pub fn display_popup(title: &str, message: &str, icon: MessageBoxIcon) {
     unsafe {
         MessageBoxW(None, message, title, icon);
     }
+}
+
+/// An error popup, except that the program exits after
+pub fn fatal_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M) -> ! {
+    let title = title.as_ref();
+    let message = message.as_ref();
+
+    display_popup(title, message, MessageBoxIcon::Error);
+    std::process::exit(1);
 }

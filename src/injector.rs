@@ -1,5 +1,5 @@
-use std::path::Path;
 use std::{ffi::c_void, fs};
+use std::{ffi::CString, path::Path};
 
 use anyhow::{anyhow, bail};
 use bg3_plugin_lib::{Plugin, Version};
@@ -46,23 +46,23 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
 
                 data.get_name()
                     .map(|n| format!("{n} v{major}.{minor}.{patch} ({name}.dll)"))
-                    .unwrap_or(format!("{name}.dll"))
+                    .unwrap_or(format!("{name}.dll v{major}.{minor}.{patch}"))
             } else {
                 format!("{name}.dll")
             };
 
-            if config.disabled.contains(&name.to_string()) {
+            if config.core.disabled.contains(&name.to_string()) {
                 info!("Skipping plugin {name}");
                 continue;
             }
 
             info!("Loading plugin {name}");
 
-            let mut plugin_path = path
-                .to_str()
-                .ok_or(anyhow!("Failed to convert plugin path"))?
-                .to_owned();
-            plugin_path.push('\0');
+            let plugin_path = CString::new(
+                path.to_str()
+                    .ok_or(anyhow!("Failed to convert plugin path"))?,
+            )?;
+            let plugin_path = plugin_path.as_bytes_with_nul();
 
             let alloc_addr = unsafe {
                 VirtualAllocEx(
@@ -77,7 +77,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
             // allocation failed
             if alloc_addr.is_null() {
                 let err = unsafe { GetLastError() }.unwrap_err();
-                bail!("Failed to allocate memory in {pid}: {err:?}");
+                bail!("Failed to allocate memory in {pid}: {err}");
             }
 
             // Write the data to the process
@@ -85,7 +85,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
                 WriteProcessMemory(
                     handle,
                     alloc_addr,
-                    plugin_path.as_bytes() as *const _ as *const _,
+                    plugin_path as *const _ as *const _,
                     plugin_path.len(),
                     None,
                 )?

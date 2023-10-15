@@ -14,7 +14,7 @@
 2. Run one of the launchers.
    - You will see a popup with instructions, make sure to follow them.
 
-3. Check the `config.json` file inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+3. Check the `config.toml` file inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
    - Edit as needed. It is recommended to leave `steam` option enabled. The game restarts twice while
      launching otherwise. (That is normal game behavior, it is not a bug)
    - If steam/the game was installed to a non-standard path, you must adjust this path to correct it.

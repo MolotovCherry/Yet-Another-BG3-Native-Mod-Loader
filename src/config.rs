@@ -1,11 +1,17 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+use crate::popup::fatal_popup;
+
+#[derive(Serialize, Deserialize, Default)]
 pub struct Config {
+    pub core: Core,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Core {
     /// The game's root installation directory,
     /// e.g. C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3
     pub install_root: PathBuf,
@@ -20,7 +26,7 @@ pub struct Config {
     pub disabled: Vec<String>,
 }
 
-impl Default for Config {
+impl Default for Core {
     fn default() -> Self {
         Self {
             // the default location for most people
@@ -36,13 +42,24 @@ pub fn get_config<P: AsRef<Path>>(path: P) -> anyhow::Result<Config> {
     let path = path.as_ref();
 
     if !path.exists() {
-        let json = serde_json::to_string_pretty(&Config::default())
-            .context("Failed to convert default config to json")?;
+        let json = toml::to_string_pretty(&Config::default())?;
 
-        fs::write(path, json).context("Failed to write default json to path")?;
+        if let Err(e) = fs::write(path, json) {
+            fatal_popup("Fatal Error", format!("Failed to save config: {e}"));
+        }
     }
 
-    let config = fs::read_to_string(path).context("Failed to read config to string")?;
+    let config = match fs::read_to_string(path) {
+        Ok(v) => v,
+        Err(e) => {
+            fatal_popup("Fatal Error", format!("Failed to read config: {e}"));
+        }
+    };
 
-    serde_json::from_str::<Config>(&config).context("Failed to convert json to config")
+    match toml::from_str::<Config>(&config) {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            fatal_popup("Fatal Error", format!("Failed to deserialize config: {e}\n\nYour config probably has a mistake in it. Please verify it's correctly formatted as toml"));
+        }
+    }
 }

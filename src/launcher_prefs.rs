@@ -3,9 +3,7 @@ use std::{collections::BTreeMap, fs};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use anyhow::anyhow;
-
-use crate::paths::get_launcher_dir;
+use crate::{paths::get_launcher_dir, popup::fatal_popup};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -69,12 +67,28 @@ pub fn get_launcher_preferences() -> anyhow::Result<LauncherPreferences> {
     preferences.push("preferences.json");
 
     if !preferences.exists() {
-        return Err(anyhow!("Launcher preferences.json not found"));
+        fatal_popup("Fatal Error", "Launcher preferences.json not found");
     }
 
-    let data = std::fs::read_to_string(&preferences)?;
+    let data = match std::fs::read_to_string(&preferences) {
+        Ok(v) => v,
+        Err(e) => {
+            fatal_popup(
+                "Fatal Error",
+                format!("Could not read launcher preferences.json: {e}"),
+            );
+        }
+    };
 
-    let config = serde_json::from_str::<LauncherPreferences>(&data)?;
+    let config = match serde_json::from_str::<LauncherPreferences>(&data) {
+        Ok(v) => v,
+        Err(e) => {
+            fatal_popup(
+                "Fatal Error",
+                format!("Failed to deserialize launcher preferences.json: {e}\n\nYour config probably has a mistake in it. Please verify it's correctly formatted as json"),
+            );
+        }
+    };
 
     Ok(config)
 }
@@ -86,7 +100,12 @@ pub fn save_launcher_preferences(prefs: &LauncherPreferences) -> anyhow::Result<
 
     let data = serde_json::to_string_pretty(&prefs)?;
 
-    fs::write(path, data)?;
+    if let Err(e) = fs::write(path, data) {
+        fatal_popup(
+            "Fatal Error",
+            format!("Failed to save launcher preferences.json: {e}"),
+        );
+    }
 
     Ok(())
 }
