@@ -1002,7 +1002,7 @@ dependencies = [
  "sysinfo",
  "toml 0.8.2",
  "windows 0.51.1",
- "windows-targets",
+ "windows-sys",
  "winreg",
  "winres",
 ]

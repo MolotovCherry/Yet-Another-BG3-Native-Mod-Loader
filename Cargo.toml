@@ -16,7 +16,6 @@ backtrace = "0.3.69"
 chrono = "0.4.31"
 winreg = "0.51.0"
 sysinfo = "0.29.10"
-windows-targets = "0.48.5"
 bg3-plugin-lib = { git = "https://github.com/MolotovCherry/BG3-Plugin-Lib" }
 
 [dependencies.windows]
@@ -33,6 +32,10 @@ features = [
 
     "Win32_Security",
 ]
+
+[dependencies.windows-sys]
+version = "0.48.0"
+features = ["Win32_System_LibraryLoader", "Win32_Foundation"]
 
 [build-dependencies]
 winres = "0.1.12"
