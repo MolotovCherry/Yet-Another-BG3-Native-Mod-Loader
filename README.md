@@ -50,7 +50,7 @@ This mod loader _DOES NOT_ under ANY circumstances touch your game files, game d
 \* `C:\Users\<user>\AppData\Local\Larian Studios\Launcher\Settings\preferences.json` is the only file touched. This is required because this file must be set to load in vulkan or dx11 mode, and the game won't start in the right mode otherwise. It's worth noting that larian's own launcher does the exact same thing.
 
 ### Where do I place my plugins?
-Place your dll plugin files inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles`
+Place your dll plugin files inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
 
 ### How do I uninstall?
 This program does not install itself. To "uninstall" it, simply delete the launchers you downloaded.
