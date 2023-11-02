@@ -19,9 +19,9 @@ use windows_sys::Win32::System::LibraryLoader::LoadLibraryW;
 
 use crate::config::Config;
 
+#[allow(non_snake_case)]
 pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::Result<()> {
     // cast from fn item to fn pointer
-    #[allow(non_snake_case)]
     let LoadLibraryW = LoadLibraryW as unsafe extern "system" fn(_) -> _;
 
     let handle = unsafe {
