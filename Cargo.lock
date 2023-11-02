@@ -988,7 +988,7 @@ dependencies = [
 
 [[package]]
 name = "yet-another-bg3-mod-loader"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "backtrace",
