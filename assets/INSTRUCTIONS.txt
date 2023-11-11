@@ -18,7 +18,7 @@
    - Edit as needed. It is recommended to leave `steam` option enabled. The game restarts twice while
      launching otherwise. (That is normal game behavior, it is not a bug)
    - If steam/the game was installed to a non-standard path, you must adjust this path to correct it.
-     It needs to point to the root directory of the games installation.
+     It needs to point to the game's root installation directory.
      E.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3`
 
 4. Place any dll plugins you have inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
@@ -26,16 +26,23 @@
 
 5. If you wish to disable a mod, add an entry without extension to the `disabled` key
    - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry looks like:
-     "disabled": ["FooBar", "FooBaz"]
+     disabled = ["FooBar", "FooBaz"]
+   - If you wish to disable all plugins, just launch the game normally using steam instead.
+     The launcher can only patch plugins into the game when it's used, so this is an easy way to
+     disable it.
 
 IMPORTANT: Read the FAQ!
-           BG3 has a bug which makes it look like your profile and saves got deleted.
+           It may sometimes appear like your BG3 profile/saves got deleted when you launch the game.
            They did not. This launcher DOES NOT touch ANY of your game files or game data.
-           This is merely a harmless (but annoying) game bug. If it happens to you,
-           go to `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles`
+           This is harmless (but annoying). What's happening is the game is making/launching into a
+           Debug profile instead of your regular profile. It appears to be intentionally designed
+           that way. If it happens to you, go to:
+           `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles`
            and delete any debug profiles you see. The main profile people generally use is `Public`.
            Launching steam and the game launcher manually first might help so the game doesn't
            recreate that, and launches into `Public` profile instead.
-           I hope Larian fixes this bug soon
+           If you have any trouble getting it to correctly launch, I offer some suggestions in the FAQ.
+           It's important to remember - it is the game itself doing this - not the launcher.
+           The game does this regardless in certain situations, and I have no control over that.
 
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
