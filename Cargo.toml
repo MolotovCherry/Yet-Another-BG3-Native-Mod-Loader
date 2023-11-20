@@ -10,7 +10,7 @@ serde = { version = "1.0.192", features = ["derive"] }
 toml = "0.8.8"
 serde_json = "1.0.108"
 directories = "5.0.1"
-human-panic = "1.2.1"
+human-panic = "1.2.2"
 anyhow = "1.0.75"
 backtrace = "0.3.69"
 chrono = "0.4.31"
