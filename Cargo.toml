@@ -14,7 +14,7 @@ human-panic = "1.2.1"
 anyhow = "1.0.75"
 backtrace = "0.3.69"
 chrono = "0.4.31"
-winreg = "0.51.0"
+winreg = "0.52.0"
 sysinfo = "0.29.10"
 bg3-plugin-lib = { git = "https://github.com/MolotovCherry/BG3-Plugin-Lib" }
 
