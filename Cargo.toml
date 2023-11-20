@@ -19,7 +19,7 @@ sysinfo = "0.29.10"
 bg3-plugin-lib = { git = "https://github.com/MolotovCherry/BG3-Plugin-Lib" }
 
 [dependencies.windows]
-version = "0.51.1"
+version = "0.52.0"
 features = [
     "Win32_Foundation",
     "Win32_System_ApplicationInstallationAndServicing",
