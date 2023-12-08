@@ -3,19 +3,15 @@ use std::{panic, path::Path};
 use human_panic::Metadata;
 use log::error;
 
-use crate::popup::{display_popup, MessageBoxIcon};
+use crate::{
+    backtrace::CaptureBacktrace,
+    popup::{display_popup, MessageBoxIcon},
+};
 
 #[allow(unused_variables)]
 pub fn set_hook(meta: Metadata) {
     panic::set_hook(Box::new(move |info| {
-        #[cfg(debug_assertions)]
-        {
-            use crate::backtrace::CaptureBacktrace;
-            error!("{info}\n\nstack backtrace:\n{}", CaptureBacktrace);
-        }
-
-        #[cfg(not(debug_assertions))]
-        error!("{info}");
+        error!("{info}\n\nstack backtrace:\n{}", CaptureBacktrace);
 
         #[allow(unused_mut)]
         let mut message = info.to_string();
