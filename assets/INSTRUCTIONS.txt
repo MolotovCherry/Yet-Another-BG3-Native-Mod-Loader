@@ -6,10 +6,19 @@
  \___/_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/
 ----------------------------------------------------------
 
-1. Place the bg3.exe and bg3_dx11.exe files wherever you want, maybe create shortcuts to them even
-   - These files directly correspond to bg3's files. bg3 is the vulkan launcher, bg3_dx11 is the dx11 launcher.
-     Each respective file will set the mode for the official launcher before starting the game, so the game
+1. Place the bg3.exe, bg3_dx11.exe, and injector.exe files wherever you want, maybe create shortcuts to them even
+   - The two bg3*.exe files directly correspond to bg3's files. bg3 is the vulkan launcher, bg3_dx11 is the dx11 launcher.
+     Each respective launcher file will set the mode for the official launcher before starting the game, so the game
      correctly starts in that mode.
+   - injector.exe is a simpler tool which finds any instance of the game that's already running (vulkan or dx11),
+     and injects the plugins into it at runtime. This means you can use injector.exe on normal game instance which
+     has not loaded any native mods into it yet. It does not launch the game for you. Please use it BEFORE loading a save.
+     And only use it on a game instance which has NOT loaded any native mods into it. And only use it ONCE.
+     There is also no telling what may happen if you use it while your save is already running; plugins expect that they are
+     run on the game process startup, so please run it as soon as possible.
+   - Warning! Use EITHER one of the bg3*.exe launchers OR injector.exe, DO NOT USE BOTH. Use it only ONCE.
+     You only need to inject plugins ONCE, do not run it any more than once. The injector/launchers will not, and cannot
+     warn or stop you from doing that.
 
 2. Run one of the launchers.
    - You will see a popup with instructions, make sure to follow them.
@@ -46,3 +55,9 @@ IMPORTANT: Read the FAQ!
            The game does this regardless in certain situations, and I have no control over that.
 
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
+
+Disclaimer:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

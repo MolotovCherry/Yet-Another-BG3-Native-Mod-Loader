@@ -85,7 +85,7 @@ pub fn load<P: AsRef<Path>>(mut config: Config, plugins_dir: P) -> anyhow::Resul
 
     handle.wait()?;
 
-    let game_pid = get_game_pid(&game_exe)?;
+    let game_pid = get_game_pid(&[&game_exe])?;
 
     // now inject all the plugins into the game!
     inject_plugins(game_pid, plugins_dir, &config)?;
@@ -93,7 +93,22 @@ pub fn load<P: AsRef<Path>>(mut config: Config, plugins_dir: P) -> anyhow::Resul
     Ok(())
 }
 
-fn get_game_pid(game_exe: &Path) -> anyhow::Result<u32> {
+pub fn injector<P: AsRef<Path>>(config: Config, plugins_dir: P) -> anyhow::Result<()> {
+    let plugins_dir = plugins_dir.as_ref();
+
+    let game_bin = config.core.install_root.join("bin");
+    let game_exe1 = game_bin.join("bg3.exe");
+    let game_exe2 = game_bin.join("bg3_dx11.exe");
+
+    let game_pid = get_game_pid(&[&game_exe1, &game_exe2])?;
+
+    // now inject all the plugins into the game!
+    inject_plugins(game_pid, plugins_dir, &config)?;
+
+    Ok(())
+}
+
+fn get_game_pid(game_exes: &[&Path]) -> anyhow::Result<u32> {
     let pid;
 
     let mut system = System::new();
@@ -104,7 +119,7 @@ fn get_game_pid(game_exe: &Path) -> anyhow::Result<u32> {
 
         for proc in system.processes().values() {
             // found exact path to the process!
-            if game_exe == proc.exe() {
+            if game_exes.contains(&proc.exe()) {
                 pid = proc.pid().as_u32();
                 break 'loop_;
             }

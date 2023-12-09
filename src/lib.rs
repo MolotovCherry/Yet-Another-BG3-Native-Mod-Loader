@@ -9,22 +9,33 @@ mod popup;
 
 use std::{
     fs::{File, OpenOptions},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use chrono::Local;
 use human_panic::Metadata;
-use simplelog::*;
+use log::LevelFilter;
+use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 
 use crate::{panic::set_hook, paths::get_bg3_plugins_dir};
 
 use self::{
-    config::get_config,
-    loader::load,
+    config::{get_config, Config},
+    loader::{injector, load},
     popup::{display_popup, fatal_popup, MessageBoxIcon},
 };
 
 pub fn run() {
+    let (plugins_dir, config) = setup();
+    load(config, plugins_dir).expect("Failed to load");
+}
+
+pub fn run_injector() {
+    let (plugins_dir, config) = setup();
+    injector(config, plugins_dir).expect("Failed to load");
+}
+
+fn setup() -> (PathBuf, Config) {
     // Nicely print any panic messages to the user
     set_hook(Metadata {
         name: env!("CARGO_PKG_NAME").into(),
@@ -51,17 +62,17 @@ pub fn run() {
 
     if first_time {
         display_popup(
-            "Finish Setup",
-            format!(
-                "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. If you installed Steam/BG3 to a non-default path, the install root in the config needs to be adjusted before launching again.",
-                plugins_dir.display()
-            ),
-            MessageBoxIcon::Information,
-        );
+                "Finish Setup",
+                format!(
+                    "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. If you installed Steam/BG3 to a non-default path, the install root in the config needs to be adjusted before launching again.",
+                    plugins_dir.display()
+                ),
+                MessageBoxIcon::Information,
+            );
         std::process::exit(0);
     }
 
-    load(config, plugins_dir).expect("Failed to load");
+    (plugins_dir, config)
 }
 
 fn setup_logs<P: AsRef<Path>>(plugins_dir: P) -> anyhow::Result<()> {
@@ -98,12 +109,12 @@ fn setup_logs<P: AsRef<Path>>(plugins_dir: P) -> anyhow::Result<()> {
             } else {
                 LevelFilter::Info
             },
-            Config::default(),
+            simplelog::Config::default(),
             TerminalMode::Mixed,
             ColorChoice::Auto,
         ),
         // save log to plugins dir
-        WriteLogger::new(LevelFilter::Info, Config::default(), file),
+        WriteLogger::new(LevelFilter::Info, simplelog::Config::default(), file),
     ])?;
 
     Ok(())
