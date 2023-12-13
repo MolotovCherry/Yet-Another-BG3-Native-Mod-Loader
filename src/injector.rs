@@ -1,13 +1,14 @@
-use std::fs;
+use std::{ffi::c_void, fs};
 use std::{mem, path::Path};
 
-use anyhow::{anyhow, bail};
+use anyhow::{anyhow, Context};
 use bg3_plugin_lib::{Plugin, Version};
 use log::info;
-use windows::Win32::{
-    Foundation::{CloseHandle, GetLastError},
-    System::{
+use windows::{
+    core::{s, w, Error as WinError},
+    Win32::System::{
         Diagnostics::Debug::WriteProcessMemory,
+        LibraryLoader::{GetModuleHandleW, GetProcAddress},
         Memory::{VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE},
         Threading::{
             CreateRemoteThread, OpenProcess, PROCESS_VM_OPERATION, PROCESS_VM_READ,
@@ -15,24 +16,36 @@ use windows::Win32::{
         },
     },
 };
-use windows_sys::Win32::System::LibraryLoader::LoadLibraryW;
 
-use crate::config::Config;
+use crate::{
+    config::Config, helpers::OwnedHandle, virtual_process_memory::VirtualProcessMemory,
+};
 
 #[allow(non_snake_case)]
 pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::Result<()> {
-    // cast from fn item to fn pointer
-    let LoadLibraryW = LoadLibraryW as unsafe extern "system" fn(_) -> _;
+    // get loadlibraryw address as fn pointer
+    let LoadLibraryW: unsafe extern "system" fn(*mut c_void) -> u32 = unsafe {
+        mem::transmute(
+            GetProcAddress(
+                GetModuleHandleW(w!("kernel32")).context("Failed to get kernel32 module handle")?,
+                s!("LoadLibraryW"),
+            )
+            .ok_or(WinError::from_win32())
+            .context("Failed to get LoadLibraryW proc address")?,
+        )
+    };
 
-    let handle = unsafe {
+    let handle: OwnedHandle = unsafe {
         OpenProcess(
             PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE,
             false,
             pid,
-        )?
+        )
+        .context("Failed to OpenProcess for {pid}")?
+        .into()
     };
 
-    for entry in fs::read_dir(plugins_dir)? {
+    for entry in fs::read_dir(plugins_dir).context("Failed to read plugins_dir {plugins_dir}")? {
         let entry = entry?;
 
         let path = entry.path();
@@ -80,51 +93,43 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
             // 1 byte = u8, u16 = 2 bytes, len = number of elems in vector, so len * 2
             let plugin_path_len = plugin_path.len() * 2;
 
-            let alloc_addr = unsafe {
+            let alloc_addr = VirtualProcessMemory::new(handle.as_raw_handle(), unsafe {
                 VirtualAllocEx(
-                    handle,
+                    handle.as_raw_handle(),
                     None,
                     plugin_path_len,
                     MEM_RESERVE | MEM_COMMIT,
                     PAGE_EXECUTE_READWRITE,
                 )
-            };
-
-            // allocation failed
-            if alloc_addr.is_null() {
-                let err = unsafe { GetLastError() }.unwrap_err();
-                bail!("Failed to allocate memory in {pid}: {err}");
-            }
+            })
+            .context("Failed to allocate virtual memory")?;
 
             // Write the data to the process
             unsafe {
                 WriteProcessMemory(
-                    handle,
-                    alloc_addr,
+                    handle.as_raw_handle(),
+                    alloc_addr.get(),
                     plugin_path.as_ptr() as *const _,
                     plugin_path_len,
                     None,
-                )?
+                )
+                .context("Failed to write process memory")?
             }
 
             // start thread with dll
             unsafe {
                 CreateRemoteThread(
-                    handle,
+                    handle.as_raw_handle(),
                     None,
                     0,
-                    Some(mem::transmute(LoadLibraryW)),
-                    Some(alloc_addr),
+                    Some(LoadLibraryW),
+                    Some(alloc_addr.get()),
                     0,
                     None,
-                )?;
+                )
+                .context("Failed to create remote thread")?;
             }
         }
-    }
-
-    // Cleanup
-    unsafe {
-        CloseHandle(handle)?;
     }
 
     Ok(())

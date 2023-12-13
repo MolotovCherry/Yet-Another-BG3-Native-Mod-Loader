@@ -1,11 +1,14 @@
 mod backtrace;
 mod config;
+mod helpers;
 mod injector;
-mod launcher_prefs;
 mod loader;
 mod panic;
 mod paths;
 mod popup;
+mod process_watcher;
+mod single_instance;
+mod virtual_process_memory;
 
 use std::{
     fs::{File, OpenOptions},
@@ -17,22 +20,37 @@ use human_panic::Metadata;
 use log::LevelFilter;
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 
-use crate::{panic::set_hook, paths::get_bg3_plugins_dir};
+use crate::{injector::inject_plugins, panic::set_hook, paths::get_bg3_plugins_dir};
 
 use self::{
     config::{get_config, Config},
-    loader::{injector, load},
     popup::{display_popup, fatal_popup, MessageBoxIcon},
+    process_watcher::watcher::ProcessWatcher,
+    single_instance::SingleInstance,
 };
 
-pub fn run() {
+/// Process watcher entry point
+pub fn run_watcher() {
+    // This prohibits multiple app instances
+    let _singleton = SingleInstance::new();
+
     let (plugins_dir, config) = setup();
-    load(config, plugins_dir).expect("Failed to load");
+
+    ProcessWatcher::watch_for(&["bg3.exe", "bg3_dx11.exe"], move |pid| {
+        println!("Injecting into {pid}");
+        inject_plugins(pid, &plugins_dir, &config).unwrap();
+    })
+    .unwrap();
 }
 
+/// Injector entry point
 pub fn run_injector() {
+    // This prohibits multiple app instances
+    let _singleton = SingleInstance::new();
+
     let (plugins_dir, config) = setup();
-    injector(config, plugins_dir).expect("Failed to load");
+
+    loader::injector(config, plugins_dir).unwrap();
 }
 
 fn setup() -> (PathBuf, Config) {

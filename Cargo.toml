@@ -14,7 +14,6 @@ human-panic = "1.2.2"
 anyhow = "1.0.75"
 backtrace = "0.3.69"
 chrono = "0.4.31"
-winreg = "0.52.0"
 sysinfo = "0.29.11"
 bg3-plugin-lib = { git = "https://github.com/MolotovCherry/BG3-Plugin-Lib" }
 
@@ -31,11 +30,15 @@ features = [
     "Win32_System_LibraryLoader",
 
     "Win32_Security",
-]
+    "Win32_System_Com",
+    "Win32_System_Ole",
+    "Win32_System_Rpc",
 
-[dependencies.windows-sys]
-version = "0.52.0"
-features = ["Win32_System_LibraryLoader", "Win32_Foundation"]
+    "Win32_System_Wmi",
+    "Win32_System_Variant",
+
+    "implement",
+]
 
 [build-dependencies]
 winres = "0.1.12"
