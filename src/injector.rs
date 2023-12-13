@@ -1,4 +1,4 @@
-use std::{ffi::c_void, fs};
+use std::{ffi::c_void, fs, time::Instant};
 use std::{mem, path::Path};
 
 use anyhow::{anyhow, Context};
@@ -11,15 +11,13 @@ use windows::{
         LibraryLoader::{GetModuleHandleW, GetProcAddress},
         Memory::{VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE},
         Threading::{
-            CreateRemoteThread, OpenProcess, PROCESS_VM_OPERATION, PROCESS_VM_READ,
-            PROCESS_VM_WRITE,
+            CreateRemoteThread, OpenProcess, WaitForSingleObject, INFINITE, PROCESS_VM_OPERATION,
+            PROCESS_VM_READ, PROCESS_VM_WRITE,
         },
     },
 };
 
-use crate::{
-    config::Config, helpers::OwnedHandle, virtual_process_memory::VirtualProcessMemory,
-};
+use crate::{config::Config, helpers::OwnedHandle, virtual_process_memory::VirtualProcessMemory};
 
 #[allow(non_snake_case)]
 pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::Result<()> {
@@ -117,7 +115,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
             }
 
             // start thread with dll
-            unsafe {
+            let thread: OwnedHandle = unsafe {
                 CreateRemoteThread(
                     handle.as_raw_handle(),
                     None,
@@ -127,7 +125,13 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
                     0,
                     None,
                 )
-                .context("Failed to create remote thread")?;
+                .context("Failed to create remote thread")?
+                .into()
+            };
+
+            // wait for thread to finish execution
+            unsafe {
+                WaitForSingleObject(thread.as_raw_handle(), INFINITE);
             }
         }
     }

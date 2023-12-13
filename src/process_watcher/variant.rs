@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use windows::Win32::System::Variant::{VariantClear, VariantInit, VARIANT};
 
 pub struct Variant(VARIANT);
@@ -20,7 +22,7 @@ impl Drop for Variant {
     }
 }
 
-impl std::ops::Deref for Variant {
+impl Deref for Variant {
     type Target = VARIANT;
 
     fn deref(&self) -> &Self::Target {
@@ -28,7 +30,7 @@ impl std::ops::Deref for Variant {
     }
 }
 
-impl std::ops::DerefMut for Variant {
+impl DerefMut for Variant {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
