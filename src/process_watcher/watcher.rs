@@ -121,7 +121,7 @@ impl ProcessWatcher {
                     .context("Failed to cast unsecured apartment for CreateObjectStub")?
             };
 
-            let query = format!("SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process' AND ({})", {
+            let query = format!("SELECT TargetInstance.ExecutablePath FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process' AND ({})", {
                 let mut instances = Vec::new();
                 for process in processes {
                     instances.push(format!("TargetInstance.ExecutablePath = '{}'", process.display().to_string().replace('\\', r"\\")));
