@@ -46,22 +46,19 @@ pub fn run_watcher() {
     let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
     let watcher = Arc::new(
-        ProcessWatcher::watch(
-            &[&bg3.to_string_lossy(), &bg3_dx11.to_string_lossy()],
-            move |call| {
-                if let CallType::Pid(pid) = call {
-                    debug!("Received callback for pid {pid}, now injecting");
-                    inject_plugins(pid, &plugins_dir, &config).unwrap();
-                }
-            },
-        )
+        ProcessWatcher::watch(vec![bg3, bg3_dx11], move |call| {
+            if let CallType::Pid(pid) = call {
+                debug!("Received callback for pid {pid}, now injecting");
+                inject_plugins(pid, &plugins_dir, &config).unwrap();
+            }
+        })
         .unwrap(),
     );
 
     // tray
     AppTray::start(watcher.clone());
 
-    watcher.wait();
+    watcher.wait().unwrap();
 }
 
 /// Injector entry point
@@ -76,25 +73,22 @@ pub fn run_injector() {
 
     let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
-    ProcessWatcher::watch_timeout(
-        &[&bg3.to_string_lossy(), &bg3_dx11.to_string_lossy()],
-        timeout,
-        move |call| match call {
-            CallType::Pid(pid) => {
-                inject_plugins(pid, &plugins_dir, &config).unwrap();
-                std::process::exit(0);
-            }
+    ProcessWatcher::watch_timeout(vec![bg3, bg3_dx11], timeout, move |call| match call {
+        CallType::Pid(pid) => {
+            inject_plugins(pid, &plugins_dir, &config).unwrap();
+            std::process::exit(0);
+        }
 
-            CallType::Timeout => {
-                fatal_popup(
-                    "Fatal Error",
-                    "Game process was not found. Is your `install_root` config value correct?",
-                );
-            }
-        },
-    )
+        CallType::Timeout => {
+            fatal_popup(
+                "Fatal Error",
+                "Game process was not found. Is your `install_root` config value correct?",
+            );
+        }
+    })
     .unwrap()
-    .wait();
+    .wait()
+    .unwrap();
 }
 
 fn setup() -> (PathBuf, Config) {

@@ -1,6 +1,10 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use std::{
+    os::windows::ffi::OsStrExt,
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 
 use windows::{
@@ -27,13 +31,13 @@ pub struct EventSink {
 }
 
 impl EventSink {
-    pub fn new(processes: &[&str], cb: SinkCallback) -> (Self, Arc<AtomicBool>) {
+    pub fn new(processes: &[PathBuf], cb: SinkCallback) -> (Self, Arc<AtomicBool>) {
         let called = Arc::new(AtomicBool::new(false));
 
         let processes = processes
             .iter()
-            .map(|&s| {
-                let mut data = s.encode_utf16().collect::<Vec<_>>();
+            .map(|s| {
+                let mut data = s.as_os_str().encode_wide().collect::<Vec<_>>();
                 data.push(0);
                 data
             })
@@ -65,6 +69,26 @@ impl EventSink {
         })
     }
 
+    fn is_process(&self, object: &IWbemClassObject) -> bool {
+        Self::get(object, w!("ExecutablePath")).map_or(false, |variant| {
+            let target = unsafe { variant.Anonymous.Anonymous.Anonymous.bstrVal.as_wide() };
+
+            if target.is_empty() {
+                return false;
+            }
+
+            for process in &self.processes {
+                let pcwstr = PCWSTR(process.as_ptr());
+                let source = unsafe { pcwstr.as_wide() };
+                if source == target {
+                    return true;
+                }
+            }
+
+            false
+        })
+    }
+
     fn handle_event(&self, object: &IWbemClassObject) -> windows::core::Result<()> {
         if Self::bstr_equal(object, w!("__Class"), w!("__InstanceCreationEvent")) {
             let target_instance: IWbemClassObject = unsafe {
@@ -78,17 +102,11 @@ impl EventSink {
                     .cast()?
             };
 
-            for process in &self.processes {
-                if Self::bstr_equal(
-                    &target_instance,
-                    w!("ExecutablePath"),
-                    PCWSTR(process.as_ptr()),
-                ) {
-                    self.called.store(true, Ordering::Relaxed);
-                    let pid = self.get_pid(&target_instance)?;
+            if self.is_process(&target_instance) {
+                self.called.store(true, Ordering::Relaxed);
+                let pid = self.get_pid(&target_instance)?;
 
-                    (self.cb)(CallType::Pid(pid));
-                }
+                (self.cb)(CallType::Pid(pid));
             }
 
             Ok(())
