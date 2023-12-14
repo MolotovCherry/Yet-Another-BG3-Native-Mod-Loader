@@ -8,6 +8,7 @@ use std::{
 };
 
 use anyhow::Context;
+use log::debug;
 use windows::{
     core::{ComInterface, BSTR},
     Win32::{
@@ -151,6 +152,7 @@ impl ProcessWatcher {
             }
 
             if res == WAIT_TIMEOUT && !called.load(Ordering::Relaxed) {
+                debug!("Calling timeout callback");
                 cb(CallType::Timeout);
             }
 

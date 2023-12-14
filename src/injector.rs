@@ -3,7 +3,7 @@ use std::{mem, path::Path};
 
 use anyhow::Context;
 use bg3_plugin_lib::{Plugin, Version};
-use log::{error, info};
+use log::{debug, error, info};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use walkdir::WalkDir;
 use windows::{
@@ -57,6 +57,8 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
 
             let path = e.path();
             if path.is_file() && path.extension().is_some_and(|e| e == "dll") {
+                debug!("Found plugin dll to inject at {}", path.display());
+
                 // check if plugin is disallowed or allowed
                 let name = path
                     .file_stem()

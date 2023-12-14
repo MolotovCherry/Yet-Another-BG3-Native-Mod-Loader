@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::popup::fatal_popup;
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     pub core: Core,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Core {
     /// The game's root installation directory,
     /// e.g. C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3

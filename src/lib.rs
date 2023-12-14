@@ -18,11 +18,13 @@ use std::{
 
 use chrono::Local;
 use human_panic::Metadata;
-use log::LevelFilter;
+use log::{debug, LevelFilter};
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 
 use crate::{
-    injector::inject_plugins, panic::set_hook, paths::get_bg3_plugins_dir,
+    injector::inject_plugins,
+    panic::set_hook,
+    paths::{build_config_game_binary_paths, get_bg3_plugins_dir},
     process_watcher::watcher::CallType,
 };
 
@@ -41,15 +43,14 @@ pub fn run_watcher() {
 
     let (plugins_dir, config) = setup();
 
-    let bin = config.core.install_root.join("bin");
-    let bg3 = bin.join("bg3.exe");
-    let bg3_dx11 = bin.join("bg3_dx11.exe");
+    let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
     let watcher = Arc::new(
         ProcessWatcher::watch(
             &[&bg3.to_string_lossy(), &bg3_dx11.to_string_lossy()],
             move |call| {
                 if let CallType::Pid(pid) = call {
+                    debug!("Received callback for pid {pid}, now injecting");
                     inject_plugins(pid, &plugins_dir, &config).unwrap();
                 }
             },
@@ -73,9 +74,7 @@ pub fn run_injector() {
     // 10 seconds
     let timeout = 10_000u32;
 
-    let bin = config.core.install_root.join("bin");
-    let bg3 = bin.join("bg3.exe");
-    let bg3_dx11 = bin.join("bg3_dx11.exe");
+    let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
     ProcessWatcher::watch_timeout(
         &[&bg3.to_string_lossy(), &bg3_dx11.to_string_lossy()],
@@ -134,6 +133,8 @@ fn setup() -> (PathBuf, Config) {
             );
         std::process::exit(0);
     }
+
+    debug!("Got config: {config:?}");
 
     (plugins_dir, config)
 }
