@@ -155,5 +155,11 @@ impl ProcessWatcher {
 impl Drop for ProcessWatcher {
     fn drop(&mut self) {
         self.stop();
+
+        if let Ok(mut guard) = self.thread.lock() {
+            if let Some(thread) = guard.take() {
+                _ = thread.join();
+            }
+        }
     }
 }
