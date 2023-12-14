@@ -5,6 +5,7 @@ use windows::Win32::{
     System::Memory::{VirtualFreeEx, MEM_RELEASE},
 };
 
+#[derive(Debug)]
 pub struct VirtualProcessMemory {
     process: HANDLE,
     memory: *mut c_void,
