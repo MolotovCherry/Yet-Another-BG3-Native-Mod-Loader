@@ -1,3 +1,8 @@
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
 use windows::{
     core::{implement, ComInterface, HRESULT, PCWSTR},
     Win32::{
@@ -10,17 +15,23 @@ use windows::{
     Win32::System::Wmi::IWbemObjectSink,
 };
 
-use super::variant::Variant;
+use super::{variant::Variant, watcher::CallType};
+
+pub type SinkCallback = Box<dyn Fn(CallType) + 'static>;
 
 #[implement(IWbemObjectSink)]
 pub struct EventSink {
+    called: Arc<AtomicBool>,
     processes: Vec<Vec<u16>>,
-    cb: Box<dyn Fn(u32)>,
+    cb: SinkCallback,
 }
 
 impl EventSink {
-    pub fn new<F: Fn(u32) + 'static>(processes: &[&str], cb: F) -> Self {
-        Self {
+    pub fn new(processes: &[&str], cb: SinkCallback) -> (Self, Arc<AtomicBool>) {
+        let called = Arc::new(AtomicBool::new(false));
+
+        let sink = Self {
+            called: called.clone(),
             processes: processes
                 .iter()
                 .map(|&s| {
@@ -30,8 +41,10 @@ impl EventSink {
                 })
                 .collect(),
 
-            cb: Box::new(cb),
-        }
+            cb,
+        };
+
+        (sink, called)
     }
 
     fn get(object: &IWbemClassObject, name: PCWSTR) -> windows::core::Result<Variant> {
@@ -63,8 +76,9 @@ impl EventSink {
 
             for process in &self.processes {
                 if Self::bstr_equal(&target_instance, w!("Name"), PCWSTR(process.as_ptr())) {
+                    self.called.store(true, Ordering::Relaxed);
                     let pid = self.get_pid(&target_instance)?;
-                    (self.cb)(pid);
+                    (self.cb)(CallType::Pid(pid));
                 }
             }
 

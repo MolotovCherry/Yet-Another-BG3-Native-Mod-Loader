@@ -2,7 +2,6 @@ mod backtrace;
 mod config;
 mod helpers;
 mod injector;
-mod loader;
 mod panic;
 mod paths;
 mod popup;
@@ -20,7 +19,10 @@ use human_panic::Metadata;
 use log::LevelFilter;
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 
-use crate::{injector::inject_plugins, panic::set_hook, paths::get_bg3_plugins_dir};
+use crate::{
+    injector::inject_plugins, panic::set_hook, paths::get_bg3_plugins_dir,
+    process_watcher::watcher::CallType,
+};
 
 use self::{
     config::{get_config, Config},
@@ -36,11 +38,13 @@ pub fn run_watcher() {
 
     let (plugins_dir, config) = setup();
 
-    ProcessWatcher::watch_for(&["bg3.exe", "bg3_dx11.exe"], move |pid| {
-        println!("Injecting into {pid}");
-        inject_plugins(pid, &plugins_dir, &config).unwrap();
+    ProcessWatcher::watch(&["bg3.exe", "bg3_dx11.exe"], move |call| {
+        if let CallType::Pid(pid) = call {
+            inject_plugins(pid, &plugins_dir, &config).unwrap();
+        }
     })
-    .unwrap();
+    .unwrap()
+    .wait();
 }
 
 /// Injector entry point
@@ -50,7 +54,28 @@ pub fn run_injector() {
 
     let (plugins_dir, config) = setup();
 
-    loader::injector(config, plugins_dir).unwrap();
+    // 10 seconds
+    let timeout = 10_000u32;
+
+    ProcessWatcher::watch_timeout(
+        &["bg3.exe", "bg3_dx11.exe"],
+        timeout,
+        move |call| match call {
+            CallType::Pid(pid) => {
+                inject_plugins(pid, &plugins_dir, &config).unwrap();
+                std::process::exit(0);
+            }
+
+            CallType::Timeout => {
+                fatal_popup(
+                    "Fatal Error",
+                    "Game process was not found. Is your `install_root` config value correct?",
+                );
+            }
+        },
+    )
+    .unwrap()
+    .wait();
 }
 
 fn setup() -> (PathBuf, Config) {

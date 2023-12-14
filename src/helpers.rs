@@ -1,5 +1,6 @@
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
 
+#[derive(Debug)]
 pub struct OwnedHandle(HANDLE);
 
 impl OwnedHandle {

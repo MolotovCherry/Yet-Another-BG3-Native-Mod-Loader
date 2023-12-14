@@ -1,4 +1,4 @@
-use std::{ffi::c_void, fs, time::Instant};
+use std::{ffi::c_void, fs};
 use std::{mem, path::Path};
 
 use anyhow::{anyhow, Context};
