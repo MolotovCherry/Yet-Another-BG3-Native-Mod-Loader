@@ -3,7 +3,6 @@ use std::sync::{
     Arc,
 };
 
-use log::debug;
 use windows::{
     core::{implement, ComInterface, HRESULT, PCWSTR},
     Win32::{
@@ -31,8 +30,6 @@ impl EventSink {
     pub fn new(processes: &[&str], cb: SinkCallback) -> (Self, Arc<AtomicBool>) {
         let called = Arc::new(AtomicBool::new(false));
 
-        debug!("Looking for processes:\n{processes:?}");
-
         let processes = processes
             .iter()
             .map(|&s| {
@@ -41,8 +38,6 @@ impl EventSink {
                 data
             })
             .collect();
-
-        debug!("Processes will be looking specifically for bytes:\n{processes:?}");
 
         let sink = Self {
             called: called.clone(),
@@ -65,13 +60,6 @@ impl EventSink {
         Self::get(object, name).map_or(false, |variant| {
             let target = unsafe { variant.Anonymous.Anonymous.Anonymous.bstrVal.as_wide() };
             let source = unsafe { string.as_wide() };
-
-            debug!(
-                "bstr_equal: comparing src \"{:?}\" and target \"{:?}\"",
-                String::from_utf16_lossy(source),
-                String::from_utf16_lossy(target)
-            );
-            debug!("bstr_equal: these are bytes:\nsrc: {source:?}, target: {target:?}");
 
             target == source
         })
@@ -96,15 +84,8 @@ impl EventSink {
                     w!("ExecutablePath"),
                     PCWSTR(process.as_ptr()),
                 ) {
-                    debug!(
-                        "Found newly created executable: {:?}",
-                        String::from_utf16_lossy(process)
-                    );
-
                     self.called.store(true, Ordering::Relaxed);
                     let pid = self.get_pid(&target_instance)?;
-
-                    debug!("Got pid {pid}, now calling callback");
 
                     (self.cb)(CallType::Pid(pid));
                 }
