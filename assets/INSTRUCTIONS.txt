@@ -6,7 +6,7 @@
  \___/_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/
 ----------------------------------------------------------
 
-1. Place bg3_watcher.exe and bg3_injector.exe wherever you want, maybe create shortcuts to them even
+ Place bg3_watcher.exe and bg3_injector.exe wherever you want, maybe create shortcuts to them even
    - bg3_watcher is a tool which stays running in the background. It watches for the launch of bg3 or
      bg3_dx11, and injects the plugins into the game. You can load your game through normal means, and
      it'll all be transparently patched in the background. This tool creates a tray icon. You can go
@@ -21,39 +21,32 @@
      Also, plugins expect that they are run on the game process startup, so please run it as soon as
      possible.
 
-2. Run one of the launchers.
-   - You will see a popup with instructions, make sure to follow them.
+Watcher:
+   - When you run it, it will stay running in the background with a tray icon (you can exit it from the
+     tray icon)
+   - It will silently watch for any game launches, and inject plugins into the game once it runs.
 
-3. Check the `config.toml` file inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
-   - Edit as needed. It is recommended to leave `steam` option enabled. The game restarts twice while
-     launching otherwise. (That is normal game behavior, it is not a bug)
-   - If steam/the game was installed to a non-standard path, you must adjust this path to correct it.
+Injector:
+   - When you run it, it will look for any currently running game instances, inject plugins into it,
+     then exit.
+   - Have a non-native modded game instance running before running it
+   - Please only run the tool on non-modded game instances, and before you load any save games
+
+The first time you run a tool:
+   - It will generate config.toml for you
+   - Check the `config.toml` file inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+   - If the game was installed to a non-standard path, you must adjust this path to correct it.
      It needs to point to the game's root installation directory.
      E.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3`
 
-4. Place any dll plugins you have inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+Place any dll plugins you have inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
    - NativeModLoader plugins are compatible!
 
-5. If you wish to disable a mod, add an entry without extension to the `disabled` key
+If you wish to disable a mod, add an entry without extension to the `disabled` key
    - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry looks like:
      disabled = ["FooBar", "FooBaz"]
-   - If you wish to disable all plugins, just launch the game normally using steam instead.
-     The launcher can only patch plugins into the game when it's used, so this is an easy way to
-     disable it.
-
-IMPORTANT: Read the FAQ!
-           It may sometimes appear like your BG3 profile/saves got deleted when you launch the game.
-           They did not. This launcher DOES NOT touch ANY of your game files or game data.
-           This is harmless (but annoying). What's happening is the game is making/launching into a
-           Debug profile instead of your regular profile. It appears to be intentionally designed
-           that way. If it happens to you, go to:
-           `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\PlayerProfiles`
-           and delete any debug profiles you see. The main profile people generally use is `Public`.
-           Launching steam and the game launcher manually first might help so the game doesn't
-           recreate that, and launches into `Public` profile instead.
-           If you have any trouble getting it to correctly launch, I offer some suggestions in the FAQ.
-           It's important to remember - it is the game itself doing this - not the launcher.
-           The game does this regardless in certain situations, and I have no control over that.
+   - If you wish to disable all plugins easily, just quit the watcher tool if it's running, and
+     start the game normally as you always do.
 
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
 
