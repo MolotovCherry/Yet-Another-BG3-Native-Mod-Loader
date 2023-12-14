@@ -11,7 +11,7 @@
      bg3_dx11, and injects the plugins into the game. You can load your game through normal means, and
      it'll all be transparently patched in the background. This tool creates a tray icon. You can go
      to your taskbar to find the icon, right click on it, and press quit, when you are done using it.
-   - injector.exe is a simpler, one-time use tool, which finds any instance of the game that's already
+   - bg3_injector.exe is a simpler, one-time use tool, which finds any instance of the game that's already
      running (vulkan or dx11), and injects the plugins into it at runtime. This is meant to be used on
      a normal game instance which has not loaded any native mods into it yet. The purpose of this tool
      is to be an alternative to the bg3_watcher tool, for those people who don't want a tool always running
