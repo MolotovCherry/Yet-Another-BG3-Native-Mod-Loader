@@ -21,7 +21,7 @@ jobs:
           key: 'release-dev'
 
       - name: Build
-        run: cargo build --release
+        run: cargo build --profile release-debug
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
