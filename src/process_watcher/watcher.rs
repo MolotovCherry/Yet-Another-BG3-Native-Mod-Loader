@@ -121,14 +121,25 @@ impl ProcessWatcher {
                     .context("Failed to cast unsecured apartment for CreateObjectStub")?
             };
 
+            let query = format!("SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process' AND ({})", {
+                let mut instances = Vec::new();
+                for process in processes {
+                    instances.push(format!("TargetInstance.ExecutablePath = '{}'", process.display().to_string().replace('\\', r"\\")));
+                }
+
+                instances.join(" OR ")
+            });
+
             unsafe {
-                services.ExecNotificationQueryAsync(
-                    &BSTR::from("WQL"),
-                    &BSTR::from("SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'"),
-                    WBEM_FLAG_SEND_STATUS,
-                    None,
-                    &stub_sink,
-                ).context("Failed to ExecNotificationQueryAsync")?;
+                services
+                    .ExecNotificationQueryAsync(
+                        &BSTR::from("WQL"),
+                        &BSTR::from(query),
+                        WBEM_FLAG_SEND_STATUS,
+                        None,
+                        &stub_sink,
+                    )
+                    .context("Failed to ExecNotificationQueryAsync")?;
             }
 
             let res = unsafe { WaitForSingleObject(event_handle, timeout_ms) };
