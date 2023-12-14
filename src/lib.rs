@@ -7,11 +7,13 @@ mod paths;
 mod popup;
 mod process_watcher;
 mod single_instance;
+mod tray;
 mod virtual_process_memory;
 
 use std::{
     fs::{File, OpenOptions},
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use chrono::Local;
@@ -29,13 +31,13 @@ use self::{
     popup::{display_popup, fatal_popup, MessageBoxIcon},
     process_watcher::watcher::ProcessWatcher,
     single_instance::SingleInstance,
+    tray::AppTray,
 };
 
 /// Process watcher entry point
 pub fn run_watcher() {
     // TODO: singleton is broken, fix it
 
-    // TODO: tray icon handling functionality, and exit from tray
     // This prohibits multiple app instances
     let _singleton = SingleInstance::new();
 
@@ -45,16 +47,22 @@ pub fn run_watcher() {
     let bg3 = bin.join("bg3.exe");
     let bg3_dx11 = bin.join("bg3_dx11.exe");
 
-    ProcessWatcher::watch(
-        &[&bg3.to_string_lossy(), &bg3_dx11.to_string_lossy()],
-        move |call| {
-            if let CallType::Pid(pid) = call {
-                inject_plugins(pid, &plugins_dir, &config).unwrap();
-            }
-        },
-    )
-    .unwrap()
-    .wait();
+    let watcher = Arc::new(
+        ProcessWatcher::watch(
+            &[&bg3.to_string_lossy(), &bg3_dx11.to_string_lossy()],
+            move |call| {
+                if let CallType::Pid(pid) = call {
+                    inject_plugins(pid, &plugins_dir, &config).unwrap();
+                }
+            },
+        )
+        .unwrap(),
+    );
+
+    // tray
+    AppTray::start(watcher.clone());
+
+    watcher.wait();
 }
 
 /// Injector entry point

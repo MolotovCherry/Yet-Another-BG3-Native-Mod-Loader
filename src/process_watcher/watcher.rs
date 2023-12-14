@@ -2,6 +2,7 @@ use std::{
     sync::{
         atomic::Ordering,
         mpsc::{channel, Receiver},
+        Mutex,
     },
     thread::{self, JoinHandle},
 };
@@ -36,19 +37,23 @@ pub enum CallType {
 }
 
 pub struct ProcessWatcher {
-    receiver: Receiver<()>,
+    receiver: Mutex<Receiver<()>>,
     event: Event,
-    thread: JoinHandle<()>,
+    thread: Mutex<Option<JoinHandle<()>>>,
 }
 
 impl ProcessWatcher {
-    pub fn wait(&mut self) {
-        _ = self.receiver.recv();
+    pub fn wait(&self) {
+        _ = self.receiver.lock().unwrap().recv();
     }
 
-    pub fn stop(mut self) {
+    pub fn stop(&self) {
         _ = self.event.signal();
-        _ = self.thread.join();
+        if let Ok(mut lock) = self.thread.lock() {
+            if let Some(t) = lock.take() {
+                _ = t.join();
+            }
+        }
     }
 
     pub fn watch(
@@ -153,9 +158,15 @@ impl ProcessWatcher {
         });
 
         Ok(Self {
-            receiver,
+            receiver: Mutex::new(receiver),
             event,
-            thread,
+            thread: Mutex::new(Some(thread)),
         })
+    }
+}
+
+impl Drop for ProcessWatcher {
+    fn drop(&mut self) {
+        self.stop();
     }
 }

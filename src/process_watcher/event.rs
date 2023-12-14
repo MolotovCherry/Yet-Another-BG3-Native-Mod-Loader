@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 use windows::Win32::{
     Foundation::HANDLE,
     System::Threading::{CreateEventW, SetEvent},
@@ -6,17 +8,19 @@ use windows::Win32::{
 use crate::helpers::OwnedHandle;
 
 #[derive(Debug)]
-pub struct Event(Option<OwnedHandle>);
+pub struct Event(Mutex<Option<OwnedHandle>>);
 
 impl Event {
     pub fn new() -> windows::core::Result<Self> {
         let event: OwnedHandle = unsafe { CreateEventW(None, false, false, None)?.into() };
 
-        Ok(Self(Some(event)))
+        Ok(Self(Mutex::new(Some(event))))
     }
 
-    pub fn signal(&mut self) -> windows::core::Result<()> {
-        if let Some(handle) = self.0.take() {
+    pub fn signal(&self) -> windows::core::Result<()> {
+        let mut lock = self.0.lock().unwrap();
+
+        if let Some(handle) = lock.take() {
             unsafe {
                 SetEvent(handle.as_raw_handle())?;
             }
@@ -26,16 +30,12 @@ impl Event {
     }
 
     pub fn get(&self) -> Option<HANDLE> {
-        self.0.as_ref().map(|r| r.as_raw_handle())
+        self.0.lock().unwrap().as_ref().map(|r| r.as_raw_handle())
     }
 }
 
 impl Drop for Event {
     fn drop(&mut self) {
-        if let Some(handle) = self.0.take() {
-            unsafe {
-                let _ = SetEvent(handle.as_raw_handle());
-            }
-        }
+        _ = self.signal();
     }
 }
