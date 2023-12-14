@@ -6,19 +6,20 @@
  \___/_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/
 ----------------------------------------------------------
 
-1. Place the bg3.exe, bg3_dx11.exe, and injector.exe files wherever you want, maybe create shortcuts to them even
-   - The two bg3*.exe files directly correspond to bg3's files. bg3 is the vulkan launcher, bg3_dx11 is the dx11 launcher.
-     Each respective launcher file will set the mode for the official launcher before starting the game, so the game
-     correctly starts in that mode.
-   - injector.exe is a simpler tool which finds any instance of the game that's already running (vulkan or dx11),
-     and injects the plugins into it at runtime. This means you can use injector.exe on normal game instance which
-     has not loaded any native mods into it yet. It does not launch the game for you. Please use it BEFORE loading a save.
-     And only use it on a game instance which has NOT loaded any native mods into it. And only use it ONCE.
-     There is also no telling what may happen if you use it while your save is already running; plugins expect that they are
-     run on the game process startup, so please run it as soon as possible.
-   - Warning! Use EITHER one of the bg3*.exe launchers OR injector.exe, DO NOT USE BOTH. Use it only ONCE.
-     You only need to inject plugins ONCE, do not run it any more than once. The injector/launchers will not, and cannot
-     warn or stop you from doing that.
+1. Place bg3_watcher.exe and bg3_injector.exe wherever you want, maybe create shortcuts to them even
+   - bg3_watcher is a tool which stays running in the background. It watches for the launch of bg3 or
+     bg3_dx11, and injects the plugins into the game. You can load your game through normal means, and
+     it'll all be transparently patched in the background. This tool creates a tray icon. You can go
+     to your taskbar to find the icon, right click on it, and press quit, when you are done using it.
+   - injector.exe is a simpler, one-time use tool, which finds any instance of the game that's already
+     running (vulkan or dx11), and injects the plugins into it at runtime. This is meant to be used on
+     a normal game instance which has not loaded any native mods into it yet. The purpose of this tool
+     is to be an alternative to the bg3_watcher tool, for those people who don't want a tool always running
+     in the background. Please use it BEFORE loading a save. And only use it on a game instance which
+     has NOT loaded any native mods into it yet. There is also no telling what may happen if you use
+     it while your save is already running; or on a game which already has the plugins loaded into it.
+     Also, plugins expect that they are run on the game process startup, so please run it as soon as
+     possible.
 
 2. Run one of the launchers.
    - You will see a popup with instructions, make sure to follow them.
@@ -57,7 +58,8 @@ IMPORTANT: Read the FAQ!
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
 
 Disclaimer:
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
-OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
