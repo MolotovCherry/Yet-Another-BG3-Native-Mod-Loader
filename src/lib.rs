@@ -36,8 +36,6 @@ use self::{
 
 /// Process watcher entry point
 pub fn run_watcher() {
-    // TODO: singleton is broken, fix it
-
     // This prohibits multiple app instances
     let _singleton = SingleInstance::new();
 

@@ -1,6 +1,9 @@
 use windows::{
     core::w,
-    Win32::{Foundation::CloseHandle, System::Threading::CreateMutexW},
+    Win32::{
+        Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS},
+        System::Threading::CreateMutexW,
+    },
 };
 
 use crate::{helpers::OwnedHandle, popup::fatal_popup};
@@ -11,16 +14,18 @@ impl SingleInstance {
     /// Panics and shows error popup if another instance of app already running
     /// If it succeeds, then the app will be considered free to open again once this instance drops
     pub fn new() -> Self {
-        let Ok(startup_mutex) =
-            (unsafe { CreateMutexW(None, true, w!("yet-another-bg3-mod-loader")) })
-        else {
-            fatal_popup(
-                "Already running",
-                "Another instance of Yet Another Bg3 Mod Loader is already running",
-            );
-        };
+        let mutex = unsafe { CreateMutexW(None, true, w!("yet-another-bg3-mod-loader")).unwrap() };
 
-        Self(startup_mutex.into())
+        if let Err(e) = unsafe { GetLastError() } {
+            if e.code() == ERROR_ALREADY_EXISTS.into() {
+                fatal_popup(
+                    "Yet Another Bg3 Mod Loader",
+                    "Another instance is already running",
+                );
+            }
+        }
+
+        Self(mutex.into())
     }
 }
 
