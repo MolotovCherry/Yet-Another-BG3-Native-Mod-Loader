@@ -66,7 +66,7 @@ pub fn build_config_game_binary_paths(config: &Config) -> (PathBuf, PathBuf) {
     let bg3_dx11 = bin.join("bg3_dx11.exe");
 
     debug!("Looking for bg3 at: {}", bg3.display());
-    debug!("Looking for bg3_dx11 at{}", bg3_dx11.display());
+    debug!("Looking for bg3_dx11 at: {}", bg3_dx11.display());
 
     (bg3, bg3_dx11)
 }
