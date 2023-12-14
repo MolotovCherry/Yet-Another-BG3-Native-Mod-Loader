@@ -62,7 +62,7 @@ impl AppTray {
 
             event_loop
                 .run(move |_event, event_loop| {
-                    event_loop.set_control_flow(ControlFlow::Poll);
+                    event_loop.set_control_flow(ControlFlow::Wait);
 
                     if let Ok(event) = MenuEvent::receiver().try_recv() {
                         if event.id == quit_i.id() {
