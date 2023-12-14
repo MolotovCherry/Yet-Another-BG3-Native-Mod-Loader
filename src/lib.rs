@@ -42,7 +42,7 @@ pub fn run_watcher() {
     let (plugins_dir, config) = setup();
 
     let bin = config.core.install_root.join("bin");
-    let bg3 = config.core.install_root.join("bg3.exe");
+    let bg3 = bin.join("bg3.exe");
     let bg3_dx11 = bin.join("bg3_dx11.exe");
 
     ProcessWatcher::watch(
@@ -68,7 +68,7 @@ pub fn run_injector() {
     let timeout = 10_000u32;
 
     let bin = config.core.install_root.join("bin");
-    let bg3 = config.core.install_root.join("bg3.exe");
+    let bg3 = bin.join("bg3.exe");
     let bg3_dx11 = bin.join("bg3_dx11.exe");
 
     ProcessWatcher::watch_timeout(
