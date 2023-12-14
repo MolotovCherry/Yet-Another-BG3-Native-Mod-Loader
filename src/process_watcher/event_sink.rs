@@ -66,7 +66,11 @@ impl EventSink {
             let target = unsafe { variant.Anonymous.Anonymous.Anonymous.bstrVal.as_wide() };
             let source = unsafe { string.as_wide() };
 
-            debug!("bstr_equal: comparing src \"{source:?}\" and target \"{target:?}\"");
+            debug!(
+                "bstr_equal: comparing src \"{:?}\" and target \"{:?}\"",
+                String::from_utf16_lossy(source),
+                String::from_utf16_lossy(target)
+            );
             debug!("bstr_equal: these are bytes:\nsrc: {source:?}, target: {target:?}");
 
             target == source
@@ -100,7 +104,7 @@ impl EventSink {
                     self.called.store(true, Ordering::Relaxed);
                     let pid = self.get_pid(&target_instance)?;
 
-                    debug!("Event sink got pid {pid}, now calling callback");
+                    debug!("Got pid {pid}, now calling callback");
 
                     (self.cb)(CallType::Pid(pid));
                 }
