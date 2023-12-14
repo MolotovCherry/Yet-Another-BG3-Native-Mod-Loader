@@ -1,0 +1,31 @@
+name: Build Release Debug
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    permissions: write-all
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: 'release-dev'
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: |
+            target/*/*.exe
