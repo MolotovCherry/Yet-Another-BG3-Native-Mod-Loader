@@ -33,16 +33,26 @@ use self::{
 
 /// Process watcher entry point
 pub fn run_watcher() {
+    // TODO: singleton is broken, fix it
+
+    // TODO: tray icon handling functionality, and exit from tray
     // This prohibits multiple app instances
     let _singleton = SingleInstance::new();
 
     let (plugins_dir, config) = setup();
 
-    ProcessWatcher::watch(&["bg3.exe", "bg3_dx11.exe"], move |call| {
-        if let CallType::Pid(pid) = call {
-            inject_plugins(pid, &plugins_dir, &config).unwrap();
-        }
-    })
+    let bin = config.core.install_root.join("bin");
+    let bg3 = config.core.install_root.join("bg3.exe");
+    let bg3_dx11 = bin.join("bg3_dx11.exe");
+
+    ProcessWatcher::watch(
+        &[&bg3.to_string_lossy(), &bg3_dx11.to_string_lossy()],
+        move |call| {
+            if let CallType::Pid(pid) = call {
+                inject_plugins(pid, &plugins_dir, &config).unwrap();
+            }
+        },
+    )
     .unwrap()
     .wait();
 }
@@ -57,8 +67,12 @@ pub fn run_injector() {
     // 10 seconds
     let timeout = 10_000u32;
 
+    let bin = config.core.install_root.join("bin");
+    let bg3 = config.core.install_root.join("bg3.exe");
+    let bg3_dx11 = bin.join("bg3_dx11.exe");
+
     ProcessWatcher::watch_timeout(
-        &["bg3.exe", "bg3_dx11.exe"],
+        &[&bg3.to_string_lossy(), &bg3_dx11.to_string_lossy()],
         timeout,
         move |call| match call {
             CallType::Pid(pid) => {

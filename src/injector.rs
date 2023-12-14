@@ -43,6 +43,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
         .into()
     };
 
+    // TODO: Make this parallel and concurrent so one dll taking long time to load won't impact others
     for entry in fs::read_dir(plugins_dir).context("Failed to read plugins_dir {plugins_dir}")? {
         let entry = entry?;
 

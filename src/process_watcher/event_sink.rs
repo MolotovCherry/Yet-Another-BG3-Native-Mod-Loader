@@ -75,7 +75,11 @@ impl EventSink {
             };
 
             for process in &self.processes {
-                if Self::bstr_equal(&target_instance, w!("Name"), PCWSTR(process.as_ptr())) {
+                if Self::bstr_equal(
+                    &target_instance,
+                    w!("ExecutablePath"),
+                    PCWSTR(process.as_ptr()),
+                ) {
                     self.called.store(true, Ordering::Relaxed);
                     let pid = self.get_pid(&target_instance)?;
                     (self.cb)(CallType::Pid(pid));
