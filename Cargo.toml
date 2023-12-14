@@ -49,3 +49,7 @@ winres = "0.1.12"
 # so we can get stacktraces in release
 [profile.release]
 debug = true
+
+[profile.release-debug]
+inherits = "release"
+debug-assertions = true
