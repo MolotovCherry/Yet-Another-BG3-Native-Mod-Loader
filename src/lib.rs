@@ -31,7 +31,6 @@ use self::{
     config::{get_config, Config},
     popup::{display_popup, fatal_popup, MessageBoxIcon},
     process_watcher::{ProcessWatcher, Timeout},
-    //process_watcher::watcher::{ProcessWatcher, QueryType},
     single_instance::SingleInstance,
     tray::AppTray,
 };
