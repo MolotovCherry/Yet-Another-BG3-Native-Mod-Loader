@@ -1,7 +1,4 @@
-use std::{
-    sync::Arc,
-    thread::{self},
-};
+use std::thread::{self};
 
 use tray_icon::{
     menu::{AboutMetadata, Menu, MenuEvent, MenuItem, PredefinedMenuItem},
@@ -12,14 +9,13 @@ use winit::{
     platform::windows::EventLoopBuilderExtWindows,
 };
 
-use crate::process_watcher::watcher::ProcessWatcher;
+use crate::process_watcher::ProcessWatcherStopToken;
 
 pub struct AppTray;
 
 impl AppTray {
-    pub fn start(watcher: Arc<ProcessWatcher>) {
+    pub fn start(watcher: ProcessWatcherStopToken) {
         thread::spawn(move || {
-            let watcher = watcher;
             let icon = Icon::from_resource(1, None).unwrap();
 
             let tray_menu = Menu::new();

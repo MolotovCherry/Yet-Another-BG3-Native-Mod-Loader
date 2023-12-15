@@ -12,7 +12,7 @@ mod tray;
 use std::{
     fs::{File, OpenOptions},
     path::{Path, PathBuf},
-    sync::Arc,
+    time::Duration,
 };
 
 use chrono::Local;
@@ -24,13 +24,14 @@ use crate::{
     injector::inject_plugins,
     panic::set_hook,
     paths::{build_config_game_binary_paths, get_bg3_plugins_dir},
-    process_watcher::watcher::CallType,
+    process_watcher::CallType,
 };
 
 use self::{
     config::{get_config, Config},
     popup::{display_popup, fatal_popup, MessageBoxIcon},
-    process_watcher::watcher::ProcessWatcher,
+    process_watcher::{ProcessWatcher, Timeout},
+    //process_watcher::watcher::{ProcessWatcher, QueryType},
     single_instance::SingleInstance,
     tray::AppTray,
 };
@@ -44,20 +45,22 @@ pub fn run_watcher() {
 
     let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
-    let watcher = Arc::new(
-        ProcessWatcher::watch(vec![bg3, bg3_dx11], move |call| {
-            if let CallType::Pid(pid) = call {
-                debug!("Received callback for pid {pid}, now injecting");
-                inject_plugins(pid, &plugins_dir, &config).unwrap();
-            }
-        })
-        .unwrap(),
-    );
+    let polling_rate = Duration::from_secs(2);
+
+    let (waiter, stop_token) =
+        ProcessWatcher::new(vec![bg3, bg3_dx11], polling_rate, Timeout::None, false).run(
+            move |call| {
+                if let CallType::Pid(pid) = call {
+                    debug!("Received callback for pid {pid}, now injecting");
+                    inject_plugins(pid, &plugins_dir, &config).unwrap();
+                }
+            },
+        );
 
     // tray
-    AppTray::start(watcher.clone());
+    AppTray::start(stop_token);
 
-    watcher.wait().unwrap();
+    waiter.wait();
 }
 
 /// Injector entry point
@@ -67,15 +70,20 @@ pub fn run_injector() {
 
     let (plugins_dir, config) = setup();
 
-    // 10 seconds
-    let timeout = 10_000u32;
+    let timeout = Duration::from_secs(10);
+    let polling_rate = Duration::from_secs(1);
 
     let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
-    ProcessWatcher::watch_timeout(vec![bg3, bg3_dx11], timeout, move |call| match call {
+    let (waiter, _) = ProcessWatcher::new(
+        vec![bg3, bg3_dx11],
+        polling_rate,
+        Timeout::Duration(timeout),
+        true,
+    )
+    .run(move |call| match call {
         CallType::Pid(pid) => {
             inject_plugins(pid, &plugins_dir, &config).unwrap();
-            std::process::exit(0);
         }
 
         CallType::Timeout => {
@@ -84,10 +92,9 @@ pub fn run_injector() {
                 "Game process was not found. Is your `install_root` config value correct?",
             );
         }
-    })
-    .unwrap()
-    .wait()
-    .unwrap();
+    });
+
+    waiter.wait();
 }
 
 fn setup() -> (PathBuf, Config) {

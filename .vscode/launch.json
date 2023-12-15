@@ -11,11 +11,10 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=injector",
-                    "--package=yet-another-bg3-mod-loader"
+                    "--bin=bg3_injector"
                 ],
                 "filter": {
-                    "name": "injector",
+                    "name": "bg3_injector",
                     "kind": "bin"
                 }
             },
@@ -29,11 +28,10 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=watcher",
-                    "--package=yet-another-bg3-mod-loader"
+                    "--bin=bg3_watcher"
                 ],
                 "filter": {
-                    "name": "watcher",
+                    "name": "bg3_watcher",
                     "kind": "bin"
                 }
             },
