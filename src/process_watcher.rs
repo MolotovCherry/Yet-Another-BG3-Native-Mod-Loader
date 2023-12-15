@@ -138,7 +138,7 @@ impl ProcessWatcher {
                     }
                 }
 
-                let cb = (pid_buffer.capacity() * 4).try_into().unwrap();
+                let cb = (pid_buffer.len() * 4).try_into().unwrap();
 
                 unsafe {
                     EnumProcesses(pid_buffer.as_mut_ptr(), cb, &mut lpcneeded)?;
