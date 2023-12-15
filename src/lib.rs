@@ -8,7 +8,6 @@ mod popup;
 mod process_watcher;
 mod single_instance;
 mod tray;
-mod virtual_process_memory;
 
 use std::{
     fs::{File, OpenOptions},
