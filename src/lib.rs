@@ -47,7 +47,7 @@ pub fn run_watcher() {
     let polling_rate = Duration::from_secs(2);
 
     let (waiter, stop_token) =
-        ProcessWatcher::new(vec![bg3, bg3_dx11], polling_rate, Timeout::None, false).run(
+        ProcessWatcher::new(&[bg3, bg3_dx11], polling_rate, Timeout::None, false).run(
             move |call| {
                 if let CallType::Pid(pid) = call {
                     debug!("Received callback for pid {pid}, now injecting");
@@ -75,7 +75,7 @@ pub fn run_injector() {
     let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
     let (waiter, _) = ProcessWatcher::new(
-        vec![bg3, bg3_dx11],
+        &[bg3, bg3_dx11],
         polling_rate,
         Timeout::Duration(timeout),
         true,

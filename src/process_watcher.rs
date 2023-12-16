@@ -79,16 +79,16 @@ pub struct ProcessWatcher {
 impl ProcessWatcher {
     /// timeout is in ms
     /// processes must be full path to exe
-    pub fn new<P: Into<PathBuf>>(
-        processes: Vec<P>,
+    pub fn new<P: Into<PathBuf> + Clone>(
+        processes: &[P],
         polling_rate: Duration,
         timeout: Timeout,
         oneshot: bool,
     ) -> Self {
         Self {
             processes: processes
-                .into_iter()
-                .map(|p| p.into().as_os_str().encode_wide().collect())
+                .iter()
+                .map(|p| p.clone().into().as_os_str().encode_wide().collect())
                 .collect(),
             state: HashSet::new(),
             polling_rate,
