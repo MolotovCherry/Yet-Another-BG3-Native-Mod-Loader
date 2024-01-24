@@ -60,7 +60,7 @@ pub fn get_bg3_plugins_dir() -> anyhow::Result<(bool, PathBuf)> {
     Ok((first_time, plugins_dir))
 }
 
-pub fn build_config_game_binary_paths(config: &Config) -> (PathBuf, PathBuf) {
+pub fn build_config_game_binary_paths(config: &Config) -> (String, String) {
     let bin = config.core.install_root.join("bin");
     let bg3 = bin.join("bg3.exe");
     let bg3_dx11 = bin.join("bg3_dx11.exe");
@@ -68,5 +68,8 @@ pub fn build_config_game_binary_paths(config: &Config) -> (PathBuf, PathBuf) {
     debug!("Looking for bg3 at: {}", bg3.display());
     debug!("Looking for bg3_dx11 at: {}", bg3_dx11.display());
 
-    (bg3, bg3_dx11)
+    (
+        bg3.to_string_lossy().to_string(),
+        bg3_dx11.to_string_lossy().to_string(),
+    )
 }

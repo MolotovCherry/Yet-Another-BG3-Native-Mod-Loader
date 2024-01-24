@@ -1,8 +1,6 @@
 use std::{
     collections::HashSet,
     mem::ManuallyDrop,
-    os::windows::ffi::OsStrExt,
-    path::PathBuf,
     sync::{
         mpsc::{channel, Receiver, RecvTimeoutError, Sender},
         Mutex,
@@ -11,6 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use unicase::UniCase;
 use windows::Win32::{
     Foundation::MAX_PATH,
     System::{
@@ -69,7 +68,7 @@ impl ProcessWatcherStopToken {
 
 #[derive(Debug)]
 pub struct ProcessWatcher {
-    processes: Vec<Vec<u16>>,
+    processes: Vec<UniCase<String>>,
     polling_rate: Duration,
     timeout: Timeout,
     state: HashSet<u32>,
@@ -79,8 +78,8 @@ pub struct ProcessWatcher {
 impl ProcessWatcher {
     /// timeout is in ms
     /// processes must be full path to exe
-    pub fn new<P: Into<PathBuf> + Clone>(
-        processes: &[P],
+    pub fn new<S: AsRef<str> + Clone>(
+        processes: &[S],
         polling_rate: Duration,
         timeout: Timeout,
         oneshot: bool,
@@ -88,7 +87,7 @@ impl ProcessWatcher {
         Self {
             processes: processes
                 .iter()
-                .map(|p| p.clone().into().as_os_str().encode_wide().collect())
+                .map(|p| UniCase::new(p.as_ref().to_owned()))
                 .collect(),
             state: HashSet::new(),
             polling_rate,
@@ -180,9 +179,10 @@ impl ProcessWatcher {
                     }
 
                     let new_process_path = &path_buffer[..written];
+                    let new_process_path = UniCase::new(String::from_utf16_lossy(new_process_path));
 
                     for process_path in &self.processes {
-                        if process_path == new_process_path {
+                        if process_path == &new_process_path {
                             callback(CallType::Pid(pid));
 
                             if self.oneshot {
