@@ -61,15 +61,24 @@ pub fn get_bg3_plugins_dir() -> anyhow::Result<(bool, PathBuf)> {
 }
 
 pub fn build_config_game_binary_paths(config: &Config) -> (String, String) {
-    let bin = config.core.install_root.join("bin");
+    let resolved_path = fs::canonicalize(&config.core.install_root).expect(
+        "Failed to resolve `install_root` path. Does the path exist and point to a directory?",
+    );
+
+    let bin = resolved_path.join("bin");
+
     let bg3 = bin.join("bg3.exe");
     let bg3_dx11 = bin.join("bg3_dx11.exe");
 
-    debug!("Looking for bg3 at: {}", bg3.display());
-    debug!("Looking for bg3_dx11 at: {}", bg3_dx11.display());
+    let bg3 = bg3.to_string_lossy();
+    let bg3_dx11 = bg3_dx11.to_string_lossy();
 
-    (
-        bg3.to_string_lossy().to_string(),
-        bg3_dx11.to_string_lossy().to_string(),
-    )
+    // canonicalize adds this to the prefix, but we don't want it
+    let bg3 = bg3.strip_prefix(r"\\?\").unwrap_or(&*bg3).to_string();
+    let bg3_dx11 = bg3_dx11.strip_prefix(r"\\?\").unwrap_or(&*bg3).to_string();
+
+    debug!("Looking for bg3 at: {bg3}");
+    debug!("Looking for bg3_dx11 at: {bg3_dx11}");
+
+    (bg3, bg3_dx11)
 }
