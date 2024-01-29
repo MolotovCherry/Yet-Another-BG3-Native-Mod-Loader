@@ -13,7 +13,7 @@ directories = "5.0.1"
 human-panic = "1.2.3"
 anyhow = "1.0.79"
 backtrace = "0.3.69"
-chrono = "0.4.31"
+chrono = "0.4.33"
 bg3-plugin-lib = { git = "https://github.com/MolotovCherry/BG3-Plugin-Lib" }
 tray-icon = "0.11.1"
 winit = "0.29.10"
