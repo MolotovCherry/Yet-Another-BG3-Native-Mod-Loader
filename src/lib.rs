@@ -35,8 +35,14 @@ use self::{
     tray::AppTray,
 };
 
+#[derive(Debug, PartialEq)]
+pub enum RunType {
+    Watcher,
+    Injector,
+}
+
 /// Process watcher entry point
-pub fn run_watcher() {
+pub fn run(run_type: RunType) {
     // This prohibits multiple app instances
     let _singleton = SingleInstance::new();
 
@@ -44,54 +50,40 @@ pub fn run_watcher() {
 
     let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
-    let polling_rate = Duration::from_secs(2);
+    let (polling_rate, timeout, oneshot) = if run_type == RunType::Watcher {
+        // watcher tool
+        (Duration::from_secs(2), Timeout::None, false)
+    } else {
+        // injector tool
+        (
+            Duration::from_secs(1),
+            Timeout::Duration(Duration::from_secs(10)),
+            true,
+        )
+    };
 
     let (waiter, stop_token) =
-        ProcessWatcher::new(&[bg3, bg3_dx11], polling_rate, Timeout::None, false).run(
-            move |call| {
-                if let CallType::Pid(pid) = call {
+        ProcessWatcher::new(&[bg3, bg3_dx11], polling_rate, timeout, oneshot).run(
+        move |call| match call {
+                CallType::Pid(pid) => {
                     debug!("Received callback for pid {pid}, now injecting");
                     inject_plugins(pid, &plugins_dir, &config).unwrap();
                 }
-            },
+
+                // only fires with injector
+                CallType::Timeout => {
+                    fatal_popup(
+                        "Fatal Error",
+                        "Game process was not found.\n\nThis can happen for 1 of 2 reasons:\n\nEither the game isn't running, so this tool timed out waiting for it\n\nOr the game wasn't detected because your `install_root` config value isn't correct",
+                    );
+                }
+            }
         );
 
     // tray
-    AppTray::start(stop_token);
-
-    waiter.wait();
-}
-
-/// Injector entry point
-pub fn run_injector() {
-    // This prohibits multiple app instances
-    let _singleton = SingleInstance::new();
-
-    let (plugins_dir, config) = setup();
-
-    let timeout = Duration::from_secs(10);
-    let polling_rate = Duration::from_secs(1);
-
-    let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
-
-    let (waiter, _) = ProcessWatcher::new(
-        &[bg3, bg3_dx11],
-        polling_rate,
-        Timeout::Duration(timeout),
-        true,
-    )
-    .run(move |call| match call {
-        CallType::Pid(pid) => {
-            inject_plugins(pid, &plugins_dir, &config).unwrap();
-        }
-
-        CallType::Timeout => {
-            fatal_popup(
-                "Fatal Error",
-                "Game process was not found.\n\nThis can happen for 1 of 2 reasons:\n\nEither the game isn't running, so this tool timed out waiting for it\n\nOr the game wasn't detected because your `install_root` config value isn't correct",
-            );
-        }
-    });
+    if run_type == RunType::Watcher {
+        AppTray::start(stop_token);
+    }
 
     waiter.wait();
 }
