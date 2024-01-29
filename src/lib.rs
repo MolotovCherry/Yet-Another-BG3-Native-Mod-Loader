@@ -88,7 +88,7 @@ pub fn run_injector() {
         CallType::Timeout => {
             fatal_popup(
                 "Fatal Error",
-                "Game process was not found. Is your `install_root` config value correct?",
+                "Game process was not found.\n\nThis can happen for 1 of 2 reasons:\n\nEither the game isn't running, so this tool timed out waiting for it\n\nOr the game wasn't detected because your `install_root` config value isn't correct",
             );
         }
     });
