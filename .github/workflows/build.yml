@@ -26,10 +26,13 @@ jobs:
         with:
           key: ${{ github.event_name == 'release' && 'prod' || 'dev' }}
 
-      - name: Build
-        env:
-          RELEASE: ${{ github.event_name == 'release' && '--release' || '' }}
-        run: cargo build $env:RELEASE
+      - name: Build Release
+        if: github.event_name == 'release'
+        run: cargo build --release
+
+      - name: Build Debug
+        if: github.event_name != 'release'
+        run: cargo build
 
       - name: Upload Artifacts
         if: github.event_name != 'release'
