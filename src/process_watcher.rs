@@ -166,6 +166,8 @@ impl ProcessWatcher {
 
                     let Ok(handle) = handle_res else {
                         // failed to open process; probably we don't have correct perms to open it
+                        // there is a risk here that we don't have permission to open the game process, so it's skipped
+                        // in such a case, this tool should be run as admin. we have no way of knowing if that happened
                         continue;
                     };
 

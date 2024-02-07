@@ -5,7 +5,7 @@ use anyhow::anyhow;
 use directories::BaseDirs;
 use log::{debug, info};
 
-use crate::config::Config;
+use crate::{config::Config, popup::fatal_popup};
 
 pub fn get_larian_local_dir() -> anyhow::Result<PathBuf> {
     let local = BaseDirs::new().ok_or(anyhow!("Failed to instantiate BaseDirs"))?;
@@ -61,9 +61,13 @@ pub fn get_bg3_plugins_dir() -> anyhow::Result<(bool, PathBuf)> {
 }
 
 pub fn build_config_game_binary_paths(config: &Config) -> (String, String) {
-    let resolved_path = fs::canonicalize(&config.core.install_root).expect(
-        "Failed to resolve `install_root` path. Does the path exist and point to a directory?",
-    );
+    let canon = fs::canonicalize(&config.core.install_root);
+    let Ok(resolved_path) = canon else {
+        fatal_popup(
+            "Path error",
+            format!("Failed to resolve `install_root` path. Does the path (or its target) exist and point to a directory? And does this program have permissions to read that path?\n\n{canon:#?}"),
+        );
+    };
 
     let bin = resolved_path.join("bin");
 
