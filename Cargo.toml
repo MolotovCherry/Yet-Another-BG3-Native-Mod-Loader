@@ -15,7 +15,7 @@ anyhow = "1.0.79"
 backtrace = "0.3.69"
 chrono = "0.4.34"
 bg3-plugin-lib = { git = "https://github.com/MolotovCherry/BG3-Plugin-Lib" }
-tray-icon = "0.11.2"
+tray-icon = "0.11.3"
 winit = "0.29.10"
 unicase = "2.7.0"
 
