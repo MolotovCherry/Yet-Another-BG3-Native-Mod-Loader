@@ -210,7 +210,8 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
 
             // If the buffer is too small to hold the module name, the string is truncated to nSize characters including the
             // terminating null character, the function returns nSize, and the function sets the last error to ERROR_INSUFFICIENT_BUFFER.
-            if len == name.len() as u32 {
+            // If the function fails, the return value is 0 (zero). To get extended error information, call GetLastError.
+            if len == name.len() as u32 || len == 0 {
                 let error = unsafe { GetLastError() };
 
                 if error
@@ -221,13 +222,6 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
                     continue;
                 } else {
                     error?;
-                }
-            }
-
-            // If the function fails, the return value is 0 (zero). To get extended error information, call GetLastError.
-            if len == 0 {
-                unsafe {
-                    GetLastError()?;
                 }
             }
 
