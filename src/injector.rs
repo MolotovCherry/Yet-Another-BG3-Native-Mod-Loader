@@ -7,7 +7,7 @@ use log::{debug, info, warn};
 use windows::{
     core::{s, w, Error as WinError},
     Win32::{
-        Foundation::{GetLastError, HMODULE},
+        Foundation::{GetLastError, ERROR_INSUFFICIENT_BUFFER, HMODULE},
         System::{
             Diagnostics::Debug::WriteProcessMemory,
             LibraryLoader::{GetModuleHandleW, GetProcAddress},
@@ -205,12 +205,34 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
 
     let mut name = vec![0u16; 1024];
     for &module in modules {
-        let len = unsafe { GetModuleFileNameExW(handle.as_raw_handle(), module, &mut name) };
+        let len = loop {
+            let len = unsafe { GetModuleFileNameExW(handle.as_raw_handle(), module, &mut name) };
 
-        // If the function fails, the return value is zero. To get extended error information, call GetLastError.
-        if len == 0 {
-            unsafe { GetLastError()? }
-        }
+            // If the buffer is too small to hold the module name, the string is truncated to nSize characters including the
+            // terminating null character, the function returns nSize, and the function sets the last error to ERROR_INSUFFICIENT_BUFFER.
+            if len == name.len() as u32 {
+                let error = unsafe { GetLastError() };
+
+                if error
+                    .clone()
+                    .is_err_and(|e| e == ERROR_INSUFFICIENT_BUFFER.into())
+                {
+                    name.resize(name.len() + 1024, 0u16);
+                    continue;
+                } else {
+                    error?;
+                }
+            }
+
+            // If the function fails, the return value is 0 (zero). To get extended error information, call GetLastError.
+            if len == 0 {
+                unsafe {
+                    GetLastError()?;
+                }
+            }
+
+            break len;
+        };
 
         let path_str = String::from_utf16_lossy(&name[..len as usize]).to_lowercase();
         let path = Path::new(&path_str);
