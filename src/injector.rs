@@ -1,23 +1,27 @@
-use std::{ffi::c_void, fs};
+use std::{ffi::c_void, fs, path::PathBuf};
 use std::{mem, path::Path};
 
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, Context, Result};
 use bg3_plugin_lib::{Plugin, Version};
-use log::info;
+use log::{debug, info, warn};
 use windows::{
     core::{s, w, Error as WinError},
-    Win32::System::{
-        Diagnostics::Debug::WriteProcessMemory,
-        LibraryLoader::{GetModuleHandleW, GetProcAddress},
-        Memory::{VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE},
-        Threading::{
-            CreateRemoteThread, OpenProcess, PROCESS_VM_OPERATION, PROCESS_VM_READ,
-            PROCESS_VM_WRITE,
+    Win32::{
+        Foundation::{GetLastError, HMODULE},
+        System::{
+            Diagnostics::Debug::WriteProcessMemory,
+            LibraryLoader::{GetModuleHandleW, GetProcAddress},
+            Memory::{VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE},
+            ProcessStatus::{EnumProcessModulesEx, GetModuleFileNameExW, LIST_MODULES_64BIT},
+            Threading::{
+                CreateRemoteThread, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION,
+                PROCESS_VM_READ, PROCESS_VM_WRITE,
+            },
         },
     },
 };
 
-use crate::{config::Config, helpers::OwnedHandle};
+use crate::{config::Config, helpers::OwnedHandle, paths::get_bg3_plugins_dir};
 
 #[allow(non_snake_case)]
 pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::Result<()> {
@@ -35,13 +39,20 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
 
     let handle: OwnedHandle = unsafe {
         OpenProcess(
-            PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE,
+            PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE,
             false,
             pid,
         )
         .context("Failed to OpenProcess for {pid}")?
         .into()
     };
+
+    // checks if process has already had injection done on it
+    if is_dirty(&handle, config)? {
+        // return ok as if nothing happened, however we will log this
+        warn!("game process already dirty; aborting injection");
+        return Ok(());
+    }
 
     for entry in fs::read_dir(plugins_dir).context("Failed to read plugins_dir {plugins_dir}")? {
         let entry = entry?;
@@ -114,7 +125,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
             }
 
             // start thread with dll
-            let _thread: OwnedHandle = unsafe {
+            unsafe {
                 CreateRemoteThread(
                     handle.as_raw_handle(),
                     None,
@@ -125,10 +136,86 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
                     None,
                 )
                 .context("Failed to create remote thread")?
-                .into()
             };
         }
     }
 
     Ok(())
+}
+
+// Determine whether the process has been tainted by previous dll injections
+fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
+    let mut install_root = PathBuf::from(config.core.install_root.to_string_lossy().to_string());
+    // important, this must be native mods folder specifically, otherwise it will have false positives
+    install_root.push("bin");
+    install_root.push("NativeMods");
+
+    let (_, plugins_dir) = get_bg3_plugins_dir()?;
+    let plugins_dir = PathBuf::from(plugins_dir.to_string_lossy().to_string());
+
+    let is_bg3_path = move |path: PathBuf| {
+        let dirty = path.starts_with(&install_root) || path.starts_with(&plugins_dir);
+
+        if dirty {
+            debug!("detected dirty plugin {}", path.display());
+        }
+
+        dirty
+    };
+
+    // fully initialize this in order to set len
+    let mut modules: Vec<HMODULE> = vec![HMODULE::default(); 1024];
+    let mut lpcbneeded = 0;
+
+    loop {
+        let size = (modules.capacity() * std::mem::size_of::<HMODULE>()) as u32;
+
+        unsafe {
+            EnumProcessModulesEx(
+                handle.as_raw_handle(),
+                modules.as_mut_ptr(),
+                size,
+                &mut lpcbneeded,
+                LIST_MODULES_64BIT,
+            )?
+        }
+
+        // To determine if the lphModule array is too small to hold all module handles for the process,
+        // compare the value returned in lpcbNeeded with the value specified in cb. If lpcbNeeded is greater
+        // than cb, increase the size of the array and call EnumProcessModulesEx again.
+        if lpcbneeded > size {
+            modules.resize(modules.len() + 1024, HMODULE::default());
+            continue;
+        }
+
+        // IMPORTANT
+        // Do not call CloseHandle on any of the handles returned by this function. The information comes from a
+        // snapshot, so there are no resources to be freed.
+
+        break;
+    }
+
+    // To determine how many modules were enumerated by the call to EnumProcessModulesEx, divide the resulting
+    // value in the lpcbNeeded parameter by sizeof(HMODULE).
+    let n_modules = lpcbneeded as usize / std::mem::size_of::<HMODULE>();
+    let modules = &modules[..n_modules];
+
+    let mut name = vec![0u16; 1024];
+    for &module in modules {
+        let len = unsafe { GetModuleFileNameExW(handle.as_raw_handle(), module, &mut name) };
+
+        // If the function fails, the return value is zero. To get extended error information, call GetLastError.
+        if len == 0 {
+            unsafe { GetLastError()? }
+        }
+
+        let path = PathBuf::from(String::from_utf16_lossy(&name[..len as usize]));
+
+        // we're only interested in dll modules
+        if path.extension().is_some_and(|ext| ext == "dll") && is_bg3_path(path) {
+            return Ok(true);
+        }
+    }
+
+    Ok(false)
 }

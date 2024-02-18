@@ -14,9 +14,10 @@ The main features of this mod loader are:
   - 0 maintenance means, when you update the game, there is nothing to fix, the mod loader always works
   - You can keep all your game files pristine and untouched
 - It is completely compatible with any NativeModLoader﻿ plugins
-  - This means you can develop your plugin using my Rust BG3 Plugin Template or NativeModLoader﻿﻿﻿'s BG3 Plugin Template
+  - This means you can develop your plugin using my Rust BG3 Plugin Template or NativeModLoader's BG3 Plugin Template
 - Compatible with steam and GoG
 - Stores your plugins in the larian local data folder alongside the mod folder
+- Does not install anything. Deleting the tool is the same as "uninstalling"
 
 # Usage
 For list of instructions, FAQ, and other info, please see the main [nexus mods page](https://www.nexusmods.com/baldursgate3/mods/3052)

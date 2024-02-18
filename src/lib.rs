@@ -141,7 +141,7 @@ fn setup_logs<P: AsRef<Path>>(plugins_dir: P) -> anyhow::Result<()> {
     let log_path = logs_dir.join(format!("native-mod-launcher {date}.log"));
 
     let file = if log_path.exists() {
-        match OpenOptions::new().write(true).append(true).open(log_path) {
+        match OpenOptions::new().append(true).open(log_path) {
             Ok(v) => v,
             Err(e) => {
                 fatal_popup("Fatal Error", format!("Failed to open log file: {e}"));

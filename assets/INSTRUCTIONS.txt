@@ -18,13 +18,8 @@
      tool is to be an alternative to bg3_watcher; for those people who don't want a tool always
      running in the background.
 
-     Please use it BEFORE loading a save. And only use it on an unpatched game instance (that is,
-     a game instance that plugins have not been loaded into). There is also no telling what may happen
-     if you use it while your save is already running; or on a game which already has the
-     plugins loaded into it.
-
-     Also, plugins expect that they are run on the game process startup, so please run it as soon as
-     possible.
+     Please use it BEFORE loading a save. Plugins expect that they are run on the game process startup,
+     so please run it as soon as possible.
 
   ____  _
  / ___|| |_ ___ _ __  ___
@@ -53,9 +48,6 @@ Watcher:
 Injector:
    - This tool is similar to the watcher, but it is a one-time use tool. It is useful if you don't
      want the watcher tool always running in the background.
-   - IMPORTANT: Only run this tool on an unpatched game instance. And only run it before you've loaded
-                into a savegame. An unpatched game instance is a game instance that you have not run
-                any of these tools on yet.
    1. Start your game.
    2. Start the injector tool.
 
