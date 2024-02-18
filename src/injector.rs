@@ -50,7 +50,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
     // checks if process has already had injection done on it
     if is_dirty(&handle, config)? {
         // return ok as if nothing happened, however we will log this
-        warn!("game process already dirty; aborting injection");
+        warn!("game process is dirty; aborting injection");
         return Ok(());
     }
 
