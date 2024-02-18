@@ -1,4 +1,4 @@
-use std::{ffi::c_void, fs, path::PathBuf};
+use std::{ffi::c_void, fs};
 use std::{mem, path::Path};
 
 use anyhow::{anyhow, Context, Result};
@@ -145,14 +145,14 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
 
 // Determine whether the process has been tainted by previous dll injections
 fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
-    let mut install_root = PathBuf::from(config.core.install_root.to_string_lossy().to_string());
+    let mut install_root = config.core.install_root.clone();
     // important, this must be native mods folder specifically, otherwise it will have false positives
     install_root.push("bin");
     install_root.push("NativeMods");
     let install_root = install_root.to_string_lossy().to_lowercase();
 
     let (_, plugins_dir) = get_bg3_plugins_dir()?;
-    let plugins_dir = plugins_dir.to_string_lossy().to_string().to_lowercase();
+    let plugins_dir = plugins_dir.to_string_lossy().to_lowercase();
 
     let is_bg3_path = move |path: String| {
         // IMPORTANT: input arg must be all lowercase!
@@ -213,7 +213,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
         }
 
         let path_str = String::from_utf16_lossy(&name[..len as usize]).to_lowercase();
-        let path = PathBuf::from(path_str.clone());
+        let path = Path::new(&path_str);
 
         // we're only interested in dll modules
         if path.extension().is_some_and(|ext| ext == "dll") && is_bg3_path(path_str) {
