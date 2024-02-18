@@ -149,15 +149,18 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
     // important, this must be native mods folder specifically, otherwise it will have false positives
     install_root.push("bin");
     install_root.push("NativeMods");
+    let install_root = install_root.to_string_lossy().to_lowercase();
 
     let (_, plugins_dir) = get_bg3_plugins_dir()?;
-    let plugins_dir = PathBuf::from(plugins_dir.to_string_lossy().to_string());
+    let plugins_dir = plugins_dir.to_string_lossy().to_string().to_lowercase();
 
-    let is_bg3_path = move |path: PathBuf| {
+    let is_bg3_path = move |path: String| {
+        // IMPORTANT: input arg must be all lowercase!
+
         let dirty = path.starts_with(&install_root) || path.starts_with(&plugins_dir);
 
         if dirty {
-            debug!("detected dirty plugin {}", path.display());
+            debug!("detected dirty plugin {path}");
         }
 
         dirty
@@ -168,7 +171,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
     let mut lpcbneeded = 0;
 
     loop {
-        let size = (modules.capacity() * std::mem::size_of::<HMODULE>()) as u32;
+        let size = (modules.len() * std::mem::size_of::<HMODULE>()) as u32;
 
         unsafe {
             EnumProcessModulesEx(
@@ -209,10 +212,11 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
             unsafe { GetLastError()? }
         }
 
-        let path = PathBuf::from(String::from_utf16_lossy(&name[..len as usize]));
+        let path_str = String::from_utf16_lossy(&name[..len as usize]).to_lowercase();
+        let path = PathBuf::from(path_str.clone());
 
         // we're only interested in dll modules
-        if path.extension().is_some_and(|ext| ext == "dll") && is_bg3_path(path) {
+        if path.extension().is_some_and(|ext| ext == "dll") && is_bg3_path(path_str) {
             return Ok(true);
         }
     }
