@@ -134,6 +134,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
             }
 
             // start thread with dll
+            // Note that the returned HANDLE is intentionally not closed!
             unsafe {
                 CreateRemoteThread(
                     handle.as_raw_handle(),
