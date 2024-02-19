@@ -11,6 +11,7 @@ mod single_instance;
 mod tray;
 
 use std::{
+    io::prelude::Write,
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -49,6 +50,31 @@ pub fn run(run_type: RunType) -> Result<()> {
     let _singleton = SingleInstance::new();
 
     let args = Args::parse();
+
+    if args.help {
+        use clap::CommandFactory;
+
+        #[cfg(not(debug_assertions))]
+        alloc_console()?;
+
+        let mut cmd = Args::command();
+        cmd.print_help()?;
+
+        #[cfg(not(debug_assertions))]
+        enter_to_exit()?;
+
+        return Ok(());
+    } else if args.version {
+        #[cfg(not(debug_assertions))]
+        alloc_console()?;
+
+        println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+
+        #[cfg(not(debug_assertions))]
+        enter_to_exit()?;
+
+        return Ok(());
+    }
 
     let (plugins_dir, config, _guard) = setup(&args)?;
 
@@ -138,19 +164,8 @@ fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<Work
     let mut worker_guard: Option<WorkerGuard> = None;
 
     if cfg!(debug_assertions) || args.cli {
-        if cfg!(not(debug_assertions)) {
-            unsafe {
-                AllocConsole()?;
-
-                let handle = GetStdHandle(STD_OUTPUT_HANDLE)?;
-                SetConsoleMode(
-                    handle,
-                    ENABLE_PROCESSED_OUTPUT
-                        | ENABLE_WRAP_AT_EOL_OUTPUT
-                        | ENABLE_VIRTUAL_TERMINAL_PROCESSING,
-                )?;
-            }
-        }
+        #[cfg(not(debug_assertions))]
+        alloc_console()?;
 
         tracing_subscriber::fmt()
             .with_env_filter(EnvFilter::from_env("YABG3ML_LOG"))
@@ -172,4 +187,35 @@ fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<Work
     }
 
     Ok(worker_guard)
+}
+
+#[allow(unused)]
+fn alloc_console() -> Result<()> {
+    unsafe {
+        AllocConsole()?;
+    }
+
+    let handle = unsafe { GetStdHandle(STD_OUTPUT_HANDLE)? };
+
+    unsafe {
+        SetConsoleMode(
+            handle,
+            ENABLE_PROCESSED_OUTPUT
+                | ENABLE_WRAP_AT_EOL_OUTPUT
+                | ENABLE_VIRTUAL_TERMINAL_PROCESSING,
+        )?;
+    }
+
+    Ok(())
+}
+
+#[allow(unused)]
+fn enter_to_exit() -> Result<()> {
+    print!("\nPress ENTER to exit..");
+    std::io::stdout().flush()?;
+
+    // empty std input
+    std::io::stdin().read_line(&mut String::new())?;
+
+    Ok(())
 }
