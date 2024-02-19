@@ -54,7 +54,7 @@ pub fn get_bg3_plugins_dir() -> Result<(bool, PathBuf)> {
 
     let log_dir = plugins_dir.join("logs");
     if !log_dir.exists() {
-        info!("Log directgory not found; creating it..");
+        info!("Log directory not found; creating it..");
 
         fs::create_dir(plugins_dir.join("logs"))?;
     }
