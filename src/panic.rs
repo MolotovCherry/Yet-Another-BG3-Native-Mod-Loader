@@ -34,13 +34,12 @@ pub fn set_hook(meta: Metadata) {
 pub fn make_msg<P: AsRef<Path>>(
     file_path: Option<P>,
     meta: &Metadata,
-    info: &str,
 ) -> Result<String, std::fmt::Error> {
     use std::fmt::Write as _;
 
     let mut buffer = String::new();
 
-    write_msg(&mut buffer, info, file_path, meta)?;
+    write_msg(&mut buffer, file_path, meta)?;
 
     Ok(buffer)
 }
@@ -48,7 +47,6 @@ pub fn make_msg<P: AsRef<Path>>(
 #[allow(unused)]
 fn write_msg<P: AsRef<Path>>(
     buffer: &mut impl std::fmt::Write,
-    info: &str,
     file_path: Option<P>,
     meta: &Metadata,
 ) -> std::fmt::Result {
@@ -74,8 +72,6 @@ fn write_msg<P: AsRef<Path>>(
     if !homepage.is_empty() {
         writeln!(buffer, "\n{homepage}")?;
     }
-
-    writeln!(buffer, "\nException:\n{info}")?;
 
     Ok(())
 }
