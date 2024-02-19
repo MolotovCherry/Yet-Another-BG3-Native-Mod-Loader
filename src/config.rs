@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use eyre::Result;
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 use crate::popup::fatal_popup;
 
@@ -39,21 +40,24 @@ pub fn get_config<P: AsRef<Path>>(path: P) -> Result<Config> {
         let json = toml::to_string_pretty(&Config::default())?;
 
         if let Err(e) = fs::write(path, json) {
-            fatal_popup("Fatal Error", format!("Failed to save config: {e}"));
+            error!("failed to save config: {e}");
+            fatal_popup("Fatal Error", "Failed to save config");
         }
     }
 
     let config = match fs::read_to_string(path) {
         Ok(v) => v,
         Err(e) => {
-            fatal_popup("Fatal Error", format!("Failed to read config: {e}"));
+            error!("failed to read config: {e}");
+            fatal_popup("Fatal Error", "Failed to read config");
         }
     };
 
     match toml::from_str::<Config>(&config) {
         Ok(v) => Ok(v),
         Err(e) => {
-            fatal_popup("Fatal Error", format!("Failed to deserialize config: {e}\n\nYour config probably has a mistake in it. Please verify it's correctly formatted as toml"));
+            error!("failed to deserialize config: {e}");
+            fatal_popup("Fatal Error", "Failed to deserialize config\n\nYour config probably has a mistake in it. Please verify it's correctly formatted as toml");
         }
     }
 }

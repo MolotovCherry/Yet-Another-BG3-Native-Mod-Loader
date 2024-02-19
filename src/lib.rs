@@ -18,7 +18,7 @@ use std::{
 use clap::Parser;
 use eyre::{Context, Result};
 use human_panic::Metadata;
-use tracing::{level_filters::LevelFilter, trace};
+use tracing::{error, level_filters::LevelFilter, trace};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::EnvFilter;
 
@@ -106,10 +106,8 @@ fn setup(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>)> {
     let (first_time, plugins_dir) = match get_bg3_plugins_dir() {
         Ok(v) => v,
         Err(e) => {
-            fatal_popup(
-                "Fatal Error",
-                format!("Failed to find bg3 plugins folder: {e}"),
-            );
+            error!("failed to find plugins_dir: {e}");
+            fatal_popup("Fatal Error", "Failed to find bg3 plugins folder");
         }
     };
 

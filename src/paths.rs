@@ -2,8 +2,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use directories::BaseDirs;
-use eyre::{eyre, Result};
-use tracing::{info, trace};
+use eyre::{bail, eyre, Result};
+use tracing::{error, info, trace};
 
 use crate::{config::Config, popup::fatal_popup};
 
@@ -19,7 +19,7 @@ pub fn get_larian_local_dir() -> Result<PathBuf> {
     if local.exists() {
         Ok(local)
     } else {
-        Err(eyre!("Larian local appdata directory does not exist"))
+        bail!("Larian local appdata directory does not exist")
     }
 }
 
@@ -33,7 +33,7 @@ pub fn get_bg3_local_dir() -> Result<PathBuf> {
     if local.exists() {
         Ok(local)
     } else {
-        Err(eyre!("Bg3 local appdata directory does not exist"))
+        bail!("Bg3 local appdata directory does not exist")
     }
 }
 
@@ -65,9 +65,11 @@ pub fn get_bg3_plugins_dir() -> Result<(bool, PathBuf)> {
 pub fn build_config_game_binary_paths(config: &Config) -> (String, String) {
     let canon = fs::canonicalize(&config.core.install_root);
     let Ok(resolved_path) = canon else {
+        error!("{}", canon.unwrap_err());
+
         fatal_popup(
             "Path error",
-            format!("Failed to resolve `install_root` path. Does the path (or its target) exist and point to a directory? And does this program have permissions to read that path?\n\n{canon:#?}"),
+            "Failed to resolve `install_root` path. Does the path (or its target) exist and point to a directory? And does this program have permissions to read that path?",
         );
     };
 
