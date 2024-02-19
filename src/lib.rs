@@ -151,7 +151,6 @@ fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<Work
         tracing_subscriber::fmt()
             .with_max_level(LevelFilter::DEBUG)
             .with_writer(non_blocking)
-            .without_time()
             .with_ansi(false)
             .init();
     }
