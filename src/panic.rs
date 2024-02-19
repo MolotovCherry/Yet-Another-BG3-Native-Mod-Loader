@@ -21,7 +21,7 @@ pub fn set_hook(meta: Metadata) {
         {
             let file_path = human_panic::handle_dump(&meta, info);
 
-            if let Ok(msg) = make_msg(file_path.as_ref(), &meta, &info.to_string()) {
+            if let Ok(msg) = make_msg(file_path.as_ref(), &meta) {
                 message = msg;
             }
         }
