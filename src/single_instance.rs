@@ -1,3 +1,4 @@
+use tracing::trace;
 use windows::{
     core::w,
     Win32::{
@@ -23,6 +24,8 @@ impl SingleInstance {
                     "Another instance is already running",
                 );
             }
+
+            trace!("CreateMutexW failed, but we have fallthrough: {e:?}");
         }
 
         Self(mutex.into())

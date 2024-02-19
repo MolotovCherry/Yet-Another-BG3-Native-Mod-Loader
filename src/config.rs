@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use eyre::Result;
 use serde::{Deserialize, Serialize};
 
 use crate::popup::fatal_popup;
@@ -31,7 +32,7 @@ impl Default for Core {
     }
 }
 
-pub fn get_config<P: AsRef<Path>>(path: P) -> anyhow::Result<Config> {
+pub fn get_config<P: AsRef<Path>>(path: P) -> Result<Config> {
     let path = path.as_ref();
 
     if !path.exists() {

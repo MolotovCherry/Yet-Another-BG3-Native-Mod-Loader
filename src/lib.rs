@@ -1,4 +1,7 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod backtrace;
+mod cli;
 mod config;
 mod helpers;
 mod injector;
@@ -10,30 +13,27 @@ mod single_instance;
 mod tray;
 
 use std::{
-    fs::{File, OpenOptions},
     path::{Path, PathBuf},
     time::Duration,
 };
 
-use chrono::Local;
+use clap::Parser;
+use eyre::Result;
 use human_panic::Metadata;
-use log::{debug, LevelFilter};
-use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
+use tracing::{level_filters::LevelFilter, trace};
+use tracing_appender::non_blocking::WorkerGuard;
+use tracing_subscriber::EnvFilter;
 
-use crate::{
-    injector::inject_plugins,
-    panic::set_hook,
-    paths::{build_config_game_binary_paths, get_bg3_plugins_dir},
-    process_watcher::CallType,
-};
-
-use self::{
-    config::{get_config, Config},
-    popup::{display_popup, fatal_popup, MessageBoxIcon},
-    process_watcher::{ProcessWatcher, Timeout},
-    single_instance::SingleInstance,
-    tray::AppTray,
-};
+use cli::Args;
+use config::{get_config, Config};
+use injector::inject_plugins;
+use panic::set_hook;
+use paths::{build_config_game_binary_paths, get_bg3_plugins_dir};
+use popup::{display_popup, fatal_popup, MessageBoxIcon};
+use process_watcher::CallType;
+use process_watcher::{ProcessWatcher, Timeout};
+use single_instance::SingleInstance;
+use tray::AppTray;
 
 #[derive(Debug, PartialEq)]
 pub enum RunType {
@@ -46,7 +46,9 @@ pub fn run(run_type: RunType) {
     // This prohibits multiple app instances
     let _singleton = SingleInstance::new();
 
-    let (plugins_dir, config) = setup();
+    let args = Args::parse();
+
+    let (plugins_dir, config, _guard) = setup(&args);
 
     let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
@@ -66,7 +68,7 @@ pub fn run(run_type: RunType) {
         ProcessWatcher::new(&[bg3, bg3_dx11], polling_rate, timeout, oneshot).run(
         move |call| match call {
                 CallType::Pid(pid) => {
-                    debug!("Received callback for pid {pid}, now injecting");
+                    trace!("Received callback for pid {pid}, now injecting");
                     inject_plugins(pid, &plugins_dir, &config).unwrap();
                 }
 
@@ -88,7 +90,7 @@ pub fn run(run_type: RunType) {
     waiter.wait();
 }
 
-fn setup() -> (PathBuf, Config) {
+fn setup(args: &Args) -> (PathBuf, Config, Option<WorkerGuard>) {
     // Nicely print any panic messages to the user
     set_hook(Metadata {
         name: env!("CARGO_PKG_NAME").into(),
@@ -108,7 +110,7 @@ fn setup() -> (PathBuf, Config) {
     };
 
     // start logger
-    setup_logs(&plugins_dir).expect("Failed to set up logs");
+    let guard = setup_logs(&plugins_dir, args).expect("Failed to set up logs");
 
     // get/create config
     let config = get_config(plugins_dir.join("config.toml")).expect("Failed to get config");
@@ -117,7 +119,7 @@ fn setup() -> (PathBuf, Config) {
         display_popup(
                 "Finish Setup",
                 format!(
-                    "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. If you installed Steam/BG3 to a non-default path, the install root in the config needs to be adjusted before launching again.",
+                    "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. install_root in the config likely needs to be adjusted to the correct path.",
                     plugins_dir.display()
                 ),
                 MessageBoxIcon::Information,
@@ -125,52 +127,34 @@ fn setup() -> (PathBuf, Config) {
         std::process::exit(0);
     }
 
-    debug!("Got config: {config:?}");
+    trace!("Got config: {config:?}");
 
-    (plugins_dir, config)
+    (plugins_dir, config, guard)
 }
 
-fn setup_logs<P: AsRef<Path>>(plugins_dir: P) -> anyhow::Result<()> {
-    let plugins_dir = plugins_dir.as_ref();
+fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<WorkerGuard>> {
+    let mut guard: Option<WorkerGuard> = None;
 
-    let date = Local::now();
-    let date = date.format("%Y-%m-%d").to_string();
-
-    let logs_dir = plugins_dir.join("logs");
-
-    let log_path = logs_dir.join(format!("native-mod-launcher {date}.log"));
-
-    let file = if log_path.exists() {
-        match OpenOptions::new().append(true).open(log_path) {
-            Ok(v) => v,
-            Err(e) => {
-                fatal_popup("Fatal Error", format!("Failed to open log file: {e}"));
-            }
-        }
+    if cfg!(debug_assertions) || args.cli {
+        tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_env("YABG3ML_LOG"))
+            .without_time()
+            .init();
     } else {
-        match File::create(log_path) {
-            Ok(v) => v,
-            Err(e) => {
-                fatal_popup("Fatal Error", format!("Failed to create log file: {e}"));
-            }
-        }
-    };
+        let plugins_dir = plugins_dir.as_ref();
+        let logs_dir = plugins_dir.join("logs");
 
-    // enable logging
-    CombinedLogger::init(vec![
-        TermLogger::new(
-            if cfg!(debug_assertions) {
-                LevelFilter::Debug
-            } else {
-                LevelFilter::Info
-            },
-            simplelog::Config::default(),
-            TerminalMode::Mixed,
-            ColorChoice::Auto,
-        ),
-        // save log to plugins dir
-        WriteLogger::new(LevelFilter::Info, simplelog::Config::default(), file),
-    ])?;
+        let file_appender = tracing_appender::rolling::daily(logs_dir, "ya-native-mmod-loader");
+        let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
-    Ok(())
+        guard = Some(_guard);
+        tracing_subscriber::fmt()
+            .with_max_level(LevelFilter::DEBUG)
+            .with_writer(non_blocking)
+            .without_time()
+            .with_ansi(false)
+            .init();
+    }
+
+    Ok(guard)
 }

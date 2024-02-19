@@ -1,9 +1,9 @@
 use std::{ffi::c_void, fs};
 use std::{mem, path::Path};
 
-use anyhow::{anyhow, Context, Result};
 use bg3_plugin_lib::{Plugin, Version};
-use log::{debug, info, warn};
+use eyre::{anyhow, Context, Result};
+use tracing::{info, trace, trace_span, warn};
 use windows::{
     core::{s, w, Error as WinError},
     Win32::{
@@ -24,7 +24,10 @@ use windows::{
 use crate::{config::Config, helpers::OwnedHandle, paths::get_bg3_plugins_dir};
 
 #[allow(non_snake_case)]
-pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::Result<()> {
+pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<()> {
+    let span = trace_span!("inject_plugins");
+    let _guard = span.enter();
+
     // get loadlibraryw address as fn pointer
     let LoadLibraryW: unsafe extern "system" fn(*mut c_void) -> u32 = unsafe {
         mem::transmute(
@@ -57,14 +60,22 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
     for entry in fs::read_dir(plugins_dir).context("Failed to read plugins_dir {plugins_dir}")? {
         let entry = entry?;
 
+        trace!("checking {entry:?} for injection plausability");
+
         let path = entry.path();
-        if path.is_file() && path.extension().is_some_and(|e| e == "dll") {
+        if path.is_file()
+            && path
+                .extension()
+                .is_some_and(|e| e.to_ascii_lowercase() == "dll")
+        {
             // check if plugin is disallowed or allowed
             let name = path
                 .file_stem()
                 .unwrap_or_default()
                 .to_str()
                 .unwrap_or_default();
+
+            trace!("{name}.dll is injectable");
 
             let data = bg3_plugin_lib::get_plugin_data(&path);
             let name = if let Ok(data) = data {
@@ -145,6 +156,9 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> anyhow::
 
 // Determine whether the process has been tainted by previous dll injections
 fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
+    let span = trace_span!("is_dirty");
+    let _guard = span.enter();
+
     let mut install_root = config.core.install_root.clone();
     // important, this must be native mods folder specifically, otherwise it will have false positives
     install_root.push("bin");
@@ -160,7 +174,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
         let dirty = path.starts_with(&install_root) || path.starts_with(&plugins_dir);
 
         if dirty {
-            debug!("detected dirty plugin {path}");
+            trace!("detected dirty plugin @ {path}");
         }
 
         dirty
@@ -187,6 +201,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
         // compare the value returned in lpcbNeeded with the value specified in cb. If lpcbNeeded is greater
         // than cb, increase the size of the array and call EnumProcessModulesEx again.
         if lpcbneeded > size {
+            trace!("lpcbneeded {lpcbneeded} > size {size}; increasing +1024");
             modules.resize(modules.len() + 1024, HMODULE::default());
             continue;
         }
@@ -212,15 +227,18 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
             // terminating null character, the function returns nSize, and the function sets the last error to ERROR_INSUFFICIENT_BUFFER.
             // If the function fails, the return value is 0 (zero). To get extended error information, call GetLastError.
             if len == name.len() as u32 || len == 0 {
+                trace!("len == name.len() || len == 0");
                 let error = unsafe { GetLastError() };
 
                 if error
                     .clone()
                     .is_err_and(|e| e == ERROR_INSUFFICIENT_BUFFER.into())
                 {
+                    trace!("ERROR_INSUFFICIENT_BUFFER, increasing +1024");
                     name.resize(name.len() + 1024, 0u16);
                     continue;
                 } else {
+                    trace!("else {error:?}");
                     error?;
                 }
             }
@@ -231,8 +249,14 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
         let path_str = String::from_utf16_lossy(&name[..len as usize]).to_lowercase();
         let path = Path::new(&path_str);
 
+        trace!("found loaded module @ {path_str}");
+
         // we're only interested in dll modules
-        if path.extension().is_some_and(|ext| ext == "dll") && is_bg3_path(path_str) {
+        if path
+            .extension()
+            .is_some_and(|ext| ext.to_ascii_lowercase() == "dll")
+            && is_bg3_path(path_str)
+        {
             return Ok(true);
         }
     }

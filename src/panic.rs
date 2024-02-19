@@ -1,7 +1,7 @@
 use std::{panic, path::Path};
 
 use human_panic::Metadata;
-use log::error;
+use tracing::error;
 
 use crate::{
     backtrace::CaptureBacktrace,
@@ -64,9 +64,7 @@ fn write_msg<P: AsRef<Path>>(
     )?;
     writeln!(
         buffer,
-        "We have generated a report file at \"{}\".\n\nSubmit an \
-     issue with the subject of \"Crash Report\" and include the \
-     report as an attachment. You may also submit the relevant log file found in the plugins directory.\n",
+        "We have generated a report file at \"{}\".\n\nSubmit an issue with the subject of \"Crash Report\" and include the report as an attachment. You may also submit the relevant log file found in the plugins directory.\n\nYou can obtain extra trace information by opening a console window, setting env var `YABG3ML_LOG=\"trace\"` and running `./bg3_*.exe --cli` (replace * with the actual tool you want to run)",
         match file_path {
             Some(fp) => format!("{}", fp.as_ref().display()),
             None => "<Failed to store file to disk>".to_string(),
@@ -74,10 +72,10 @@ fn write_msg<P: AsRef<Path>>(
     )?;
 
     if !homepage.is_empty() {
-        writeln!(buffer, "{homepage}")?;
+        writeln!(buffer, "\n{homepage}")?;
     }
 
-    writeln!(buffer, "\nException:\n{info}\n")?;
+    writeln!(buffer, "\nException:\n{info}")?;
 
     Ok(())
 }
