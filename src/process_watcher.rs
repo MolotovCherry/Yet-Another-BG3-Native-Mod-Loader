@@ -177,11 +177,9 @@ impl ProcessWatcher {
                 // process list of pids, compare to last cached copy, find new ones and process those
                 self.process_pids(pids, &mut new_pid_buffer);
 
-                let span_pid_lop = trace_span!("pid_loop");
-                let _guard = span_pid_lop.enter();
-
                 'pid_loop: for pid in new_pid_buffer.iter().copied() {
-                    trace!("checking pid {pid}");
+                    let span_pid_loop = trace_span!("pid_loop", pid = pid);
+                    let _guard = span_pid_loop.enter();
 
                     let handle_res: Result<OwnedHandle, _> = unsafe {
                         OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid)
@@ -193,9 +191,7 @@ impl ProcessWatcher {
                         // there is a risk here that we don't have permission to open the game process, so it's skipped
                         // in such a case, this tool should be run as admin. we have no way of knowing if that happened
 
-                        trace!("Failed to open process {pid}: {:?}", unsafe {
-                            GetLastError()
-                        });
+                        trace!("Failed to open process: {:?}", unsafe { GetLastError() });
 
                         continue;
                     };
@@ -213,13 +209,11 @@ impl ProcessWatcher {
                     let new_process_path = &path_buffer[..written];
                     let new_process_path = UniCase::new(String::from_utf16_lossy(new_process_path));
 
-                    trace!("process {pid} @ {new_process_path}");
+                    trace!("process @ {new_process_path}");
 
                     for process_path in &self.processes {
                         if process_path == &new_process_path {
-                            trace!(
-                                "pid {pid} found match for {process_path} == {new_process_path}"
-                            );
+                            trace!("found match for {process_path} == {new_process_path}");
 
                             callback(CallType::Pid(pid));
 
@@ -234,10 +228,8 @@ impl ProcessWatcher {
                         }
                     }
 
-                    trace!("pid {pid} did not match any known process paths");
+                    trace!("did not match any known process paths");
                 }
-
-                drop(_guard);
 
                 let signal = thread_receiver.recv_timeout(self.polling_rate);
 

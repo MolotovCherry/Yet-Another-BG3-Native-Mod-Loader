@@ -75,8 +75,6 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
                 .to_str()
                 .unwrap_or_default();
 
-            trace!("{name}.dll is injectable");
-
             let data = bg3_plugin_lib::get_plugin_data(&path);
             let name = if let Ok(data) = data {
                 let Plugin {
