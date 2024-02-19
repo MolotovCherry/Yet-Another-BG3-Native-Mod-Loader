@@ -1,5 +1,3 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
 mod backtrace;
 mod cli;
 mod config;
@@ -18,7 +16,7 @@ use std::{
 };
 
 use clap::Parser;
-use eyre::Result;
+use eyre::{Context, Result};
 use human_panic::Metadata;
 use tracing::{level_filters::LevelFilter, trace};
 use tracing_appender::non_blocking::WorkerGuard;
@@ -34,6 +32,10 @@ use process_watcher::CallType;
 use process_watcher::{ProcessWatcher, Timeout};
 use single_instance::SingleInstance;
 use tray::AppTray;
+use windows::Win32::System::Console::{
+    AllocConsole, GetStdHandle, SetConsoleMode, ENABLE_PROCESSED_OUTPUT,
+    ENABLE_VIRTUAL_TERMINAL_PROCESSING, ENABLE_WRAP_AT_EOL_OUTPUT, STD_OUTPUT_HANDLE,
+};
 
 #[derive(Debug, PartialEq)]
 pub enum RunType {
@@ -42,13 +44,13 @@ pub enum RunType {
 }
 
 /// Process watcher entry point
-pub fn run(run_type: RunType) {
+pub fn run(run_type: RunType) -> Result<()> {
     // This prohibits multiple app instances
     let _singleton = SingleInstance::new();
 
     let args = Args::parse();
 
-    let (plugins_dir, config, _guard) = setup(&args);
+    let (plugins_dir, config, _guard) = setup(&args)?;
 
     let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
 
@@ -88,9 +90,11 @@ pub fn run(run_type: RunType) {
     }
 
     waiter.wait();
+
+    Ok(())
 }
 
-fn setup(args: &Args) -> (PathBuf, Config, Option<WorkerGuard>) {
+fn setup(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>)> {
     // Nicely print any panic messages to the user
     set_hook(Metadata {
         name: env!("CARGO_PKG_NAME").into(),
@@ -110,10 +114,10 @@ fn setup(args: &Args) -> (PathBuf, Config, Option<WorkerGuard>) {
     };
 
     // start logger
-    let guard = setup_logs(&plugins_dir, args).expect("Failed to set up logs");
+    let worker_guard = setup_logs(&plugins_dir, args).context("Failed to set up logs")?;
 
     // get/create config
-    let config = get_config(plugins_dir.join("config.toml")).expect("Failed to get config");
+    let config = get_config(plugins_dir.join("config.toml")).context("Failed to get config")?;
 
     if first_time {
         display_popup(
@@ -129,13 +133,27 @@ fn setup(args: &Args) -> (PathBuf, Config, Option<WorkerGuard>) {
 
     trace!("Got config: {config:?}");
 
-    (plugins_dir, config, guard)
+    Ok((plugins_dir, config, worker_guard))
 }
 
 fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<WorkerGuard>> {
-    let mut guard: Option<WorkerGuard> = None;
+    let mut worker_guard: Option<WorkerGuard> = None;
 
     if cfg!(debug_assertions) || args.cli {
+        if cfg!(not(debug_assertions)) {
+            unsafe {
+                AllocConsole()?;
+
+                let handle = GetStdHandle(STD_OUTPUT_HANDLE)?;
+                SetConsoleMode(
+                    handle,
+                    ENABLE_PROCESSED_OUTPUT
+                        | ENABLE_WRAP_AT_EOL_OUTPUT
+                        | ENABLE_VIRTUAL_TERMINAL_PROCESSING,
+                )?;
+            }
+        }
+
         tracing_subscriber::fmt()
             .with_env_filter(EnvFilter::from_env("YABG3ML_LOG"))
             .without_time()
@@ -144,10 +162,10 @@ fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<Work
         let plugins_dir = plugins_dir.as_ref();
         let logs_dir = plugins_dir.join("logs");
 
-        let file_appender = tracing_appender::rolling::daily(logs_dir, "ya-native-mmod-loader");
+        let file_appender = tracing_appender::rolling::daily(logs_dir, "ya-native-mod-loader");
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
-        guard = Some(_guard);
+        worker_guard = Some(_guard);
         tracing_subscriber::fmt()
             .with_max_level(LevelFilter::DEBUG)
             .with_writer(non_blocking)
@@ -155,5 +173,5 @@ fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<Work
             .init();
     }
 
-    Ok(guard)
+    Ok(worker_guard)
 }

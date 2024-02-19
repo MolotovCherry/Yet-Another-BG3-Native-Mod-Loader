@@ -227,8 +227,6 @@ impl ProcessWatcher {
                             continue 'pid_loop;
                         }
                     }
-
-                    trace!("did not match any known process paths");
                 }
 
                 let signal = thread_receiver.recv_timeout(self.polling_rate);
