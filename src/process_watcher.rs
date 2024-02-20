@@ -68,7 +68,10 @@ pub struct ProcessWatcherStopToken {
 impl ProcessWatcherStopToken {
     pub fn stop(&self) {
         trace!("process watcher stop token stopping");
-        self.thread_sender.send(()).unwrap();
+        self.thread_sender
+            .send(())
+            .expect("thread exited unexpectedly");
+
         self.wait_sender.send(()).unwrap();
     }
 }
@@ -232,6 +235,7 @@ impl ProcessWatcher {
                 let signal = thread_receiver.recv_timeout(self.polling_rate);
 
                 if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
+                    trace!(?signal, "signal thread_receiver exited");
                     break 'run;
                 }
             }
