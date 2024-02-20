@@ -237,8 +237,13 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
                     name.resize(name.len() + 1024, 0u16);
                     continue;
                 } else {
-                    trace!("else {error:?}");
-                    error?;
+                    trace!(
+                        handle = ?handle.as_raw_handle(),
+                        module = ?module,
+                        "failed to open module handle {error:?}",
+                    );
+
+                    continue;
                 }
             }
 
