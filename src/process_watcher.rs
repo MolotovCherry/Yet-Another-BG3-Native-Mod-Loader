@@ -68,9 +68,9 @@ pub struct ProcessWatcherStopToken {
 impl ProcessWatcherStopToken {
     pub fn stop(&self) {
         trace!("process watcher stop token stopping");
-        self.thread_sender
-            .send(())
-            .expect("thread exited unexpectedly");
+
+        // this may fail if the thread exited early, but that doesn't matter at this point
+        _ = self.thread_sender.send(());
 
         self.wait_sender.send(()).unwrap();
     }
