@@ -1,8 +1,8 @@
 use std::{ffi::c_void, fs};
 use std::{mem, path::Path};
 
-use bg3_plugin_lib::{Plugin, Version};
 use eyre::{anyhow, Context, Result};
+use native_plugin_lib::{Plugin, Version};
 use tracing::{info, trace, trace_span, warn};
 use windows::{
     core::{s, w, Error as WinError},
@@ -75,7 +75,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
                 .to_str()
                 .unwrap_or_default();
 
-            let data = bg3_plugin_lib::get_plugin_data(&path);
+            let data = native_plugin_lib::get_plugin_data(&path);
             let name = if let Ok(data) = data {
                 let Plugin {
                     version:
