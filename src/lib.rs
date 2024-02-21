@@ -163,7 +163,6 @@ fn setup(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>)> {
     Ok((plugins_dir, config, worker_guard))
 }
 
-#[allow(unused)]
 fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<WorkerGuard>> {
     let mut worker_guard: Option<WorkerGuard> = None;
 
