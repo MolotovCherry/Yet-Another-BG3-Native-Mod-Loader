@@ -52,7 +52,7 @@ fn write_msg<P: AsRef<Path>>(
 ) -> std::fmt::Result {
     let (_version, homepage) = (&meta.version, &meta.homepage);
 
-    let name = "Yet Another Mod Loader";
+    let name = "Yet Another BG3 Native Mod Loader";
 
     writeln!(buffer, "Well, this is embarrassing.\n")?;
     writeln!(
