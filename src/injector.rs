@@ -83,7 +83,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
                 .any(|s| UniCase::new(s) == UniCase::new(name));
 
             if contains_disabled {
-                info!("Skipping disabled plugin {name}");
+                info!("Skipping disabled plugin {name}.dll");
                 continue;
             }
 
