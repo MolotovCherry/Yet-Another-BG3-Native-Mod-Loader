@@ -46,14 +46,7 @@ impl ProcessWatcherWaiter {
         _ = self.wait_receiver.recv();
 
         trace!("process watcher thread joining");
-        self.thread
-            .lock()
-            .unwrap()
-            .take()
-            .unwrap()
-            .join()
-            .unwrap()
-            .unwrap();
+        _ = self.thread.lock().unwrap().take().unwrap().join();
 
         trace!("process watcher finished wait");
     }
