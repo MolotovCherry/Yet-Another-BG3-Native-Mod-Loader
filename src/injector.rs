@@ -242,16 +242,15 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
                 {
                     trace!("ERROR_INSUFFICIENT_BUFFER, increasing +1024");
                     name.resize(name.len() + 1024, 0u16);
-                    continue;
                 } else {
                     trace!(
                         handle = ?handle.as_raw_handle(),
                         module = ?module,
                         "failed to open module handle {error:?}",
                     );
-
-                    continue;
                 }
+
+                continue;
             }
 
             break len;
