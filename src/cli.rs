@@ -1,6 +1,6 @@
 use clap::Parser;
 
-/// A simple, non-invasive injector for BG3 native dll plugins
+/// A simple, non-invasive BG3 native mod loader
 #[derive(Parser, Debug)]
 #[clap(disable_help_flag = true, disable_version_flag = true)]
 #[command(version, about, long_about = None)]

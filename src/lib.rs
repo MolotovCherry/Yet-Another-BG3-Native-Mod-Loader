@@ -33,12 +33,15 @@ use process_watcher::CallType;
 use process_watcher::{ProcessWatcher, Timeout};
 use single_instance::SingleInstance;
 use tray::AppTray;
-use windows::Win32::System::Console::{
-    AllocConsole, GetStdHandle, SetConsoleMode, ENABLE_PROCESSED_OUTPUT,
-    ENABLE_VIRTUAL_TERMINAL_PROCESSING, ENABLE_WRAP_AT_EOL_OUTPUT, STD_OUTPUT_HANDLE,
+use windows::{
+    core::PCWSTR,
+    Win32::System::Console::{
+        AllocConsole, GetStdHandle, SetConsoleMode, SetConsoleTitleW, ENABLE_PROCESSED_OUTPUT,
+        ENABLE_VIRTUAL_TERMINAL_PROCESSING, ENABLE_WRAP_AT_EOL_OUTPUT, STD_OUTPUT_HANDLE,
+    },
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum RunType {
     Watcher,
     Injector,
@@ -55,7 +58,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         use clap::CommandFactory;
 
         #[cfg(not(debug_assertions))]
-        alloc_console()?;
+        debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
 
         let mut cmd = Args::command();
         cmd.print_help()?;
@@ -66,7 +69,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         return Ok(());
     } else if args.version {
         #[cfg(not(debug_assertions))]
-        alloc_console()?;
+        debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
 
         println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
@@ -160,12 +163,13 @@ fn setup(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>)> {
     Ok((plugins_dir, config, worker_guard))
 }
 
+#[allow(unused)]
 fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<WorkerGuard>> {
     let mut worker_guard: Option<WorkerGuard> = None;
 
     if cfg!(debug_assertions) || args.cli {
         #[cfg(not(debug_assertions))]
-        alloc_console()?;
+        debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
 
         tracing_subscriber::fmt()
             .with_env_filter(EnvFilter::from_env("YABG3ML_LOG"))
@@ -190,7 +194,7 @@ fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<Work
 }
 
 #[allow(unused)]
-fn alloc_console() -> Result<()> {
+fn debug_console<A: AsRef<str>>(title: A) -> Result<()> {
     unsafe {
         AllocConsole()?;
     }
@@ -204,6 +208,16 @@ fn alloc_console() -> Result<()> {
                 | ENABLE_WRAP_AT_EOL_OUTPUT
                 | ENABLE_VIRTUAL_TERMINAL_PROCESSING,
         )?;
+    }
+
+    let title = title
+        .as_ref()
+        .encode_utf16()
+        .chain(std::iter::once(0u16))
+        .collect::<Vec<_>>();
+
+    unsafe {
+        SetConsoleTitleW(PCWSTR(title.as_ptr()))?;
     }
 
     Ok(())
