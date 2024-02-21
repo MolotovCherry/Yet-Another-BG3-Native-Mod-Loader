@@ -4,6 +4,7 @@ use std::{mem, path::Path};
 use eyre::{anyhow, Context, Result};
 use native_plugin_lib::{Plugin, Version};
 use tracing::{info, trace, trace_span, warn};
+use unicase::UniCase;
 use windows::{
     core::{s, w, Error as WinError},
     Win32::{
@@ -75,6 +76,17 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
                 .to_str()
                 .unwrap_or_default();
 
+            let contains_disabled = config
+                .core
+                .disabled
+                .iter()
+                .any(|s| UniCase::new(s) == UniCase::new(name));
+
+            if contains_disabled {
+                info!("Skipping disabled plugin {name}");
+                continue;
+            }
+
             let data = native_plugin_lib::get_plugin_data(&path);
             let name = if let Ok(data) = data {
                 let Plugin {
@@ -93,11 +105,6 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
             } else {
                 format!("{name}.dll")
             };
-
-            if config.core.disabled.contains(&name.to_string()) {
-                info!("Skipping plugin {name}");
-                continue;
-            }
 
             info!("Loading plugin {name}");
 
