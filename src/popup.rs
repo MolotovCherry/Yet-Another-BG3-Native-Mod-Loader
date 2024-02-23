@@ -1,19 +1,21 @@
 use windows::{
     core::{HSTRING, PCWSTR},
     Win32::UI::WindowsAndMessaging::{
-        MessageBoxW, MB_ICONERROR, MB_ICONINFORMATION, MESSAGEBOX_STYLE,
+        MessageBoxW, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MESSAGEBOX_STYLE,
     },
 };
 
 pub enum MessageBoxIcon {
-    Information,
+    Info,
+    Warn,
     Error,
 }
 
 impl From<MessageBoxIcon> for MESSAGEBOX_STYLE {
     fn from(value: MessageBoxIcon) -> Self {
         match value {
-            MessageBoxIcon::Information => MB_ICONINFORMATION,
+            MessageBoxIcon::Info => MB_ICONINFORMATION,
+            MessageBoxIcon::Warn => MB_ICONWARNING,
             MessageBoxIcon::Error => MB_ICONERROR,
         }
     }
@@ -42,4 +44,9 @@ pub fn display_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M, icon: M
 pub fn fatal_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M) -> ! {
     display_popup(title, message, MessageBoxIcon::Error);
     std::process::exit(1);
+}
+
+/// A warning popup, program DOES NOT exit
+pub fn warn_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M) {
+    display_popup(title, message, MessageBoxIcon::Warn);
 }

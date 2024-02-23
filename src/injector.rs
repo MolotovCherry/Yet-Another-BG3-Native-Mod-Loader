@@ -1,9 +1,9 @@
 use std::{ffi::c_void, fs};
 use std::{mem, path::Path};
 
-use eyre::{anyhow, Context, Result};
+use eyre::{anyhow, bail, Context, Result};
 use native_plugin_lib::{Plugin, Version};
-use tracing::{info, trace, trace_span, warn};
+use tracing::{error, info, trace, trace_span, warn};
 use unicase::UniCase;
 use windows::{
     core::{s, w, Error as WinError},
@@ -22,7 +22,7 @@ use windows::{
     },
 };
 
-use crate::{config::Config, helpers::OwnedHandle, paths::get_bg3_plugins_dir};
+use crate::{config::Config, helpers::OwnedHandle, paths::get_bg3_plugins_dir, popup::warn_popup};
 
 #[allow(non_snake_case)]
 pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<()> {
@@ -41,25 +41,67 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
         )
     };
 
-    let handle: OwnedHandle = unsafe {
+    let handle: Result<OwnedHandle, _> = unsafe {
         OpenProcess(
             PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE,
             false,
             pid,
         )
-        .context("Failed to OpenProcess for {pid}")?
-        .into()
+        .map(Into::into)
+    };
+
+    let Ok(handle) = handle else {
+        error!(?handle, "failed to open process");
+        warn_popup("Can't open process", format!("Failed to open the game process.\n\nThis could be due to a few reasons:\n1. when the program attempted to open the process, it was already gone\n2. you need higher permissions, e.g. admin perms to open it (try running this as admin)\n\nIf this isn't a perm problem, just try again\n\nError: {}", handle.unwrap_err()));
+        return Ok(());
     };
 
     // checks if process has already had injection done on it
-    if is_dirty(&handle, config)? {
+    let is_dirty = is_dirty(&handle, config);
+    let Ok(is_dirty) = is_dirty else {
+        error!(?is_dirty, "failed dirty check");
+        warn_popup(
+            "Failed process dirty check",
+            is_dirty.unwrap_err().to_string(),
+        );
+        return Ok(());
+    };
+
+    if is_dirty {
         // return ok as if nothing happened, however we will log this
         warn!("game process is dirty; aborting injection");
         return Ok(());
     }
 
-    for entry in fs::read_dir(plugins_dir).context("Failed to read plugins_dir {plugins_dir}")? {
-        let entry = entry?;
+    let read_dir = fs::read_dir(plugins_dir).context("Failed to read plugins_dir {plugins_dir}");
+    let Ok(read_dir) = read_dir else {
+        error!(?read_dir, "failed to read plugins dir");
+        warn_popup(
+            "Failed to read plugins dir",
+            format!(
+                "Attempted to read plugins dir {}, but failed opening it\n\nDo you have correct perms?\n\nError: {}",
+                plugins_dir.display(),
+                read_dir.unwrap_err()
+            ),
+        );
+
+        return Ok(());
+    };
+
+    for entry in read_dir {
+        let Ok(entry) = entry else {
+            error!(?entry, "failed to read dir entry");
+            warn_popup(
+                "Failed to open path",
+                format!(
+                    "Attempted to read dir listing from {}, but a file inside could not be read\n\nError: {}",
+                    plugins_dir.display(),
+                    entry.unwrap_err()
+                ),
+            );
+
+            return Ok(());
+        };
 
         trace!("checking {entry:?} for injection plausability");
 
@@ -82,11 +124,6 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
                 .iter()
                 .any(|s| UniCase::new(s) == UniCase::new(name));
 
-            if contains_disabled {
-                info!("Skipping disabled plugin {name}.dll");
-                continue;
-            }
-
             let data = native_plugin_lib::get_plugin_data(&path);
             let name = if let Ok(data) = data {
                 let Plugin {
@@ -105,6 +142,11 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
             } else {
                 format!("{name}.dll")
             };
+
+            if contains_disabled {
+                info!("Skipping disabled plugin {name}");
+                continue;
+            }
 
             info!("Loading plugin {name}");
 
@@ -129,7 +171,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
             };
 
             // Write the data to the process
-            unsafe {
+            let write_res = unsafe {
                 WriteProcessMemory(
                     handle.as_raw_handle(),
                     alloc_addr,
@@ -137,12 +179,19 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
                     plugin_path_len,
                     None,
                 )
-                .context("Failed to write process memory")?
+            };
+            if let Err(e) = write_res {
+                error!(?e, "Failed to write to process");
+                warn_popup(
+                    "Process injection failure",
+                    format!("Failed to write to process memory\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. It's possible at this point that some plugins are injected, while others are not. Recommend restarting game and trying again\n\nError: {e}"),
+                );
+                return Ok(());
             }
 
             // start thread with dll
             // Note that the returned HANDLE is intentionally not closed!
-            unsafe {
+            let rem_thread_res = unsafe {
                 CreateRemoteThread(
                     handle.as_raw_handle(),
                     None,
@@ -152,8 +201,15 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
                     0,
                     None,
                 )
-                .context("Failed to create remote thread")?
             };
+            if let Err(e) = rem_thread_res {
+                error!(?e, "Failed to create remote thread");
+                warn_popup(
+                    "Process injection failure",
+                    format!("Failed to create process remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. It's possible at this point that some plugins are injected, while others are not. Recommend restarting game and trying again\n\nError: {e}"),
+                );
+                return Ok(());
+            }
         }
     }
 
@@ -193,14 +249,19 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
     loop {
         let size = (modules.len() * std::mem::size_of::<HMODULE>()) as u32;
 
-        unsafe {
+        let enum_res = unsafe {
             EnumProcessModulesEx(
                 handle.as_raw_handle(),
                 modules.as_mut_ptr(),
                 size,
                 &mut lpcbneeded,
                 LIST_MODULES_64BIT,
-            )?
+            )
+        };
+
+        if let Err(e) = enum_res {
+            error!(?e, "EnumProcessModulesEx failed");
+            bail!("Failed to check if process was dirty\n\nThis could happen for many reasons, among them:\n1. process disappeared during the call\n2. you don't have correct perms\n\nPlease try again\n\nError: {e}");
         }
 
         // To determine if the lphModule array is too small to hold all module handles for the process,
