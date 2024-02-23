@@ -317,7 +317,8 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
                     trace!(
                         handle = ?handle.as_raw_handle(),
                         module = ?module,
-                        "failed to open module handle {error:?}",
+                        error = ?error,
+                        "failed to open module handle",
                     );
                 }
 
