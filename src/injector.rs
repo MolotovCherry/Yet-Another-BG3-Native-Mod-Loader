@@ -170,6 +170,16 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
                 )
             };
 
+            if alloc_addr.is_null() {
+                let error = unsafe { GetLastError() };
+                error!(?error, "virtualallocex failed to allocate memory");
+                warn_popup(
+                    "Process injection failure",
+                    format!("Failed to allocate memory in target process\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. It's possible at this point that some plugins are injected, while others are not. Recommend restarting game and trying again\n\nError: {error:?}"),
+                );
+                return Ok(());
+            }
+
             // Write the data to the process
             let write_res = unsafe {
                 WriteProcessMemory(
