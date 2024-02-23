@@ -1,7 +1,7 @@
 use std::{ffi::c_void, fs};
 use std::{mem, path::Path};
 
-use eyre::{anyhow, bail, Context, Result};
+use eyre::{bail, eyre, Context, Result};
 use native_plugin_lib::{Plugin, Version};
 use tracing::{error, info, trace, trace_span, warn};
 use unicase::UniCase;
@@ -152,7 +152,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
 
             let mut plugin_path = path
                 .to_str()
-                .ok_or(anyhow!("Failed to convert plugin path"))?
+                .ok_or(eyre!("Failed to convert plugin path"))?
                 .encode_utf16()
                 .collect::<Vec<_>>();
             plugin_path.push(b'\0' as u16);
