@@ -13,7 +13,7 @@ pub struct Config {
     #[serde(skip)]
     path: PathBuf,
 
-    pub use_plugins_dir: bool,
+    pub use_local_plugins_dir: bool,
 }
 
 impl Config {

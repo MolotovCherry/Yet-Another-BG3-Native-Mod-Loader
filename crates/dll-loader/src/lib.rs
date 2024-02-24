@@ -54,12 +54,12 @@ fn entry(module: HINSTANCE) -> Result<()> {
     let config_path = get_dll_dir_filepath(module, "yet-another-bg3-mod-loader.toml")?;
     let config = Config::load(config_path).unwrap_or_default();
 
-    let plugins_dir = if config.use_plugins_dir {
-        info!("Loading plugins from NativeMods directory");
-        get_dll_dir_filepath(module, "NativeMods")?
-    } else {
+    let plugins_dir = if config.use_local_plugins_dir {
         info!("Loading plugins from local Plugins directory");
         get_bg3_plugins_dir()?
+    } else {
+        info!("Loading plugins from NativeMods directory");
+        get_dll_dir_filepath(module, "NativeMods")?
     };
 
     plugin_loader::load(&plugins_dir)?;
