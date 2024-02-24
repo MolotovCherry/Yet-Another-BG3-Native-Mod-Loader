@@ -10,7 +10,7 @@ use std::{
 };
 
 use eyre::{Error, Result};
-use tracing::{trace, trace_span};
+use tracing::{error, trace, trace_span};
 use unicase::UniCase;
 use windows::Win32::{
     Foundation::{GetLastError, MAX_PATH},
@@ -20,7 +20,7 @@ use windows::Win32::{
     },
 };
 
-use crate::helpers::OwnedHandle;
+use crate::{helpers::OwnedHandle, popup::fatal_popup};
 
 #[derive(Debug)]
 pub enum CallType {
@@ -127,6 +127,7 @@ impl ProcessWatcher {
                 end = Some(d);
             }
 
+            let mut enum_retries = 0;
             'run: loop {
                 if let Some(now) = now {
                     trace!("initiating timeout check");
@@ -147,9 +148,8 @@ impl ProcessWatcher {
 
                 let cb = (pid_buffer.len() * 4).try_into().unwrap();
 
-                unsafe {
-                    EnumProcesses(pid_buffer.as_mut_ptr(), cb, &mut lpcneeded)?;
-                }
+                let enum_res =
+                    unsafe { EnumProcesses(pid_buffer.as_mut_ptr(), cb, &mut lpcneeded) };
 
                 // if lpcbNeeded equals cb, consider retrying the call with a larger array
                 //
@@ -162,6 +162,25 @@ impl ProcessWatcher {
 
                     pid_buffer.resize(pid_buffer.capacity() + 1024, 0);
                     continue 'run;
+                }
+
+                if enum_res.is_err() && enum_retries < 4 {
+                    let Err(e) = enum_res else {
+                        unreachable!();
+                    };
+
+                    error!(error = ?e, "EnumProcesses failed");
+
+                    enum_retries += 1;
+                    continue;
+                }
+
+                if let Err(e) = enum_res {
+                    error!(error = ?e, "EnumProcesses failed");
+                    fatal_popup(
+                        "failed to get process list",
+                        "For some reason, EnumProcesses is unexpectedly failing. An error was logged to the logfile. Please report this",
+                    );
                 }
 
                 // To determine how many processes were enumerated, divide the lpcbNeeded value by sizeof(DWORD).
