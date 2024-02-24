@@ -1,6 +1,5 @@
 use color_eyre::config::PanicHook;
 use eyre::Result;
-use strip_ansi_escapes::Writer;
 use tracing::error;
 use tracing_appender::rolling::RollingFileAppender;
 use tracing_error::ErrorLayer;
@@ -20,10 +19,10 @@ impl StripAnsiWriter {
 }
 
 impl<'a> MakeWriter<'a> for StripAnsiWriter {
-    type Writer = Writer<RollingFileAppender>;
+    type Writer = strip_ansi_escapes::Writer<RollingFileAppender>;
 
     fn make_writer(&'a self) -> Self::Writer {
-        Writer::new(tracing_appender::rolling::never(&self.0 .0, &self.0 .1))
+        strip_ansi_escapes::Writer::new(tracing_appender::rolling::never(&self.0 .0, &self.0 .1))
     }
 }
 
@@ -87,6 +86,9 @@ fn set_panic_hook(hook: PanicHook) {
         let panic = hook.panic_report(info).to_string();
         error!("{panic}");
 
-        fatal_popup("Yet-Another-BG3-Mod-Loader Panic", panic);
+        fatal_popup(
+            "Yet-Another-BG3-Mod-Loader Panic",
+            strip_ansi_escapes::strip_str(panic),
+        );
     }))
 }
