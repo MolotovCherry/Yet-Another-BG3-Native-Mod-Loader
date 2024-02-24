@@ -25,7 +25,7 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
         error!(?read_dir, "failed to read plugins dir");
 
         #[cfg(not(any(debug_assertions, feature = "console")))]
-        crate::popup::fatal_popup::fatal_popup(
+        crate::popup::fatal_popup(
             "Yet Another BG3 Mod Loader Error",
             format!(
                 "Sttempted to read plugins dir {}, but failed opening it\n\nDo you have correct perms?\n\n{read_dir:?}",
@@ -42,7 +42,7 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
             error!(?entry, "failed to read plugin dir file");
 
             #[cfg(not(any(debug_assertions, feature = "console")))]
-            crate::popup::fatal_popup::fatal_popup(
+            crate::popup::fatal_popup(
                 "Yet Another BG3 Mod Loader Error",
                 "Attempted to read file path in plugin directory, but failed\n\nDo you have correct perms?\n\n{entry:?}",
             );
@@ -95,7 +95,7 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
             error!(?e, "failed to load plugin {original_name}");
 
             #[cfg(not(any(debug_assertions, feature = "console")))]
-            crate::popup::fatal_popup::fatal_popup(
+            crate::popup::fatal_popup(
                 "Yet Another BG3 Mod Loader Error",
                 format!("Failed to load plugin {original_name}\n\n{e}"),
             );
