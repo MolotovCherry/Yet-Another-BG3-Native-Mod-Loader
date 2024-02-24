@@ -1,52 +1,19 @@
-[package]
-name = "yet-another-bg3-mod-loader"
-version = "0.2.4"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = ["crates/dll-loader", "crates/yet-another-bg3-mod-loader"]
 
-[dependencies]
-serde = { version = "1.0.197", features = ["derive"] }
-toml = "0.8.10"
-serde_json = "1.0.114"
-directories = "5.0.1"
-human-panic = "1.2.3"
-eyre = "0.6.12"
-backtrace = "0.3.69"
-native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
-tray-icon = "0.11.3"
-winit = "0.29.10"
-unicase = "2.7.0"
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-tracing-appender = "0.2.3"
-clap = { version = "4.5.1", features = ["derive"] }
+[profile.dev]
+opt-level = 1
 
-[dependencies.windows]
-version = "0.53.0"
-features = [
-    "Win32_Foundation",
-    "Win32_System_ApplicationInstallationAndServicing",
+[profile.dev-dbg]
+inherits = "dev"
+opt-level = 0
 
-    "Win32_UI_WindowsAndMessaging",
-    "Win32_System_Threading",
-    "Win32_System_Memory",
-    "Win32_System_Diagnostics_Debug",
-    "Win32_System_LibraryLoader",
-    "Win32_Storage_FileSystem",
-
-    "Win32_Security",
-
-    "Win32_System_ProcessStatus",
-
-    "Win32_System_Console",
-]
-
-[build-dependencies]
-winres = "0.1.12"
-
-# so we can get stacktraces in release
 [profile.release]
 debug = true
+lto = true
+codegen-units = 1
 
-[profile.release-debug]
+[profile.release-dbg]
 inherits = "release"
 debug-assertions = true

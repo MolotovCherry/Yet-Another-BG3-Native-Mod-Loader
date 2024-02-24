@@ -1,11 +1,13 @@
 fn main() {
-    if cfg!(target_os = "windows") {
-        let mut res = winres::WindowsResource::new();
-        // ordinal 1
-        res.set_icon("icon.ico");
+    if !cfg!(target_os = "windows") {
+        panic!("Only windows OS is supported");
+    }
+    let mut res = winres::WindowsResource::new();
+    // ordinal 1
+    res.set_icon("icon.ico");
 
-        // allow high dpi scaling
-        res.set_manifest(r#"
+    // allow high dpi scaling
+    res.set_manifest(r#"
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
     <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
         <application>
@@ -22,6 +24,5 @@ fn main() {
 </assembly>
 "#);
 
-        let _ = res.compile();
-    }
+    res.compile().unwrap();
 }

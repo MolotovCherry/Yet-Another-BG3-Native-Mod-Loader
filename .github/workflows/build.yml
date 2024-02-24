@@ -41,11 +41,17 @@ jobs:
           name: build
           path: |
             target/*/*.exe
+            target/*/*.dll
 
-      - name: Zip files up
+      - name: Zip files up yabg3ml
         if: github.event_name == 'release'
         run: |
           Get-ChildItem -Path target/*/*.exe,assets/* | Compress-Archive -CompressionLevel Optimal -DestinationPath "yet-another-bg3-mod-loader-x64.zip"
+
+      - name: Zip files up dll loader
+        if: github.event_name == 'release'
+        run: |
+            Get-ChildItem -Path target/*/*.dll | Compress-Archive -CompressionLevel Optimal -DestinationPath "dll-loader-x64.zip"
 
       - name: Attach assets to release
         if: github.event_name == 'release'
