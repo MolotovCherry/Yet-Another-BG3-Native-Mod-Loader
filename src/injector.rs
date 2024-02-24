@@ -354,7 +354,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
                 );
 
                 if total_retries > 9 {
-                    bail!("GetModuleFileNameExW is failing too much. This could signify the process is already gone. Please try again");
+                    bail!("GetModuleFileNameExW is failing too much. This could signify the process is already gone or in a corrupted state. Please try again");
                 }
 
                 if retry < 3 {
