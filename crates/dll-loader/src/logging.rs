@@ -68,13 +68,14 @@ pub fn setup_logging(module: HINSTANCE) -> Result<()> {
             .init();
     }
 
-    let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
+    let (panic_hook, _eyre_hook) = color_eyre::config::HookBuilder::default()
         .panic_section(
             "consider reporting the bug @ https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader",
         )
         .into_hooks();
 
-    eyre_hook.install()?;
+    // fails cause of auto-install feature, but we don't use it anyways?
+    //eyre_hook.install()?;
     set_panic_hook(panic_hook);
 
     Ok(())

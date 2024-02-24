@@ -9,8 +9,9 @@ mod wrapper;
 use std::ffi::c_void;
 
 use eyre::Result;
-use windows::Win32::Foundation::HINSTANCE;
+use tracing::info;
 use windows::Win32::System::SystemServices::DLL_PROCESS_ATTACH;
+use windows::Win32::{Foundation::HINSTANCE, System::SystemServices::DLL_PROCESS_DETACH};
 
 use config::Config;
 use logging::setup_logging;
@@ -25,7 +26,6 @@ extern "C-unwind" fn DllMain(
     fdw_reason: u32,
     _lpv_reserved: *const c_void,
 ) -> bool {
-    #[allow(clippy::single_match)]
     match fdw_reason {
         DLL_PROCESS_ATTACH => {
             _ = std::panic::catch_unwind(|| {
@@ -40,6 +40,10 @@ extern "C-unwind" fn DllMain(
             });
         }
 
+        DLL_PROCESS_DETACH => {
+            plugin_loader::unload();
+        }
+
         _ => (),
     }
 
@@ -51,8 +55,10 @@ fn entry(module: HINSTANCE) -> Result<()> {
     let config = Config::load(config_path).unwrap_or_default();
 
     let plugins_dir = if config.use_plugins_dir {
+        info!("Loading plugins from NativeMods directory");
         get_dll_dir_filepath(module, "NativeMods")?
     } else {
+        info!("Loading plugins from local Plugins directory");
         get_bg3_plugins_dir()?
     };
 

@@ -1,11 +1,24 @@
-use std::path::Path;
+use std::{
+    path::Path,
+    sync::{Mutex, OnceLock},
+};
 
 use eyre::{Context, Result};
 use native_plugin_lib::{Plugin, Version};
 use tracing::{error, info};
-use windows::{core::PCWSTR, Win32::System::LibraryLoader::LoadLibraryW};
+use windows::{
+    core::PCWSTR,
+    Win32::{
+        Foundation::{FreeLibrary, HMODULE},
+        System::LibraryLoader::LoadLibraryW,
+    },
+};
+
+static PLUGINS: OnceLock<Mutex<Vec<HMODULE>>> = OnceLock::new();
 
 pub fn load(plugins_dir: &Path) -> Result<()> {
+    _ = PLUGINS.set(Mutex::new(Vec::new()));
+
     let read_dir =
         std::fs::read_dir(plugins_dir).context("Failed to read plugins_dir {plugins_dir}");
     let Ok(read_dir) = read_dir else {
@@ -77,7 +90,8 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
         let path = PCWSTR(path.as_ptr());
 
         let load_res = unsafe { LoadLibraryW(path) };
-        if let Err(e) = load_res {
+        let Ok(handle) = load_res else {
+            let e = load_res.unwrap_err();
             error!(?e, "failed to load plugin {original_name}");
 
             #[cfg(not(any(debug_assertions, feature = "console")))]
@@ -85,8 +99,23 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
                 "Yet Another BG3 Mod Loader Error",
                 format!("Failed to load plugin {original_name}\n\n{e}"),
             );
-        }
+
+            #[cfg(any(debug_assertions, feature = "console"))]
+            return Ok(());
+        };
+
+        let mut guard = PLUGINS.get().unwrap().lock().unwrap();
+        guard.push(handle);
     }
 
     Ok(())
+}
+
+pub fn unload() {
+    let mut guard = PLUGINS.get().unwrap().lock().unwrap();
+    for plugin in guard.drain(..) {
+        unsafe {
+            _ = FreeLibrary(plugin);
+        }
+    }
 }
