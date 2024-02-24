@@ -321,7 +321,8 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
     let modules = &modules[..n_modules];
 
     let mut name = vec![0u16; 1024];
-    for &module in modules {
+    'for_modules: for &module in modules {
+        let mut retry = 0;
         let len = loop {
             let len = unsafe { GetModuleFileNameExW(handle.as_raw_handle(), module, &mut name) };
 
@@ -338,16 +339,25 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
                 {
                     trace!("ERROR_INSUFFICIENT_BUFFER, increasing +1024");
                     name.resize(name.len() + 1024, 0u16);
-                } else {
-                    trace!(
-                        handle = ?handle.as_raw_handle(),
-                        module = ?module,
-                        error = ?error,
-                        "failed to open module handle",
-                    );
+
+                    continue;
                 }
 
-                continue;
+                error!(
+                    handle = ?handle.as_raw_handle(),
+                    module = ?module,
+                    error = ?error,
+                    retry = retry,
+                    "failed to open module handle",
+                );
+
+                if retry < 3 {
+                    retry += 1;
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                    continue;
+                }
+
+                continue 'for_modules;
             }
 
             break len;
