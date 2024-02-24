@@ -10,10 +10,12 @@ inherits = "dev"
 opt-level = 0
 
 [profile.release]
-debug = true
 lto = true
+strip = true
 codegen-units = 1
 
 [profile.release-dbg]
 inherits = "release"
+debug = true
+strip = false
 debug-assertions = true

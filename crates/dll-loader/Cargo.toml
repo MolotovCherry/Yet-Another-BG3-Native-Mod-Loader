@@ -11,13 +11,8 @@ console = []
 
 [dependencies]
 eyre = "0.6.12"
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-tracing-appender = "0.2.3"
-tracing-error = "0.2.0"
-color-eyre = "0.6.2"
-strip-ansi-escapes = "0.2.0"
-directories = "5.0.1"
+log = "0.4.20"
+simplelog = "0.12.1"
 serde = { version = "1.0.197", features = ["derive"] }
 toml = "0.8.10"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }

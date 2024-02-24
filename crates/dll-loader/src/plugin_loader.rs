@@ -4,8 +4,8 @@ use std::{
 };
 
 use eyre::{Context, Result};
+use log::{error, info};
 use native_plugin_lib::{Plugin, Version};
-use tracing::{error, info};
 use windows::{
     core::PCWSTR,
     Win32::{
@@ -22,7 +22,7 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
     let read_dir =
         std::fs::read_dir(plugins_dir).context("Failed to read plugins_dir {plugins_dir}");
     let Ok(read_dir) = read_dir else {
-        error!(?read_dir, "failed to read plugins dir");
+        error!("failed to read plugins dir: {:?}", read_dir);
 
         #[cfg(not(any(debug_assertions, feature = "console")))]
         crate::popup::fatal_popup(
@@ -39,7 +39,7 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
 
     for entry in read_dir {
         let Ok(entry) = entry else {
-            error!(?entry, "failed to read plugin dir file");
+            error!("failed to read plugin dir file: {:?}", entry);
 
             #[cfg(not(any(debug_assertions, feature = "console")))]
             crate::popup::fatal_popup(
@@ -92,7 +92,7 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
         let load_res = unsafe { LoadLibraryW(path) };
         let Ok(handle) = load_res else {
             let e = load_res.unwrap_err();
-            error!(?e, "failed to load plugin {original_name}");
+            error!("failed to load plugin {original_name}: {e:?}");
 
             #[cfg(not(any(debug_assertions, feature = "console")))]
             crate::popup::fatal_popup(
