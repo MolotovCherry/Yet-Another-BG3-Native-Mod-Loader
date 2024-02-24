@@ -2837,7 +2837,7 @@ checksum = "054a8e68b76250b253f671d1268cb7f1ae089ec35e195b2efb2a4e9a836d0621"
 
 [[package]]
 name = "yet-another-bg3-mod-loader"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "backtrace",
  "clap",
