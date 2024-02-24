@@ -17,7 +17,7 @@ extern "system" fn mini_dump_write_dump(
     userstreamparam: *const MINIDUMP_USER_STREAM_INFORMATION,
     callbackparam: *const MINIDUMP_CALLBACK_INFORMATION,
 ) -> BOOL {
-    #[dll(dwrite)]
+    #[dll(Dbghelp)]
     extern "system" {
         #[allow(non_snake_case)]
         fn MiniDumpWriteDump(
