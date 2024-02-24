@@ -183,6 +183,8 @@ impl ProcessWatcher {
                     );
                 }
 
+                enum_retries = 0;
+
                 // To determine how many processes were enumerated, divide the lpcbNeeded value by sizeof(DWORD).
                 let num_processes = (lpcneeded / 4) as usize;
                 let pids = &pid_buffer[..num_processes];
