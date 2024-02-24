@@ -5,29 +5,37 @@ use native_plugin_lib::{Plugin, Version};
 use tracing::{error, info};
 use windows::{core::PCWSTR, Win32::System::LibraryLoader::LoadLibraryW};
 
-use crate::popup::fatal_popup;
-
 pub fn load(plugins_dir: &Path) -> Result<()> {
     let read_dir =
         std::fs::read_dir(plugins_dir).context("Failed to read plugins_dir {plugins_dir}");
     let Ok(read_dir) = read_dir else {
         error!(?read_dir, "failed to read plugins dir");
-        fatal_popup(
+
+        #[cfg(not(any(debug_assertions, feature = "console")))]
+        crate::popup::fatal_popup::fatal_popup(
             "Yet Another BG3 Mod Loader Error",
             format!(
                 "Sttempted to read plugins dir {}, but failed opening it\n\nDo you have correct perms?\n\n{read_dir:?}",
                 plugins_dir.display()
             ),
         );
+
+        #[cfg(any(debug_assertions, feature = "console"))]
+        return Ok(());
     };
 
     for entry in read_dir {
         let Ok(entry) = entry else {
             error!(?entry, "failed to read plugin dir file");
-            fatal_popup(
+
+            #[cfg(not(any(debug_assertions, feature = "console")))]
+            crate::popup::fatal_popup::fatal_popup(
                 "Yet Another BG3 Mod Loader Error",
                 "Attempted to read file path in plugin directory, but failed\n\nDo you have correct perms?\n\n{entry:?}",
             );
+
+            #[cfg(any(debug_assertions, feature = "console"))]
+            return Ok(());
         };
 
         let dll = entry.path();
@@ -70,7 +78,10 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
 
         let load_res = unsafe { LoadLibraryW(path) };
         if let Err(e) = load_res {
-            fatal_popup(
+            error!(?e, "failed to load plugin {original_name}");
+
+            #[cfg(not(any(debug_assertions, feature = "console")))]
+            crate::popup::fatal_popup::fatal_popup(
                 "Yet Another BG3 Mod Loader Error",
                 format!("Failed to load plugin {original_name}\n\n{e}"),
             );

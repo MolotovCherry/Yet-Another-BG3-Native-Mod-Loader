@@ -8,7 +8,7 @@ use tracing_subscriber::{
 };
 use windows::Win32::Foundation::HINSTANCE;
 
-use crate::{paths::get_dll_dir, popup::fatal_popup};
+use crate::paths::get_dll_dir;
 
 struct StripAnsiWriter((String, String));
 
@@ -86,7 +86,8 @@ fn set_panic_hook(hook: PanicHook) {
         let panic = hook.panic_report(info).to_string();
         error!("{panic}");
 
-        fatal_popup(
+        #[cfg(not(any(debug_assertions, feature = "console")))]
+        crate::popup::fatal_popup(
             "Yet Another BG3 Mod Loader Panic",
             strip_ansi_escapes::strip_str(panic),
         );

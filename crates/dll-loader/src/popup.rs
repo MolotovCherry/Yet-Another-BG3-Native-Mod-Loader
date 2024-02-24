@@ -21,6 +21,7 @@ impl From<MessageBoxIcon> for MESSAGEBOX_STYLE {
     }
 }
 
+#[allow(unused)]
 pub fn display_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M, icon: MessageBoxIcon) {
     let title = title.as_ref();
     let message = message.as_ref();
@@ -41,6 +42,7 @@ pub fn display_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M, icon: M
 }
 
 /// An error popup, except that the program exits after
+#[allow(unused)]
 pub fn fatal_popup<T: AsRef<str>, M: AsRef<str>>(title: T, message: M) -> ! {
     display_popup(title, message, MessageBoxIcon::Error);
     std::process::exit(1);
