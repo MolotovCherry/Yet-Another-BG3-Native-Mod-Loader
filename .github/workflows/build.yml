@@ -53,6 +53,15 @@ jobs:
         run: |
             Get-ChildItem -Path target/*/*.dll | Compress-Archive -CompressionLevel Optimal -DestinationPath "dll-loader-x64.zip"
 
+      - name: Build Release Dll loader with console
+        if: github.event_name == 'release'
+        run: cargo build --release -p dwrite --features console
+
+      - name: Zip files up dll loader
+        if: github.event_name == 'release'
+        run: |
+            Get-ChildItem -Path target/*/*.dll | Compress-Archive -CompressionLevel Optimal -DestinationPath "dll-loader-console-x64.zip"
+
       - name: Attach assets to release
         if: github.event_name == 'release'
         uses: xresloader/upload-to-github-release@v1
