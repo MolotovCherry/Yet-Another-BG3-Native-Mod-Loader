@@ -62,7 +62,10 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
         error!(?is_dirty, "failed dirty check");
         warn_popup(
             "Failed process dirty check",
-            is_dirty.unwrap_err().to_string(),
+            format!(
+                "Dirty check failed. Skipping process injection\n\n{}",
+                is_dirty.unwrap_err()
+            ),
         );
         return Ok(());
     };
@@ -256,6 +259,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
     let mut modules: Vec<HMODULE> = vec![HMODULE::default(); 1024];
     let mut lpcbneeded = 0;
 
+    let mut enum_proc_retries = 0;
     loop {
         let size = (modules.len() * std::mem::size_of::<HMODULE>()) as u32;
 
@@ -269,10 +273,31 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
             )
         };
 
-        if let Err(e) = enum_res {
-            error!(?e, "EnumProcessModulesEx failed");
-            bail!("Failed to check if process was dirty\n\nThis could happen for many reasons, among them:\n1. process disappeared during the call\n2. you don't have correct perms\n\nPlease try again\n\nError: {e}");
+        // sometimes it may fail, for example, during module changes and so on
+        // so we may have to retry this once, but a few times just to be on the safe side
+        // if it's still failing after, it's def an error
+        //
+        // 4 retries max
+        if enum_res.is_err() && enum_proc_retries < 4 {
+            error!(
+                error = ?enum_res,
+                retry = enum_proc_retries + 1,
+                "EnumProcessModulesEx failed; retrying"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(250));
+            enum_proc_retries += 1;
+            continue;
         }
+
+        // reset since we made it past
+        enum_proc_retries = 0;
+
+        if let Err(e) = enum_res {
+            error!(error = ?e, "EnumProcessModulesEx failed");
+            bail!("EnumProcessModulesEx failed to check if process was dirty\n\nThis could happen for many reasons, among them:\n1. process disappeared during the call\n2. you don't have correct perms\n3. process is corrupted\n4. modules changed while we were reading\n\nPlease try again\n\nError: {e}");
+        }
+
+        trace!("Passed EnumProcessModulesEx check");
 
         // To determine if the lphModule array is too small to hold all module handles for the process,
         // compare the value returned in lpcbNeeded with the value specified in cb. If lpcbNeeded is greater
