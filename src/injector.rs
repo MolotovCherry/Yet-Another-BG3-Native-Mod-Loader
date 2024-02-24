@@ -321,6 +321,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
     let modules = &modules[..n_modules];
 
     let mut name = vec![0u16; 1024];
+    let mut total_retries = 0;
     'for_modules: for &module in modules {
         let mut retry = 0;
         let len = loop {
@@ -348,11 +349,17 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
                     module = ?module,
                     error = ?error,
                     retry = retry,
+                    total_retries = total_retries,
                     "failed to open module handle",
                 );
 
+                if total_retries > 9 {
+                    bail!("GetModuleFileNameExW is failing too much. This could signify the process is already gone. Please try again");
+                }
+
                 if retry < 3 {
                     retry += 1;
+                    total_retries += 1;
                     std::thread::sleep(std::time::Duration::from_millis(50));
                     continue;
                 }
