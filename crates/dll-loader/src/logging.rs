@@ -87,7 +87,7 @@ fn set_panic_hook(hook: PanicHook) {
         error!("{panic}");
 
         fatal_popup(
-            "Yet-Another-BG3-Mod-Loader Panic",
+            "Yet Another BG3 Mod Loader Panic",
             strip_ansi_escapes::strip_str(panic),
         );
     }))
