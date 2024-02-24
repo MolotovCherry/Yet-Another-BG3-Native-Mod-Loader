@@ -1,5 +1,5 @@
 [package]
-name = "dwrite"
+name = "dbghelp"
 version = "0.1.0"
 edition = "2021"
 
@@ -22,7 +22,7 @@ serde = { version = "1.0.197", features = ["derive"] }
 toml = "0.8.10"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
 owo-colors = "4.0.0"
-windows-targets = "0.52.3"
+windows-dll = "0.4.1"
 
 [dependencies.windows]
 version = "0.53.0"
@@ -35,7 +35,10 @@ features = [
     # for console
     "Win32_System_Console",
     # for the wrapper
-    "Win32_Graphics_DirectWrite",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Kernel",
+    "Win32_System_Memory",
 ]
 
 [build-dependencies]
@@ -43,7 +46,7 @@ winres = "0.1.12"
 vergen = { version = "8.3.1", features = ["build", "cargo", "git", "gitcl"] }
 
 [package.metadata.winres]
-OriginalFilename = "dwrite.dll"
+OriginalFilename = "dbghelp.dll"
 LegalCopyright = "Copyright © 2024"
 ProductName = "Yet Another BG3 Mod Loader"
 FileDescription = "Loads dll plugins into the game"

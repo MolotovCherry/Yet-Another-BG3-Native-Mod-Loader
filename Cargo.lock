@@ -581,6 +581,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96a6ac251f4a2aca6b3f91340350eab87ae57c3f127ffeb585e92bd336717991"
 
 [[package]]
+name = "dbghelp"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "directories",
+ "eyre",
+ "native-plugin-lib",
+ "owo-colors 4.0.0",
+ "serde",
+ "strip-ansi-escapes",
+ "toml 0.8.10",
+ "tracing",
+ "tracing-appender",
+ "tracing-error",
+ "tracing-subscriber",
+ "vergen",
+ "windows",
+ "windows-dll",
+ "winres",
+]
+
+[[package]]
 name = "deranged"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -651,28 +673,6 @@ name = "downcast-rs"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
-
-[[package]]
-name = "dwrite"
-version = "0.1.0"
-dependencies = [
- "color-eyre",
- "directories",
- "eyre",
- "native-plugin-lib",
- "owo-colors 4.0.0",
- "serde",
- "strip-ansi-escapes",
- "toml 0.8.10",
- "tracing",
- "tracing-appender",
- "tracing-error",
- "tracing-subscriber",
- "vergen",
- "windows",
- "windows-targets 0.52.3",
- "winres",
-]
 
 [[package]]
 name = "equivalent"
@@ -1988,6 +1988,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
  "proc-macro2",
+ "quote",
  "unicode-ident",
 ]
 
@@ -2656,6 +2657,30 @@ checksum = "9dcc5b895a6377f1ab9fa55acedab1fd5ac0db66ad1e6c7f47e28a22e446a5dd"
 dependencies = [
  "windows-result",
  "windows-targets 0.52.3",
+]
+
+[[package]]
+name = "windows-dll"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0895e287d32aad509d5720ea1975e5d22b2fa51fc3e1f94163cdb73b185b5555"
+dependencies = [
+ "once_cell",
+ "thiserror",
+ "winapi",
+ "windows-dll-codegen",
+]
+
+[[package]]
+name = "windows-dll-codegen"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7c2f703a1e16b2447f1ce6c6a7c9231535fef0ca2e260f4bc69ecc8e06b208b"
+dependencies = [
+ "proc-macro-crate 1.3.1",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
