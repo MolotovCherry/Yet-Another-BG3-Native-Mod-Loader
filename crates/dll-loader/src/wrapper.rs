@@ -1,8 +1,10 @@
+use std::ffi::c_void;
+
 use windows::Win32::{
     Foundation::{BOOL, HANDLE},
     System::Diagnostics::Debug::{
-        MINIDUMP_CALLBACK_INFORMATION, MINIDUMP_EXCEPTION_INFORMATION, MINIDUMP_TYPE,
-        MINIDUMP_USER_STREAM_INFORMATION,
+        IMAGE_NT_HEADERS64, MINIDUMP_CALLBACK_INFORMATION, MINIDUMP_EXCEPTION_INFORMATION,
+        MINIDUMP_TYPE, MINIDUMP_USER_STREAM_INFORMATION,
     },
 };
 use windows_dll::dll;
@@ -42,4 +44,15 @@ extern "system" fn mini_dump_write_dump(
             callbackparam,
         )
     }
+}
+
+#[export_name = "ImageNtHeader"]
+extern "system" fn image_nt_header(base: *const c_void) -> *mut IMAGE_NT_HEADERS64 {
+    #[dll(Dbghelp)]
+    extern "system" {
+        #[allow(non_snake_case)]
+        fn ImageNtHeader(base: *const c_void) -> *mut IMAGE_NT_HEADERS64;
+    }
+
+    unsafe { ImageNtHeader(base) }
 }
