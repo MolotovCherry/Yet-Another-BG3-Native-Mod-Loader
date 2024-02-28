@@ -17,15 +17,16 @@ impl SingleInstance {
     pub fn new() -> Self {
         let mutex = unsafe { CreateMutexW(None, true, w!("yet-another-bg3-mod-loader")).unwrap() };
 
-        if let Err(e) = unsafe { GetLastError() } {
-            if e.code() == ERROR_ALREADY_EXISTS.into() {
+        let err = unsafe { GetLastError() };
+        if err.is_err() {
+            if err == ERROR_ALREADY_EXISTS {
                 fatal_popup(
                     "Yet Another Bg3 Mod Loader",
                     "Another instance is already running",
                 );
             }
 
-            trace!("CreateMutexW failed, but we have fallthrough: {e:?}");
+            trace!("CreateMutexW failed, but we have fallthrough: {err:?}");
         }
 
         Self(mutex.into())

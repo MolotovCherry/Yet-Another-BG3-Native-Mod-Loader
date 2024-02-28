@@ -1,5 +1,5 @@
 [package]
-name = "dbghelp"
+name = "bink2w64"
 version = "0.1.0"
 edition = "2021"
 
@@ -17,32 +17,33 @@ serde = { version = "1.0.197", features = ["derive"] }
 toml = "0.8.10"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
 owo-colors = "4.0.0"
-windows-dll = "0.4.1"
+search_path = "0.1.4"
 
 [dependencies.windows]
-version = "0.53.0"
+version = "0.54.0"
 features = [
     "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_Security",
     "Win32_System_SystemServices",
     "Win32_System_LibraryLoader",
     # for the popup
     "Win32_UI_WindowsAndMessaging",
     # for console
     "Win32_System_Console",
-    # for the wrapper
-    "Win32_Storage_FileSystem",
-    "Win32_System_Diagnostics_Debug",
-    "Win32_System_Kernel",
-    "Win32_System_Memory",
-    "Win32_System_SystemInformation",
 ]
 
 [build-dependencies]
 winres = "0.1.12"
 vergen = { version = "8.3.1", features = ["build", "cargo", "git", "gitcl"] }
+pelite = "0.10.0"
+search_path = "0.1.4"
+syn = "2.0.51"
+quote = "1.0.35"
+proc-macro2 = "1.0.78"
 
 [package.metadata.winres]
-OriginalFilename = "dbghelp.dll"
+OriginalFilename = "bink2w64.dll"
 LegalCopyright = "Copyright © 2024"
 ProductName = "Yet Another BG3 Mod Loader"
 FileDescription = "Loads dll plugins into the game"

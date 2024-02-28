@@ -30,9 +30,9 @@ pub fn get_dll_path(module: HINSTANCE) -> Result<&'static Path> {
         written_len = unsafe { GetModuleFileNameW(module, &mut path) as usize };
 
         // bubble up error if there was any, for example, ERROR_INSUFFICIENT_BUFFER
-        let result = unsafe { GetLastError() };
-        if let Err(e) = result {
-            if e == ERROR_INSUFFICIENT_BUFFER.into() {
+        let error = unsafe { GetLastError() };
+        if error.is_err() {
+            if error == ERROR_INSUFFICIENT_BUFFER {
                 path.resize(path.len(), 0u16);
                 continue;
             }

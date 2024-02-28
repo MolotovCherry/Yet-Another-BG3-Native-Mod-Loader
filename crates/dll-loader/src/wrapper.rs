@@ -1,58 +1,75 @@
-use std::ffi::c_void;
+use std::path::{Path, PathBuf};
 
-use windows::Win32::{
-    Foundation::{BOOL, HANDLE},
-    System::Diagnostics::Debug::{
-        IMAGE_NT_HEADERS64, MINIDUMP_CALLBACK_INFORMATION, MINIDUMP_EXCEPTION_INFORMATION,
-        MINIDUMP_TYPE, MINIDUMP_USER_STREAM_INFORMATION,
-    },
+use eyre::Result;
+use log::error;
+use search_path::SearchPath;
+use windows::{
+    core::{PCSTR, PCWSTR},
+    Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW},
 };
-use windows_dll::dll;
 
-#[export_name = "MiniDumpWriteDump"]
-extern "system" fn mini_dump_write_dump(
-    hprocess: HANDLE,
-    processid: u32,
-    hfile: HANDLE,
-    dumptype: MINIDUMP_TYPE,
-    exceptionparam: *const MINIDUMP_EXCEPTION_INFORMATION,
-    userstreamparam: *const MINIDUMP_USER_STREAM_INFORMATION,
-    callbackparam: *const MINIDUMP_CALLBACK_INFORMATION,
-) -> BOOL {
-    #[dll(Dbghelp)]
-    extern "system" {
-        #[allow(non_snake_case)]
-        fn MiniDumpWriteDump(
-            hprocess: HANDLE,
-            processid: u32,
-            hfile: HANDLE,
-            dumptype: MINIDUMP_TYPE,
-            exceptionparam: *const MINIDUMP_EXCEPTION_INFORMATION,
-            userstreamparam: *const MINIDUMP_USER_STREAM_INFORMATION,
-            callbackparam: *const MINIDUMP_CALLBACK_INFORMATION,
-        ) -> BOOL;
+use crate::{popup::fatal_popup, racy_cell::RacyCell};
+
+static FUNCTION_PTRS: RacyCell<[*const (); NUM_FUNCTIONS]> =
+    RacyCell::new([std::ptr::null(); NUM_FUNCTIONS]);
+
+// Defines ORDINAL_BASE, NUM_FUNCTIONS, FUNCTION_NAMES, and asm
+include!(concat!(env!("OUT_DIR"), "/func_defs.rs"));
+
+// grabs correct dll from Path OR from same directory
+fn get_libpath() -> PathBuf {
+    static LIBNAME: &str = include_str!("../libname.cfg");
+    let libname = LIBNAME.trim();
+
+    let libname = libname.strip_suffix(".dll").unwrap_or(libname);
+    let libname = format!("{libname}.dll");
+    let path = Path::new(&libname);
+
+    let search_path = SearchPath::new("Path").unwrap();
+    let res = search_path.find_file(path);
+
+    if let Some(res) = res {
+        return res;
     }
 
-    unsafe {
-        MiniDumpWriteDump(
-            hprocess,
-            processid,
-            hfile,
-            dumptype,
-            exceptionparam,
-            userstreamparam,
-            callbackparam,
-        )
+    // search in same directory now
+    if !path.exists() {
+        fatal_popup(
+            "Yet Another BG3 Mod Loader Error",
+            format!("{libname}.dll not found"),
+        );
     }
+
+    path.to_path_buf()
 }
 
-#[export_name = "ImageNtHeader"]
-extern "system" fn image_nt_header(base: *const c_void) -> *mut IMAGE_NT_HEADERS64 {
-    #[dll(Dbghelp)]
-    extern "system" {
-        #[allow(non_snake_case)]
-        fn ImageNtHeader(base: *const c_void) -> *mut IMAGE_NT_HEADERS64;
+pub fn load_proxy_fns() -> Result<()> {
+    let libpath = get_libpath()
+        .to_string_lossy()
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+
+    let lib = unsafe { LoadLibraryW(PCWSTR(libpath.as_ptr()))? };
+
+    for (i, name) in FUNCTION_NAMES.iter().enumerate() {
+        let name_ptr: *const u8 = if let Some(name) = name {
+            name.as_ptr()
+        } else {
+            // MAKEINTRESOURCEA
+            // https://github.com/microsoft/windows-rs/issues/641
+            (i as u16 + ORDINAL_BASE) as *mut _
+        };
+
+        let addr = unsafe { GetProcAddress(lib, PCSTR(name_ptr)) };
+        if let Some(fn_) = addr {
+            unsafe {
+                FUNCTION_PTRS.get_mut()[i] = fn_ as _;
+            }
+        } else {
+            error!("Warning: unresolved import {name:?} at index {i}");
+        }
     }
 
-    unsafe { ImageNtHeader(base) }
+    Ok(())
 }

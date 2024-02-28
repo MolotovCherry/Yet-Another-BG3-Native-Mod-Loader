@@ -334,10 +334,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
                 trace!("len == name.len() || len == 0");
                 let error = unsafe { GetLastError() };
 
-                if error
-                    .clone()
-                    .is_err_and(|e| e == ERROR_INSUFFICIENT_BUFFER.into())
-                {
+                if error.is_err() && error == ERROR_INSUFFICIENT_BUFFER {
                     trace!("ERROR_INSUFFICIENT_BUFFER, increasing +1024");
                     name.resize(name.len() + 1024, 0u16);
 
