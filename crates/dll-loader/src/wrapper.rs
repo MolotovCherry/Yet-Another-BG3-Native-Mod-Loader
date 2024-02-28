@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use eyre::Result;
-use log::error;
 use search_path::SearchPath;
 use windows::{
     core::{PCSTR, PCWSTR},
@@ -71,9 +70,18 @@ pub fn load_proxy_fns() -> Result<()> {
             unsafe {
                 FUNCTION_PTRS.get_mut()[i] = fn_ as _;
             }
-        } else {
-            error!("Warning: unresolved import {name:?} at index {i}");
+
+            continue;
         }
+
+        let msg = if let &Some(name) = name {
+            let name = String::from_utf8_lossy(name);
+            format!("unresolved import {name} @{}", i + 1)
+        } else {
+            format!("unresolved import @{}", (i as u16 + ORDINAL_BASE))
+        };
+
+        fatal_popup("Yet Another BG3 Mod Loader Error", msg);
     }
 
     Ok(())
