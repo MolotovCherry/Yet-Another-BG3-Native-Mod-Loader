@@ -25,6 +25,11 @@ fn get_libpath() -> PathBuf {
     let libname = format!("{libname}.dll");
     let path = Path::new(&libname);
 
+    // prefer local over path search
+    if path.exists() {
+        return path.to_path_buf();
+    }
+
     let search_path = SearchPath::new("Path").unwrap();
     let res = search_path.find_file(path);
 
@@ -40,7 +45,7 @@ fn get_libpath() -> PathBuf {
         );
     }
 
-    path.to_path_buf()
+    unreachable!("SearchPath library has a bug")
 }
 
 pub fn load_proxy_fns() -> Result<()> {
