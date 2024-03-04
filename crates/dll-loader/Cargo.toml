@@ -12,7 +12,7 @@ console = []
 [dependencies]
 eyre = "0.6.12"
 log = "0.4.20"
-simplelog = "0.12.1"
+simplelog = "0.12.2"
 serde = { version = "1.0.197", features = ["derive"] }
 toml = "0.8.10"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
