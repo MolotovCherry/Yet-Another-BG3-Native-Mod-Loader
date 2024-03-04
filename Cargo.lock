@@ -1925,9 +1925,9 @@ checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
 
 [[package]]
 name = "simplelog"
-version = "0.12.1"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acee08041c5de3d5048c8b3f6f13fafb3026b24ba43c6a695a0c76179b844369"
+checksum = "16257adbfaef1ee58b1363bdc0664c9b8e1e30aed86049635fb5f147d065a9c0"
 dependencies = [
  "log",
  "termcolor",
@@ -2860,9 +2860,9 @@ checksum = "0770833d60a970638e989b3fa9fd2bb1aaadcf88963d1659fd7d9990196ed2d6"
 
 [[package]]
 name = "winit"
-version = "0.29.11"
+version = "0.29.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "272be407f804517512fdf408f0fe6c067bf24659a913c61af97af176bfd5aa92"
+checksum = "2b9d7047a2a569d5a81e3be098dcd8153759909b127477f4397e03cf1006d90a"
 dependencies = [
  "ahash",
  "android-activity",
