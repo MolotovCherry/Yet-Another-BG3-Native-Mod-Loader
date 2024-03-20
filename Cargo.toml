@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/dll-loader", "crates/yet-another-bg3-mod-loader"]
+members = ["crates/yet-another-bg3-mod-loader"]
 
 [profile.dev]
 opt-level = 1

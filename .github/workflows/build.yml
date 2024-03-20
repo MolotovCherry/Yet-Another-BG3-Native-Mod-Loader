@@ -55,16 +55,6 @@ jobs:
           Compress-Archive -Path "bin/*" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-mod-loader-x64.zip"
           Get-ChildItem -Path "bin" -Recurse | Remove-Item -Force
 
-      - name: Build Release Dll loader with console
-        if: github.event_name == 'release'
-        run: cargo build --release -p dbghelp --features console
-
-      - name: Zip files up dll loader
-        if: github.event_name == 'release'
-        run: |
-            Get-ChildItem -Path target/*/*.dll | Copy-Item -Destination "bin"
-            Compress-Archive -Path "bin/*" -CompressionLevel Optimal -DestinationPath "dll-loader-console-x64.zip"
-
       - name: Attach assets to release
         if: github.event_name == 'release'
         uses: xresloader/upload-to-github-release@v1
