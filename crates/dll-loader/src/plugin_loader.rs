@@ -7,12 +7,14 @@ use eyre::{Context, Result};
 use log::{error, info};
 use native_plugin_lib::{Plugin, Version};
 use windows::{
-    core::PCWSTR,
+    core::{s, PCWSTR},
     Win32::{
         Foundation::{FreeLibrary, HMODULE},
-        System::LibraryLoader::LoadLibraryW,
+        System::LibraryLoader::{GetProcAddress, LoadLibraryW},
     },
 };
+
+use crate::popup::fatal_popup;
 
 static PLUGINS: OnceLock<Mutex<Vec<HMODULE>>> = OnceLock::new();
 
@@ -25,7 +27,7 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
         error!("failed to read plugins dir: {:?}", read_dir);
 
         #[cfg(not(any(debug_assertions, feature = "console")))]
-        crate::popup::fatal_popup(
+        fatal_popup(
             "Yet Another BG3 Mod Loader Error",
             format!(
                 "Sttempted to read plugins dir {}, but failed opening it\n\nDo you have correct perms?\n\n{read_dir:?}",
@@ -37,12 +39,14 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
         return Ok(());
     };
 
+    let mut guard = PLUGINS.get().unwrap().lock().unwrap();
+
     for entry in read_dir {
         let Ok(entry) = entry else {
             error!("failed to read plugin dir file: {:?}", entry);
 
             #[cfg(not(any(debug_assertions, feature = "console")))]
-            crate::popup::fatal_popup(
+            fatal_popup(
                 "Yet Another BG3 Mod Loader Error",
                 "Attempted to read file path in plugin directory, but failed\n\nDo you have correct perms?\n\n{entry:?}",
             );
@@ -85,17 +89,19 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
 
         info!("Loading plugin {name}");
 
-        let mut path: Vec<u16> = dll.to_string_lossy().encode_utf16().collect();
-        path.push(b'\0' as u16);
-        let path = PCWSTR(path.as_ptr());
+        let path: Vec<u16> = dll
+            .to_string_lossy()
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
 
-        let load_res = unsafe { LoadLibraryW(path) };
+        let load_res = unsafe { LoadLibraryW(PCWSTR(path.as_ptr())) };
         let Ok(handle) = load_res else {
             let e = load_res.unwrap_err();
             error!("failed to load plugin {original_name}: {e:?}");
 
             #[cfg(not(any(debug_assertions, feature = "console")))]
-            crate::popup::fatal_popup(
+            fatal_popup(
                 "Yet Another BG3 Mod Loader Error",
                 format!("Failed to load plugin {original_name}\n\n{e}"),
             );
@@ -104,7 +110,17 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
             return Ok(());
         };
 
-        let mut guard = PLUGINS.get().unwrap().lock().unwrap();
+        let init = unsafe { GetProcAddress(handle, s!("Init")) };
+        if let Some(init) = init {
+            let result = unsafe { init() };
+            if result != 2 {
+                fatal_popup(
+                    "Yet Another BG3 Mod Loader Error",
+                    format!("Plugin {original_name} Init() crashed. There's a problem with the plugin. Please contact the plugin author"),
+                );
+            }
+        }
+
         guard.push(handle);
     }
 
@@ -112,7 +128,10 @@ pub fn load(plugins_dir: &Path) -> Result<()> {
 }
 
 pub fn unload() {
-    let mut guard = PLUGINS.get().unwrap().lock().unwrap();
+    let Some(Ok(mut guard)) = PLUGINS.get().map(|g| g.lock()) else {
+        return;
+    };
+
     for plugin in guard.drain(..) {
         unsafe {
             _ = FreeLibrary(plugin);

@@ -18,6 +18,8 @@ toml = "0.8.12"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
 owo-colors = "4.0.0"
 search_path = "0.1.4"
+thiserror = "1.0.57"
+crossbeam = "0.8.4"
 
 [dependencies.windows]
 version = "0.54.0"
@@ -27,10 +29,12 @@ features = [
     "Win32_Security",
     "Win32_System_SystemServices",
     "Win32_System_LibraryLoader",
-    # for the popup
+    "Win32_System_WindowsProgramming",
     "Win32_UI_WindowsAndMessaging",
-    # for console
     "Win32_System_Console",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_SystemInformation",
+    "Win32_System_Memory",
 ]
 
 [build-dependencies]

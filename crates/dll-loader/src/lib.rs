@@ -1,9 +1,12 @@
 mod console;
+mod hook;
+mod iat;
 mod logging;
 mod paths;
 mod plugin_loader;
 mod popup;
 mod racy_cell;
+mod utils;
 mod wrapper;
 
 use std::{ffi::c_void, sync::OnceLock};
@@ -32,7 +35,6 @@ use windows::{
 };
 
 use logging::setup_logging;
-use paths::get_dll_dir_filepath;
 
 use self::wrapper::load_proxy_fns;
 
@@ -61,7 +63,7 @@ extern "C-unwind" fn DllMain(
 
                 load_proxy_fns().expect("Failed to load proxy fns");
 
-                entry(module).expect("entry failure");
+                entry().expect("entry failure");
             });
         }
 
@@ -75,11 +77,10 @@ extern "C-unwind" fn DllMain(
     true
 }
 
-fn entry(module: HINSTANCE) -> Result<()> {
+fn entry() -> Result<()> {
     info!("Loading plugins from NativeMods directory");
-    let plugins_dir = get_dll_dir_filepath(module, "NativeMods")?;
 
-    plugin_loader::load(&plugins_dir)?;
+    hook::hook()?;
 
     Ok(())
 }

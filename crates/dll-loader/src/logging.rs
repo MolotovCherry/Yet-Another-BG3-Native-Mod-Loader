@@ -48,7 +48,6 @@ fn set_panic_hook() {
 
         error!("{panic}");
 
-        #[cfg(not(any(debug_assertions, feature = "console")))]
         crate::popup::fatal_popup(
             "Yet Another BG3 Mod Loader Panic",
             format!("The mod loader unexpectedly crashed. Please consider reporting the bug @ https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader\n\n{panic}"),
