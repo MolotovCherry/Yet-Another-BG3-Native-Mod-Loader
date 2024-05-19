@@ -146,7 +146,7 @@ fn setup(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>)> {
         display_popup(
                 "Finish Setup",
                 format!(
-                    "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. install_root in the config likely needs to be adjusted to the correct path.",
+                    "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. install_root in the config likely needs to be adjusted to the correct path. If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, the tools will automatically detect the correct root path and do not require install_root to be configured, otherwise you need to configure install_root",
                     plugins_dir.display()
                 ),
                 MessageBoxIcon::Info,

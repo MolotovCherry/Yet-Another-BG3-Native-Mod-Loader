@@ -1,9 +1,9 @@
-use std::fs;
 use std::path::PathBuf;
+use std::{fs, path::Path};
 
 use directories::BaseDirs;
 use eyre::{bail, eyre, Result};
-use tracing::{error, info, trace};
+use tracing::{debug, info, trace};
 
 use crate::{config::Config, popup::fatal_popup};
 
@@ -68,30 +68,55 @@ pub struct Bg3Exes {
 }
 
 pub fn build_config_game_binary_paths(config: &Config) -> Bg3Exes {
-    let canon = fs::canonicalize(&config.core.install_root);
-    let Ok(resolved_path) = canon else {
-        error!("{}", canon.unwrap_err());
+    let bin = config.core.install_root.join("bin");
 
-        fatal_popup(
-            "Path error",
-            "Failed to resolve `install_root` path. Does the path (or its target) exist and point to a directory? And does this program have permissions to read that path?",
-        );
-    };
+    // first check current directory or 1 directory up for exes before using config value
+    let check_dirs = [".", "..", &bin.to_string_lossy()];
+    for dir in check_dirs {
+        let path = Path::new(dir);
 
-    let bin = resolved_path.join("bin");
+        let bg3 = path.join("bg3.exe");
+        let bg3_dx11 = path.join("bg3_dx11.exe");
 
-    let bg3 = bin.join("bg3.exe");
-    let bg3_dx11 = bin.join("bg3_dx11.exe");
+        if bg3.is_file() && bg3_dx11.exists() {
+            let bg3 = match fs::canonicalize(&bg3) {
+                Ok(p) => p,
+                Err(e) => {
+                    debug!(error = %e, path = %bg3.display(), "failed to canonicalize");
+                    continue;
+                }
+            };
 
-    let bg3 = bg3.to_string_lossy();
-    let bg3_dx11 = bg3_dx11.to_string_lossy();
+            let bg3_dx11 = match fs::canonicalize(&bg3_dx11) {
+                Ok(p) => p,
+                Err(e) => {
+                    debug!(error = %e, path = %bg3_dx11.display(), "failed to canonicalize");
+                    continue;
+                }
+            };
 
-    // canonicalize adds this to the prefix, but we don't want it
-    let bg3 = bg3.strip_prefix(r"\\?\").unwrap_or(&*bg3).to_string();
-    let bg3_dx11 = bg3_dx11.strip_prefix(r"\\?\").unwrap_or(&*bg3).to_string();
+            // canonicalize adds this to the prefix, but we don't want it
+            let bg3 = bg3
+                .to_string_lossy()
+                .strip_prefix(r"\\?\")
+                .map(ToOwned::to_owned)
+                .unwrap_or_else(|| bg3.to_string_lossy().to_string());
 
-    trace!("Looking for bg3 at: {bg3}");
-    trace!("Looking for bg3_dx11 at: {bg3_dx11}");
+            let bg3_dx11 = bg3_dx11
+                .to_string_lossy()
+                .strip_prefix(r"\\?\")
+                .map(ToOwned::to_owned)
+                .unwrap_or_else(|| bg3_dx11.to_string_lossy().to_string());
 
-    Bg3Exes { bg3, bg3_dx11 }
+            trace!("Looking for bg3 at: {bg3}");
+            trace!("Looking for bg3_dx11 at: {bg3_dx11}");
+
+            return Bg3Exes { bg3, bg3_dx11 };
+        }
+    }
+
+    fatal_popup(
+        "Path error",
+        "Failed to resolve `install_root` path. Does the path (or its target) exist and point to a directory? And does this program have permissions to read that path?",
+    );
 }
