@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 
 use directories::BaseDirs;
 use eyre::{bail, eyre, Result};
-use tracing::{debug, info, trace};
+use tracing::{error, info, trace};
 
 use crate::{config::Config, popup::fatal_popup};
 
@@ -78,11 +78,11 @@ pub fn build_config_game_binary_paths(config: &Config) -> Bg3Exes {
         let bg3 = path.join("bg3.exe");
         let bg3_dx11 = path.join("bg3_dx11.exe");
 
-        if bg3.is_file() && bg3_dx11.exists() {
+        if bg3.is_file() && bg3_dx11.is_file() {
             let bg3 = match fs::canonicalize(&bg3) {
                 Ok(p) => p,
                 Err(e) => {
-                    debug!(error = %e, path = %bg3.display(), "failed to canonicalize");
+                    error!(error = %e, path = %bg3.display(), "failed to canonicalize");
                     continue;
                 }
             };
@@ -90,7 +90,7 @@ pub fn build_config_game_binary_paths(config: &Config) -> Bg3Exes {
             let bg3_dx11 = match fs::canonicalize(&bg3_dx11) {
                 Ok(p) => p,
                 Err(e) => {
-                    debug!(error = %e, path = %bg3_dx11.display(), "failed to canonicalize");
+                    error!(error = %e, path = %bg3_dx11.display(), "failed to canonicalize");
                     continue;
                 }
             };
