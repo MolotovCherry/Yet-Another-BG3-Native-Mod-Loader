@@ -35,6 +35,8 @@ The first time you run a tool, it will:
    - If the game was installed to a non-standard path, you must adjust this path to correct it.
      It needs to point to the game's root installation directory.
      E.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3`
+   - If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, they will detect the install root
+     automatically, and install_root in config.toml won't require configuring.
    - Place any dll plugins you have inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
    - Remember, all NativeModLoader plugins are compatible!
 
