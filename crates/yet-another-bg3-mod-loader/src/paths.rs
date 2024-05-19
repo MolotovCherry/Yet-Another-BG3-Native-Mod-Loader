@@ -62,7 +62,12 @@ pub fn get_bg3_plugins_dir() -> Result<(bool, PathBuf)> {
     Ok((first_time, plugins_dir))
 }
 
-pub fn build_config_game_binary_paths(config: &Config) -> (String, String) {
+pub struct Bg3Exes {
+    pub bg3: String,
+    pub bg3_dx11: String,
+}
+
+pub fn build_config_game_binary_paths(config: &Config) -> Bg3Exes {
     let canon = fs::canonicalize(&config.core.install_root);
     let Ok(resolved_path) = canon else {
         error!("{}", canon.unwrap_err());
@@ -88,5 +93,5 @@ pub fn build_config_game_binary_paths(config: &Config) -> (String, String) {
     trace!("Looking for bg3 at: {bg3}");
     trace!("Looking for bg3_dx11 at: {bg3_dx11}");
 
-    (bg3, bg3_dx11)
+    Bg3Exes { bg3, bg3_dx11 }
 }

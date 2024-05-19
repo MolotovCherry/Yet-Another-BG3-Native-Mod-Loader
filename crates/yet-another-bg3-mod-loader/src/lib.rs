@@ -40,6 +40,8 @@ use windows::{
     },
 };
 
+use self::paths::Bg3Exes;
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum RunType {
     Watcher,
@@ -80,7 +82,7 @@ pub fn run(run_type: RunType) -> Result<()> {
 
     let (plugins_dir, config, _guard) = setup(&args)?;
 
-    let (bg3, bg3_dx11) = build_config_game_binary_paths(&config);
+    let Bg3Exes { bg3, bg3_dx11 } = build_config_game_binary_paths(&config);
 
     let (polling_rate, timeout, oneshot) = if run_type == RunType::Watcher {
         // watcher tool
