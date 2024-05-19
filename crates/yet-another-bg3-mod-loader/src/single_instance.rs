@@ -1,4 +1,3 @@
-use tracing::trace;
 use windows::{
     core::w,
     Win32::{
@@ -26,7 +25,7 @@ impl SingleInstance {
                 );
             }
 
-            trace!("CreateMutexW failed, but we have fallthrough: {err:?}");
+            fatal_popup("Yet Another Bg3 Mod Loader", "CreateMutexW failure: {e}");
         }
 
         Self(mutex.into())
