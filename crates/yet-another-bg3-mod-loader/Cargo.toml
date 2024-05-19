@@ -1,18 +1,21 @@
 [package]
 name = "yet-another-bg3-mod-loader"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2021"
+authors = ["Cherry"]
+homepage = "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader"
+license = "MIT"
 
 [dependencies]
-serde = { version = "1.0.201", features = ["derive"] }
-toml = "0.8.12"
+serde = { version = "1.0.202", features = ["derive"] }
+toml = "0.8.13"
 serde_json = "1.0.117"
 directories = "5.0.1"
-human-panic = "1.2.3"
+human-panic = "2.0.0"
 eyre = "0.6.12"
 backtrace = "0.3.71"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
-tray-icon = "0.13.5"
+tray-icon = "0.14.0"
 winit = "0.30.0"
 unicase = "2.7.0"
 tracing = "0.1.40"

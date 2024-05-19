@@ -18,7 +18,6 @@ use std::{
 
 use clap::Parser;
 use eyre::{Context, Result};
-use human_panic::Metadata;
 use tracing::{error, level_filters::LevelFilter, trace};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::EnvFilter;
@@ -125,12 +124,7 @@ pub fn run(run_type: RunType) -> Result<()> {
 
 fn setup(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>)> {
     // Nicely print any panic messages to the user
-    set_hook(Metadata {
-        name: env!("CARGO_PKG_NAME").into(),
-        version: env!("CARGO_PKG_VERSION").into(),
-        authors: "Cherry".into(),
-        homepage: "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader".into(),
-    });
+    set_hook();
 
     let (first_time, plugins_dir) = match get_bg3_plugins_dir() {
         Ok(v) => v,
