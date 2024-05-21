@@ -63,11 +63,13 @@ pub fn get_bg3_plugins_dir() -> Result<(bool, PathBuf)> {
 }
 
 pub struct Bg3Exes {
+    // path to game's bin folders
+    pub bin: PathBuf,
     pub bg3: String,
     pub bg3_dx11: String,
 }
 
-pub fn build_config_game_binary_paths(config: &Config) -> Bg3Exes {
+pub fn get_game_binary_paths(config: &Config) -> Bg3Exes {
     let bin = config.core.install_root.join("bin");
 
     // first check current directory or 1 directory up for exes before using config value
@@ -95,6 +97,19 @@ pub fn build_config_game_binary_paths(config: &Config) -> Bg3Exes {
                 }
             };
 
+            let root = match path.canonicalize() {
+                Ok(p) => p
+                    .to_string_lossy()
+                    .strip_prefix(r"\\?\")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| p.to_string_lossy().to_string().into()),
+
+                Err(e) => {
+                    error!(error = %e, path = %path.display(), "failed to canonicalize");
+                    continue;
+                }
+            };
+
             // canonicalize adds this to the prefix, but we don't want it
             let bg3 = bg3
                 .to_string_lossy()
@@ -111,7 +126,11 @@ pub fn build_config_game_binary_paths(config: &Config) -> Bg3Exes {
             trace!("Looking for bg3 at: {bg3}");
             trace!("Looking for bg3_dx11 at: {bg3_dx11}");
 
-            return Bg3Exes { bg3, bg3_dx11 };
+            return Bg3Exes {
+                bin: root,
+                bg3,
+                bg3_dx11,
+            };
         }
     }
 

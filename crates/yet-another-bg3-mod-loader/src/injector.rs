@@ -25,7 +25,7 @@ use windows::{
 use crate::{config::Config, helpers::OwnedHandle, paths::get_bg3_plugins_dir, popup::warn_popup};
 
 #[allow(non_snake_case)]
-pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<()> {
+pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config, bin: &Path) -> Result<()> {
     let span = trace_span!("inject_plugins");
     let _guard = span.enter();
 
@@ -57,7 +57,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
     };
 
     // checks if process has already had injection done on it
-    let is_dirty = is_dirty(&handle, config);
+    let is_dirty = is_dirty(&handle, bin);
     let Ok(is_dirty) = is_dirty else {
         error!(?is_dirty, "failed dirty check");
         warn_popup(
@@ -230,23 +230,28 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
 }
 
 // Determine whether the process has been tainted by previous dll injections
-fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
+fn is_dirty(handle: &OwnedHandle, bin: &Path) -> Result<bool> {
     let span = trace_span!("is_dirty");
     let _guard = span.enter();
 
-    let mut install_root = config.core.install_root.clone();
     // important, this must be native mods folder specifically, otherwise it will have false positives
-    install_root.push("bin");
-    install_root.push("NativeMods");
-    let install_root = install_root.to_string_lossy().to_lowercase();
+    let bin_native_mod = bin.join("NativeMods").to_string_lossy().to_lowercase();
 
     let (_, plugins_dir) = get_bg3_plugins_dir()?;
     let plugins_dir = plugins_dir.to_string_lossy().to_lowercase();
 
-    let is_bg3_path = move |path: String| {
-        // IMPORTANT: input arg must be all lowercase!
+    trace!(
+        bin_native_mod,
+        plugins_dir,
+        "checking dll path against dirs"
+    );
 
-        let dirty = path.starts_with(&install_root) || path.starts_with(&plugins_dir);
+    let is_plugin_path = move |path: String| {
+        let path = path.to_lowercase();
+
+        trace!(path, "is_plugin_path checking dll path");
+
+        let dirty = path.starts_with(&bin_native_mod) || path.starts_with(&plugins_dir);
 
         if dirty {
             trace!("detected dirty plugin @ {path}");
@@ -367,7 +372,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
             break len;
         };
 
-        let path_str = String::from_utf16_lossy(&name[..len as usize]).to_lowercase();
+        let path_str = String::from_utf16_lossy(&name[..len as usize]);
         let path = Path::new(&path_str);
 
         trace!("found loaded module @ {path_str}");
@@ -376,7 +381,7 @@ fn is_dirty(handle: &OwnedHandle, config: &Config) -> Result<bool> {
         if path
             .extension()
             .is_some_and(|ext| ext.to_ascii_lowercase() == "dll")
-            && is_bg3_path(path_str)
+            && is_plugin_path(path_str)
         {
             return Ok(true);
         }
