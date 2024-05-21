@@ -406,7 +406,7 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
                 let error = unsafe { GetLastError() };
 
                 if error.is_ok() {
-                    continue 'for_modules;
+                    break len;
                 }
 
                 if error == ERROR_INSUFFICIENT_BUFFER {
