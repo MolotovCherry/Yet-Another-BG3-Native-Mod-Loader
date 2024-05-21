@@ -1,4 +1,4 @@
-use std::{ffi::c_void, fs};
+use std::{ffi::c_void, fs, os::windows::prelude::AsRawHandle};
 use std::{mem, path::Path};
 
 use eyre::{bail, eyre, Context, Result};
@@ -8,7 +8,8 @@ use unicase::UniCase;
 use windows::{
     core::{s, w, Error as WinError},
     Win32::{
-        Foundation::{GetLastError, ERROR_INSUFFICIENT_BUFFER, HMODULE},
+        Foundation::{GetLastError, ERROR_INSUFFICIENT_BUFFER, HANDLE, HMODULE},
+        Storage::FileSystem::{FileIdInfo, GetFileInformationByHandleEx, FILE_ID_INFO},
         System::{
             Diagnostics::Debug::WriteProcessMemory,
             LibraryLoader::{GetModuleHandleW, GetProcAddress},
@@ -25,7 +26,7 @@ use windows::{
 use crate::{config::Config, helpers::OwnedHandle, paths::get_bg3_plugins_dir, popup::warn_popup};
 
 #[allow(non_snake_case)]
-pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config, bin: &Path) -> Result<()> {
+pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<()> {
     let span = trace_span!("inject_plugins");
     let _guard = span.enter();
 
@@ -57,7 +58,7 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config, bin: &Path)
     };
 
     // checks if process has already had injection done on it
-    let is_dirty = is_dirty(&handle, bin);
+    let is_dirty = is_dirty(&handle);
     let Ok(is_dirty) = is_dirty else {
         error!(?is_dirty, "failed dirty check");
         warn_popup(
@@ -230,34 +231,100 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config, bin: &Path)
 }
 
 // Determine whether the process has been tainted by previous dll injections
-fn is_dirty(handle: &OwnedHandle, bin: &Path) -> Result<bool> {
+fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
     let span = trace_span!("is_dirty");
     let _guard = span.enter();
 
-    // important, this must be native mods folder specifically, otherwise it will have false positives
-    let bin_native_mod = bin.join("NativeMods").to_string_lossy().to_lowercase();
-
     let (_, plugins_dir) = get_bg3_plugins_dir()?;
-    let plugins_dir = plugins_dir.to_string_lossy().to_lowercase();
 
-    trace!(
-        bin_native_mod,
-        plugins_dir,
-        "checking dll path against dirs"
-    );
+    trace!(plugins_dir = %plugins_dir.display(), "checking dll path against dirs");
 
-    let is_plugin_path = move |path: String| {
-        let path = path.to_lowercase();
-
+    let is_plugin = move |path: &str| {
         trace!("is_plugin_path checking dll @ {path}");
 
-        let dirty = path.starts_with(&bin_native_mod) || path.starts_with(&plugins_dir);
+        // path
+        //
 
-        if dirty {
-            trace!("detected dirty plugin @ {path}");
+        let path = Path::new(path);
+
+        // not a dll file
+        if !path.is_file()
+            || !path
+                .extension()
+                .is_some_and(|ext| ext.to_ascii_lowercase() == "dll")
+        {
+            return Ok(false);
         }
 
-        dirty
+        // get base name of file
+        let Some(base) = path.file_name() else {
+            return Ok(false);
+        };
+
+        // create path with filename
+        let plugin_path = plugins_dir.join(base);
+
+        if !plugin_path.is_file() {
+            return Ok(false);
+        }
+
+        // open/check if filename exists as plugin dir path
+        let plugin_file = match fs::OpenOptions::new().read(true).open(plugin_path) {
+            Ok(v) => v,
+            Err(error) => {
+                error!(%error, "failed to open plugin file");
+                return Err(());
+            }
+        };
+
+        let plugin_handle = plugin_file.as_raw_handle();
+
+        // get file at location
+        let path_file = match fs::OpenOptions::new().read(true).open(path) {
+            Ok(v) => v,
+            Err(error) => {
+                error!(%error, "failed to open path file");
+                return Err(());
+            }
+        };
+
+        let path_handle = path_file.as_raw_handle();
+
+        // now get the file info for both files and compare them
+        // this is accurate regardless of initial file paths presented
+        // as it gets the actual file id
+
+        let mut path_info = FILE_ID_INFO::default();
+
+        if let Err(error) = unsafe {
+            GetFileInformationByHandleEx(
+                HANDLE(path_handle as _),
+                FileIdInfo,
+                &mut path_info as *mut _ as *mut _,
+                std::mem::size_of::<FILE_ID_INFO>() as u32,
+            )
+        } {
+            error!(%error, "failed to get path file info");
+            return Err(());
+        }
+
+        let mut plugin_info = FILE_ID_INFO::default();
+
+        if let Err(error) = unsafe {
+            GetFileInformationByHandleEx(
+                HANDLE(plugin_handle as _),
+                FileIdInfo,
+                &mut plugin_info as *mut _ as *mut _,
+                std::mem::size_of::<FILE_ID_INFO>() as u32,
+            )
+        } {
+            error!(%error, "failed to get plugin path info");
+            return Err(());
+        }
+
+        trace!(?path_info, ?plugin_info, "file ids");
+
+        Ok(path_info == plugin_info)
     };
 
     // fully initialize this in order to set len
@@ -336,10 +403,13 @@ fn is_dirty(handle: &OwnedHandle, bin: &Path) -> Result<bool> {
             // terminating null character, the function returns nSize, and the function sets the last error to ERROR_INSUFFICIENT_BUFFER.
             // If the function fails, the return value is 0 (zero). To get extended error information, call GetLastError.
             if len == name.len() as u32 || len == 0 {
-                trace!("len == name.len() || len == 0");
                 let error = unsafe { GetLastError() };
 
-                if error.is_err() && error == ERROR_INSUFFICIENT_BUFFER {
+                if error.is_ok() {
+                    continue 'for_modules;
+                }
+
+                if error == ERROR_INSUFFICIENT_BUFFER {
                     trace!("ERROR_INSUFFICIENT_BUFFER, increasing +1024");
                     name.resize(name.len() + 1024, 0u16);
 
@@ -372,18 +442,22 @@ fn is_dirty(handle: &OwnedHandle, bin: &Path) -> Result<bool> {
             break len;
         };
 
-        let path_str = String::from_utf16_lossy(&name[..len as usize]);
-        let path = Path::new(&path_str);
+        let path = String::from_utf16_lossy(&name[..len as usize]);
 
-        trace!("found loaded module @ {path_str}");
+        trace!("found loaded module @ {path}");
 
         // we're only interested in dll modules
-        if path
-            .extension()
-            .is_some_and(|ext| ext.to_ascii_lowercase() == "dll")
-            && is_plugin_path(path_str)
-        {
-            return Ok(true);
+        match is_plugin(&path) {
+            Ok(v) => {
+                if v {
+                    trace!("detected dirty plugin @ {path}");
+                    return Ok(true);
+                }
+            }
+
+            Err(_) => {
+                bail!("is_plugin unexpectedly failed. Please check logs for error");
+            }
         }
     }
 

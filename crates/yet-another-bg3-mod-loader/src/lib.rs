@@ -82,7 +82,7 @@ pub fn run(run_type: RunType) -> Result<()> {
 
     let (plugins_dir, config, _guard) = setup(&args)?;
 
-    let Bg3Exes { bin, bg3, bg3_dx11 } = get_game_binary_paths(&config);
+    let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&config);
 
     let (polling_rate, timeout, oneshot) = if run_type == RunType::Watcher {
         // watcher tool
@@ -101,7 +101,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         move |call| match call {
                 CallType::Pid(pid) => {
                     trace!("Received callback for pid {pid}, now injecting");
-                    inject_plugins(pid, &plugins_dir, &config, &bin).unwrap();
+                    inject_plugins(pid, &plugins_dir, &config).unwrap();
                 }
 
                 // only fires with injector
