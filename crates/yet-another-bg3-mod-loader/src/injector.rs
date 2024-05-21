@@ -448,16 +448,16 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
 
         // we're only interested in dll modules
         match is_plugin(&path) {
-            Ok(v) => {
-                if v {
-                    trace!("detected dirty plugin @ {path}");
-                    return Ok(true);
-                }
+            Ok(v) if v => {
+                trace!("detected dirty plugin @ {path}");
+                return Ok(true);
             }
 
             Err(_) => {
                 bail!("is_plugin unexpectedly failed. Please check logs for error");
             }
+
+            _ => (),
         }
     }
 
