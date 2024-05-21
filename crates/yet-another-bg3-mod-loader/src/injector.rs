@@ -249,7 +249,7 @@ fn is_dirty(handle: &OwnedHandle, bin: &Path) -> Result<bool> {
     let is_plugin_path = move |path: String| {
         let path = path.to_lowercase();
 
-        trace!(path, "is_plugin_path checking dll path");
+        trace!("is_plugin_path checking dll @ {path}");
 
         let dirty = path.starts_with(&bin_native_mod) || path.starts_with(&plugins_dir);
 
