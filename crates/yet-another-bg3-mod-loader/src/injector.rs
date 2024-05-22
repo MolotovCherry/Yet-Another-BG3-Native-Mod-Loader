@@ -250,7 +250,10 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
     trace!(plugins_dir = %plugins_dir.display(), "checking dll path against dirs");
 
     let plugins_dir_id = dir_id(&plugins_dir).ok_or(anyhow!("failed to get id for plugins_dir"))?;
-    cache_id_map.insert(plugins_dir.clone(), plugins_dir_id);
+    cache_id_map.insert(
+        plugins_dir.to_string_lossy().to_lowercase().into(),
+        plugins_dir_id,
+    );
 
     let mut is_plugin = move |path: &str| {
         trace!("is_plugin_path checking dll @ {path}");
@@ -258,14 +261,11 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
         // path
         //
 
-        let path = Path::new(path);
+        let path = path.to_lowercase();
+        let path = Path::new(&path);
 
         // not a dll file
-        if !path.is_file()
-            || !path
-                .extension()
-                .is_some_and(|ext| ext.to_ascii_lowercase() == "dll")
-        {
+        if !path.is_file() || !path.extension().is_some_and(|ext| ext == "dll") {
             return false;
         }
 
