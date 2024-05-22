@@ -15,7 +15,7 @@ use windows::{
     Win32::{
         Foundation::{GetLastError, ERROR_INSUFFICIENT_BUFFER, HANDLE, HMODULE},
         Storage::FileSystem::{
-            GetFileInformationByHandle, BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS,
+            FileIdInfo, GetFileInformationByHandleEx, FILE_FLAG_BACKUP_SEMANTICS, FILE_ID_INFO,
             FILE_SHARE_READ,
         },
         System::{
@@ -256,11 +256,6 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
     );
 
     let mut is_plugin = move |path: &str| {
-        trace!("is_plugin_path checking dll @ {path}");
-
-        // path
-        //
-
         let path = path.to_lowercase();
         let path = Path::new(&path);
 
@@ -416,7 +411,7 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
     Ok(false)
 }
 
-fn dir_id(path: &Path) -> Option<u128> {
+fn dir_id(path: &Path) -> Option<(u64, u128)> {
     if !path.is_dir() {
         return None;
     }
@@ -437,17 +432,20 @@ fn dir_id(path: &Path) -> Option<u128> {
 
     let handle = dir.as_raw_handle();
 
-    let mut info = BY_HANDLE_FILE_INFORMATION::default();
+    let mut info = FILE_ID_INFO::default();
     unsafe {
-        GetFileInformationByHandle(HANDLE(handle as _), &mut info).ok()?;
+        GetFileInformationByHandleEx(
+            HANDLE(handle as _),
+            FileIdInfo,
+            &mut info as *mut _ as *mut _,
+            std::mem::size_of::<FILE_ID_INFO>() as u32,
+        )
+        .ok()?;
     }
 
-    let mut id = 0u128;
-    id |= (info.dwVolumeSerialNumber as u128) << 64;
-    id |= (info.nFileIndexHigh as u128) << 32;
-    id |= info.nFileIndexLow as u128;
+    let file_id = u128::from_le_bytes(info.FileId.Identifier);
 
-    trace!(id, path = %path.display(), "path id");
+    trace!(volume_id = info.VolumeSerialNumber, file_id, path = %path.display(), "dir id");
 
-    Some(id)
+    Some((info.VolumeSerialNumber, file_id))
 }
