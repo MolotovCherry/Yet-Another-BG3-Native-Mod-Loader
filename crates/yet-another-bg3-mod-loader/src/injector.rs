@@ -411,7 +411,10 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
     Ok(false)
 }
 
-fn dir_id(path: &Path) -> Option<(u64, u128)> {
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct Id(u64, u128);
+
+fn dir_id(path: &Path) -> Option<Id> {
     if !path.is_dir() {
         return None;
     }
@@ -447,5 +450,5 @@ fn dir_id(path: &Path) -> Option<(u64, u128)> {
 
     trace!(volume_id = info.VolumeSerialNumber, file_id, path = %path.display(), "dir id");
 
-    Some((info.VolumeSerialNumber, file_id))
+    Some(Id(info.VolumeSerialNumber, file_id))
 }
