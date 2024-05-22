@@ -1,7 +1,12 @@
-use std::{ffi::c_void, fs, os::windows::prelude::AsRawHandle};
+use std::{
+    collections::HashMap,
+    ffi::c_void,
+    fs::{self, OpenOptions},
+    os::windows::{fs::OpenOptionsExt as _, prelude::AsRawHandle},
+};
 use std::{mem, path::Path};
 
-use eyre::{bail, eyre, Context, Result};
+use eyre::{anyhow, bail, eyre, Context, Result};
 use native_plugin_lib::{Plugin, Version};
 use tracing::{error, info, trace, trace_span, warn};
 use unicase::UniCase;
@@ -9,7 +14,10 @@ use windows::{
     core::{s, w, Error as WinError},
     Win32::{
         Foundation::{GetLastError, ERROR_INSUFFICIENT_BUFFER, HANDLE, HMODULE},
-        Storage::FileSystem::{FileIdInfo, GetFileInformationByHandleEx, FILE_ID_INFO},
+        Storage::FileSystem::{
+            GetFileInformationByHandle, BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS,
+            FILE_SHARE_READ,
+        },
         System::{
             Diagnostics::Debug::WriteProcessMemory,
             LibraryLoader::{GetModuleHandleW, GetProcAddress},
@@ -237,9 +245,14 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
 
     let (_, plugins_dir) = get_bg3_plugins_dir()?;
 
+    let mut cache_id_map = HashMap::new();
+
     trace!(plugins_dir = %plugins_dir.display(), "checking dll path against dirs");
 
-    let is_plugin = move |path: &str| {
+    let plugins_dir_id = dir_id(&plugins_dir).ok_or(anyhow!("failed to get id for plugins_dir"))?;
+    cache_id_map.insert(plugins_dir.clone(), plugins_dir_id);
+
+    let mut is_plugin = move |path: &str| {
         trace!("is_plugin_path checking dll @ {path}");
 
         // path
@@ -253,78 +266,27 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
                 .extension()
                 .is_some_and(|ext| ext.to_ascii_lowercase() == "dll")
         {
-            return Ok(false);
+            return false;
         }
 
-        // get base name of file
-        let Some(base) = path.file_name() else {
-            return Ok(false);
+        // get parent dir
+        let Some(parent) = path.parent() else {
+            return false;
         };
 
-        // create path with filename
-        let plugin_path = plugins_dir.join(base);
+        let id = if let Some(&id) = cache_id_map.get(parent) {
+            id
+        } else {
+            let Some(path_id) = dir_id(parent) else {
+                return false;
+            };
 
-        if !plugin_path.is_file() {
-            return Ok(false);
-        }
+            cache_id_map.insert(parent.to_path_buf(), path_id);
 
-        // open/check if filename exists as plugin dir path
-        let plugin_file = match fs::OpenOptions::new().read(true).open(plugin_path) {
-            Ok(v) => v,
-            Err(error) => {
-                error!(%error, "failed to open plugin file");
-                return Err(());
-            }
+            path_id
         };
 
-        let plugin_handle = plugin_file.as_raw_handle();
-
-        // get file at location
-        let path_file = match fs::OpenOptions::new().read(true).open(path) {
-            Ok(v) => v,
-            Err(error) => {
-                error!(%error, "failed to open path file");
-                return Err(());
-            }
-        };
-
-        let path_handle = path_file.as_raw_handle();
-
-        // now get the file info for both files and compare them
-        // this is accurate regardless of initial file paths presented
-        // as it gets the actual file id
-
-        let mut path_info = FILE_ID_INFO::default();
-
-        if let Err(error) = unsafe {
-            GetFileInformationByHandleEx(
-                HANDLE(path_handle as _),
-                FileIdInfo,
-                &mut path_info as *mut _ as *mut _,
-                std::mem::size_of::<FILE_ID_INFO>() as u32,
-            )
-        } {
-            error!(%error, "failed to get path file info");
-            return Err(());
-        }
-
-        let mut plugin_info = FILE_ID_INFO::default();
-
-        if let Err(error) = unsafe {
-            GetFileInformationByHandleEx(
-                HANDLE(plugin_handle as _),
-                FileIdInfo,
-                &mut plugin_info as *mut _ as *mut _,
-                std::mem::size_of::<FILE_ID_INFO>() as u32,
-            )
-        } {
-            error!(%error, "failed to get plugin path info");
-            return Err(());
-        }
-
-        trace!(?path_info, ?plugin_info, "file ids");
-
-        Ok(path_info == plugin_info)
+        plugins_dir_id == id
     };
 
     // fully initialize this in order to set len
@@ -446,20 +408,46 @@ fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
 
         trace!("found loaded module @ {path}");
 
-        // we're only interested in dll modules
-        match is_plugin(&path) {
-            Ok(v) if v => {
-                trace!("detected dirty plugin @ {path}");
-                return Ok(true);
-            }
-
-            Err(_) => {
-                bail!("is_plugin unexpectedly failed. Please check logs for error");
-            }
-
-            _ => (),
+        if is_plugin(&path) {
+            return Ok(true);
         }
     }
 
     Ok(false)
+}
+
+fn dir_id(path: &Path) -> Option<u128> {
+    if !path.is_dir() {
+        return None;
+    }
+
+    // abuse OpenOptions to call CreateFileW with the correct args to get a dir handle
+    // this lets us avoid an unsafe call
+    let dir = OpenOptions::new()
+        .access_mode(0)
+        .share_mode(FILE_SHARE_READ.0)
+        .attributes(FILE_FLAG_BACKUP_SEMANTICS.0)
+        // (self.create, self.truncate, self.create_new) {
+        //    (false, false, false) => c::OPEN_EXISTING,
+        .create(false)
+        .truncate(false)
+        .create_new(false)
+        .open(path)
+        .ok()?;
+
+    let handle = dir.as_raw_handle();
+
+    let mut info = BY_HANDLE_FILE_INFORMATION::default();
+    unsafe {
+        GetFileInformationByHandle(HANDLE(handle as _), &mut info).ok()?;
+    }
+
+    let mut id = 0u128;
+    id |= (info.dwVolumeSerialNumber as u128) << 64;
+    id |= (info.nFileIndexHigh as u128) << 32;
+    id |= info.nFileIndexLow as u128;
+
+    trace!(id, path = %path.display(), "path id");
+
+    Some(id)
 }
