@@ -16,7 +16,7 @@ eyre = "0.6.12"
 backtrace = "0.3.73"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
 tray-icon = "0.14.3"
-winit = "0.30.3"
+winit = "0.30.4"
 unicase = "2.7.0"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
