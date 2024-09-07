@@ -7,39 +7,35 @@ homepage = "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader"
 license = "MIT"
 
 [dependencies]
-serde = { version = "1.0.209", features = ["derive"] }
+serde = { version = "1.0.210", features = ["derive"] }
 toml = "0.8.19"
-serde_json = "1.0.127"
+serde_json = "1.0.128"
 directories = "5.0.1"
 human-panic = "2.0.1"
 eyre = "0.6.12"
 backtrace = "0.3.73"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
-tray-icon = "0.14.3"
+tray-icon = "0.17.0"
 winit = "0.30.5"
 unicase = "2.7.0"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tracing-appender = "0.2.3"
-clap = { version = "4.5.16", features = ["derive"] }
+clap = { version = "4.5.17", features = ["derive"] }
 
 [dependencies.windows]
 version = "0.58.0"
 features = [
     "Win32_Foundation",
     "Win32_System_ApplicationInstallationAndServicing",
-
     "Win32_UI_WindowsAndMessaging",
     "Win32_System_Threading",
     "Win32_System_Memory",
     "Win32_System_Diagnostics_Debug",
     "Win32_System_LibraryLoader",
     "Win32_Storage_FileSystem",
-
     "Win32_Security",
-
     "Win32_System_ProcessStatus",
-
     "Win32_System_Console",
 ]
 

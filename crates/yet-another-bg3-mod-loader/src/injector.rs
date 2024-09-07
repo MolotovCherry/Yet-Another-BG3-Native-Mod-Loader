@@ -7,7 +7,7 @@ use std::{
 use std::{mem, path::Path};
 
 use eyre::{anyhow, bail, eyre, Context, Result};
-use native_plugin_lib::{Plugin, Version};
+use native_plugin_lib::Version;
 use tracing::{error, info, trace, trace_span, warn};
 use unicase::UniCase;
 use windows::{
@@ -137,20 +137,19 @@ pub fn inject_plugins(pid: u32, plugins_dir: &Path, config: &Config) -> Result<(
                 .any(|s| UniCase::new(s) == UniCase::new(name));
 
             let data = native_plugin_lib::get_plugin_data(&path);
-            let name = if let Ok(data) = data {
-                let Plugin {
-                    version:
-                        Version {
-                            major,
-                            minor,
-                            patch,
-                        },
-                    ..
-                } = data;
 
-                data.get_name()
-                    .map(|n| format!("{n} v{major}.{minor}.{patch} ({name}.dll)"))
-                    .unwrap_or(format!("{name}.dll v{major}.{minor}.{patch}"))
+            let name = if let Ok(guard) = data {
+                let data = guard.data();
+
+                let Version {
+                    major,
+                    minor,
+                    patch,
+                } = data.version;
+
+                let p_name = data.name;
+
+                format!("{p_name} v{major}.{minor}.{patch} ({name}.dll)")
             } else {
                 format!("{name}.dll")
             };
