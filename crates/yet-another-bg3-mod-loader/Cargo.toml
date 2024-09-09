@@ -13,7 +13,7 @@ serde_json = "1.0.128"
 directories = "5.0.1"
 human-panic = "2.0.1"
 eyre = "0.6.12"
-backtrace = "0.3.73"
+backtrace = "0.3.74"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
 tray-icon = "0.17.0"
 winit = "0.30.5"
