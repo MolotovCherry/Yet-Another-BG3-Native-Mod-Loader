@@ -15,7 +15,7 @@ human-panic = "2.0.1"
 eyre = "0.6.12"
 backtrace = "0.3.73"
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
-tray-icon = "0.17.0"
+tray-icon = "0.18.0"
 winit = "0.30.5"
 unicase = "2.7.0"
 tracing = "0.1.40"
