@@ -15,9 +15,8 @@ pub fn write_loader() -> Result<PathBuf> {
     let file = tmpdir.join(format!("loader-{LOADER_BIN_HASH}.dll"));
 
     if !file.exists() {
-        let data =
-            lz4_flex::decompress_size_prepended(LOADER_BIN).context("decompressing loader")?;
-        fs::write(&file, data).context("writing tmp loader")?;
+        let mut out_file = fs::File::create(&file).context("decompressing loader")?;
+        zstd::stream::copy_decode(LOADER_BIN, &mut out_file).context("writing tmp loader")?;
     }
 
     Ok(file)

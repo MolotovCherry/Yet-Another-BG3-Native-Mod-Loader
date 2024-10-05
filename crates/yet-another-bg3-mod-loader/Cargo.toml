@@ -20,11 +20,11 @@ winit = "0.30.5"
 tracing-appender = "0.2.3"
 clap = { version = "4.5.18", features = ["derive"] }
 tempfile = "3.13.0"
-lz4_flex = "0.11.3"
+zstd = "0.13.2"
 
 [build-dependencies]
 winres = "0.1.12"
-lz4_flex = "0.11.3"
+zstd = "0.13.2"
 sha256 = "1.5.0"
 # https://github.com/rust-lang/cargo/issues/9096
 # https://doc.rust-lang.org/beta/cargo/reference/unstable.html#artifact-dependencies
@@ -33,3 +33,4 @@ loader = { path = "../loader", artifact = "cdylib" }
 [package.metadata.winres]
 ProductName = "Yet Another BG3 Mod Loader"
 FileDescription = "Loads native plugins into BG3"
+LegalCopyright = "Copyright (c) Cherry"

@@ -32,7 +32,7 @@ pub fn init(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>, PathBu
     let worker_guard = setup_logs(&plugins_dir, args).context("Failed to set up logs")?;
 
     // get/create config
-    let first_time = plugins_dir.join("config.toml").exists();
+    let first_time = !plugins_dir.join("config.toml").exists();
     let config = get_config().context("Failed to get config")?;
 
     if first_time {

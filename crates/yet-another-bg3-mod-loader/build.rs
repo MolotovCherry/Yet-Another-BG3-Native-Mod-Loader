@@ -1,5 +1,4 @@
 use std::error::Error;
-use std::hash::{DefaultHasher, Hasher};
 use std::path::Path;
 use std::{env, fs};
 
@@ -28,21 +27,18 @@ fn build_compressed() -> Result<(), Box<dyn Error>> {
     // https://github.com/rust-lang/cargo/issues/9096
     // https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies-environment-variables
     let env = env::var_os("CARGO_CDYLIB_FILE_LOADER").unwrap();
-    let path = Path::new(&env);
-    let data = fs::read(path)?;
-
-    let out_dir = env::var("OUT_DIR").unwrap();
-    let out_dir = Path::new(&out_dir);
-
-    let data = lz4_flex::compress_prepend_size(&data);
-
-    let file = out_dir.join("loader.bin");
-    fs::write(&file, &data)?;
-
-    println!("cargo::rustc-env=LOADER_BIN={}", file.display());
+    let data = fs::read(&env)?;
 
     let hash = sha256::digest(&data);
 
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let out_dir = Path::new(&out_dir);
+    let file = out_dir.join("loader.bin");
+    let mut out_file = fs::File::create(&file)?;
+
+    zstd::stream::copy_encode(&*data, &mut out_file, 22)?;
+
+    println!("cargo::rustc-env=LOADER_BIN={}", file.display());
     println!("cargo::rustc-env=LOADER_BIN_HASH={}", &hash[..8]);
 
     Ok(())
