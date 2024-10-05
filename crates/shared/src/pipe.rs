@@ -98,7 +98,7 @@ impl Server {
         let fut = async {
             let mut buf = Vec::with_capacity(4096);
             let mut tbuf = [0; 1024];
-            let mut msg_len = 0;
+            let mut msg_len = None;
 
             loop {
                 let server = ServerOptions::new()
@@ -140,25 +140,28 @@ impl Server {
                                 // 1. get msg len if it's not set and we have enough buffer to get it
                                 // <len><message>
                                 // ^---^
-                                if msg_len == 0 && buf.len() >= size_of::<usize>() {
-                                    msg_len = usize::from_le_bytes(
+                                if msg_len.is_none() && buf.len() >= size_of::<usize>() {
+                                    msg_len = Some(usize::from_le_bytes(
                                         buf[..size_of::<usize>()].try_into().unwrap(),
-                                    );
+                                    ));
 
                                     continue;
                                 // 2. process msg if we know the msg len and there's enough buffer to process it
                                 // <len><message>
                                 //      ^-------^
-                                } else if msg_len > 0 && buf.len() >= msg_len + size_of::<usize>() {
-                                    let data =
-                                        &buf[size_of::<usize>()..msg_len + size_of::<usize>()];
+                                } else if let Some(len) = msg_len {
+                                    if buf.len() < len + size_of::<usize>() {
+                                        break;
+                                    }
+
+                                    let data = &buf[size_of::<usize>()..len + size_of::<usize>()];
 
                                     if let Ok(command) = serde_json::from_slice::<Command>(data) {
                                         cb(command);
                                     }
 
-                                    buf.drain(..msg_len + size_of::<usize>());
-                                    msg_len = 0;
+                                    buf.drain(..len + size_of::<usize>());
+                                    msg_len = None;
 
                                     continue;
                                 }
