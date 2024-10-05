@@ -1,6 +1,7 @@
 pub mod commands;
 
 use std::{
+    convert::Infallible,
     io::{self, ErrorKind},
     sync::LazyLock,
 };
@@ -10,6 +11,7 @@ use tokio::{
     net::windows::named_pipe::{ClientOptions, NamedPipeClient, PipeMode, ServerOptions},
     runtime::{Builder, Runtime},
 };
+use tracing::error;
 
 static RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
     Builder::new_current_thread()
@@ -93,80 +95,93 @@ impl Server {
         Self
     }
 
-    pub fn recv(&self, cb: impl Fn(Command)) -> io::Result<()> {
+    pub fn recv(&self, cb: impl Fn(Command)) -> io::Result<Infallible> {
         let fut = async {
             let mut buf = Vec::with_capacity(4096);
             let mut tbuf = [0; 1024];
             let mut msg_len = 0;
 
-            let server = ServerOptions::new()
-                .access_inbound(true)
-                .access_outbound(false)
-                .reject_remote_clients(true)
-                .pipe_mode(PipeMode::Byte)
-                .create(PIPE)?;
-
-            server.connect().await?;
-
             loop {
-                if server.readable().await.is_err() {
-                    break;
+                let server = ServerOptions::new()
+                    .access_inbound(true)
+                    .access_outbound(false)
+                    .reject_remote_clients(true)
+                    .pipe_mode(PipeMode::Byte)
+                    .create(PIPE);
+
+                let server = match server {
+                    Ok(s) => s,
+                    Err(e) => {
+                        error!(%e, "failed to create pipe server");
+                        return Err(e);
+                    }
+                };
+
+                if let Err(e) = server.connect().await {
+                    error!(%e, "client failed to connect");
+                    continue;
                 }
 
-                match server.try_read(&mut tbuf) {
-                    Ok(0) => break,
-
-                    Ok(n) => {
-                        let data = &tbuf[..n];
-                        buf.extend_from_slice(data);
-
-                        // message: <len:usize><message>
-                        // this will keep looping and process each msg len / message for as long as there's enough
-                        // data buffered
-                        loop {
-                            // 1. get msg len if it's not set and we have enough buffer to get it
-                            // <len><message>
-                            // ^---^
-                            if msg_len == 0 && buf.len() >= size_of::<usize>() {
-                                msg_len = usize::from_le_bytes(
-                                    buf[..size_of::<usize>()].try_into().unwrap(),
-                                );
-
-                                continue;
-                            // 2. process msg if we know the msg len and there's enough buffer to process it
-                            // <len><message>
-                            //      ^-------^
-                            } else if msg_len > 0 && buf.len() >= msg_len + size_of::<usize>() {
-                                let data = &buf[size_of::<usize>()..msg_len + size_of::<usize>()];
-
-                                if let Ok(command) = serde_json::from_slice::<Command>(data) {
-                                    cb(command);
-                                }
-
-                                buf.drain(..msg_len + size_of::<usize>());
-                                msg_len = 0;
-
-                                continue;
-                            }
-
-                            // there's no len or message left to process
-                            break;
-                        }
-
-                        continue;
+                loop {
+                    if server.readable().await.is_err() {
+                        break;
                     }
 
-                    Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
+                    match server.try_read(&mut tbuf) {
+                        Ok(0) => break,
 
-                    Err(e) => return Err(e),
+                        Ok(n) => {
+                            let data = &tbuf[..n];
+                            buf.extend_from_slice(data);
+
+                            // message: <len:usize><message>
+                            // this will keep looping and process each msg len / message for as long as there's enough
+                            // data buffered
+                            loop {
+                                // 1. get msg len if it's not set and we have enough buffer to get it
+                                // <len><message>
+                                // ^---^
+                                if msg_len == 0 && buf.len() >= size_of::<usize>() {
+                                    msg_len = usize::from_le_bytes(
+                                        buf[..size_of::<usize>()].try_into().unwrap(),
+                                    );
+
+                                    continue;
+                                // 2. process msg if we know the msg len and there's enough buffer to process it
+                                // <len><message>
+                                //      ^-------^
+                                } else if msg_len > 0 && buf.len() >= msg_len + size_of::<usize>() {
+                                    let data =
+                                        &buf[size_of::<usize>()..msg_len + size_of::<usize>()];
+
+                                    if let Ok(command) = serde_json::from_slice::<Command>(data) {
+                                        cb(command);
+                                    }
+
+                                    buf.drain(..msg_len + size_of::<usize>());
+                                    msg_len = 0;
+
+                                    continue;
+                                }
+
+                                // there's no len or message left to process
+                                break;
+                            }
+
+                            continue;
+                        }
+
+                        Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
+
+                        Err(e) => {
+                            error!(%e, "pipe client error");
+                            break;
+                        }
+                    }
                 }
             }
-
-            Ok(())
         };
 
-        RUNTIME.block_on(fut)?;
-
-        Ok(())
+        RUNTIME.block_on(fut)
     }
 }
