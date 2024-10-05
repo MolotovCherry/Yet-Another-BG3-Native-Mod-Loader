@@ -1,46 +1,31 @@
-mod backtrace;
 mod cli;
-mod config;
+mod console;
 mod helpers;
-mod injector;
+mod loader;
+mod logging;
 mod panic;
 mod paths;
 mod popup;
 mod process_watcher;
+mod setup;
 mod single_instance;
+mod tmp_loader;
 mod tray;
 
-use std::{
-    io::prelude::Write,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::time::Duration;
 
 use clap::Parser;
-use eyre::{Context, Result};
-use tracing::{error, level_filters::LevelFilter, trace};
-use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::EnvFilter;
+use eyre::Result;
+use tracing::trace;
 
 use cli::Args;
-use config::{get_config, Config};
-use injector::inject_plugins;
-use panic::set_hook;
-use paths::{get_bg3_plugins_dir, get_game_binary_paths};
-use popup::{display_popup, fatal_popup, MessageBoxIcon};
+use loader::load_plugins;
+use popup::fatal_popup;
 use process_watcher::CallType;
 use process_watcher::{ProcessWatcher, Timeout};
+use setup::init;
 use single_instance::SingleInstance;
 use tray::AppTray;
-use windows::{
-    core::PCWSTR,
-    Win32::System::Console::{
-        AllocConsole, GetStdHandle, SetConsoleMode, SetConsoleTitleW, ENABLE_PROCESSED_OUTPUT,
-        ENABLE_VIRTUAL_TERMINAL_PROCESSING, ENABLE_WRAP_AT_EOL_OUTPUT, STD_OUTPUT_HANDLE,
-    },
-};
-
-use self::paths::Bg3Exes;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum RunType {
@@ -59,30 +44,30 @@ pub fn run(run_type: RunType) -> Result<()> {
         use clap::CommandFactory;
 
         #[cfg(not(debug_assertions))]
-        debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
+        console::debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
 
         let mut cmd = Args::command();
         cmd.print_help()?;
 
         #[cfg(not(debug_assertions))]
-        enter_to_exit()?;
+        console::enter_to_exit()?;
 
         return Ok(());
     } else if args.version {
         #[cfg(not(debug_assertions))]
-        debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
+        console::debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
 
         println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
         #[cfg(not(debug_assertions))]
-        enter_to_exit()?;
+        console::enter_to_exit()?;
 
         return Ok(());
     }
 
-    let (plugins_dir, config, _guard) = setup(&args)?;
+    let (plugins_dir, config, _guard, loader) = init(&args)?;
 
-    let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&config);
+    //let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&config);
 
     let (polling_rate, timeout, oneshot) = if run_type == RunType::Watcher {
         // watcher tool
@@ -97,11 +82,11 @@ pub fn run(run_type: RunType) -> Result<()> {
     };
 
     let (waiter, stop_token) =
-        ProcessWatcher::new(&[bg3, bg3_dx11], polling_rate, timeout, oneshot).run(
+        ProcessWatcher::new(&[r"C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2407.8.0_x64__8wekyb3d8bbwe\Notepad\Notepad.exe"], polling_rate, timeout, oneshot).run(
         move |call| match call {
                 CallType::Pid(pid) => {
                     trace!("Received callback for pid {pid}, now injecting");
-                    inject_plugins(pid, &plugins_dir, &config).unwrap();
+                    load_plugins(pid, &plugins_dir, &config, &loader).unwrap();
                 }
 
                 // only fires with injector
@@ -120,111 +105,6 @@ pub fn run(run_type: RunType) -> Result<()> {
     }
 
     waiter.wait();
-
-    Ok(())
-}
-
-fn setup(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>)> {
-    // Nicely print any panic messages to the user
-    set_hook();
-
-    let (first_time, plugins_dir) = match get_bg3_plugins_dir() {
-        Ok(v) => v,
-        Err(e) => {
-            error!("failed to find plugins_dir: {e}");
-            fatal_popup("Fatal Error", "Failed to find bg3 plugins folder");
-        }
-    };
-
-    // start logger
-    let worker_guard = setup_logs(&plugins_dir, args).context("Failed to set up logs")?;
-
-    // get/create config
-    let config = get_config(plugins_dir.join("config.toml")).context("Failed to get config")?;
-
-    if first_time {
-        display_popup(
-                "Finish Setup",
-                format!(
-                    "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. install_root in the config likely needs to be adjusted to the correct path. If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, the tools will automatically detect the correct root path and do not require install_root to be configured, otherwise you need to configure install_root",
-                    plugins_dir.display()
-                ),
-                MessageBoxIcon::Info,
-            );
-        std::process::exit(0);
-    }
-
-    trace!("Got config: {config:?}");
-
-    Ok((plugins_dir, config, worker_guard))
-}
-
-fn setup_logs<P: AsRef<Path>>(plugins_dir: P, args: &Args) -> Result<Option<WorkerGuard>> {
-    let mut worker_guard: Option<WorkerGuard> = None;
-
-    if cfg!(debug_assertions) || args.cli {
-        #[cfg(not(debug_assertions))]
-        debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
-
-        tracing_subscriber::fmt()
-            .with_env_filter(EnvFilter::from_env("YABG3ML_LOG"))
-            .without_time()
-            .init();
-    } else {
-        let plugins_dir = plugins_dir.as_ref();
-        let logs_dir = plugins_dir.join("logs");
-
-        let file_appender = tracing_appender::rolling::daily(logs_dir, "ya-native-mod-loader");
-        let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-
-        worker_guard = Some(_guard);
-        tracing_subscriber::fmt()
-            .with_max_level(LevelFilter::DEBUG)
-            .with_writer(non_blocking)
-            .with_ansi(false)
-            .init();
-    }
-
-    Ok(worker_guard)
-}
-
-#[allow(unused)]
-fn debug_console<A: AsRef<str>>(title: A) -> Result<()> {
-    unsafe {
-        AllocConsole()?;
-    }
-
-    let handle = unsafe { GetStdHandle(STD_OUTPUT_HANDLE)? };
-
-    unsafe {
-        SetConsoleMode(
-            handle,
-            ENABLE_PROCESSED_OUTPUT
-                | ENABLE_WRAP_AT_EOL_OUTPUT
-                | ENABLE_VIRTUAL_TERMINAL_PROCESSING,
-        )?;
-    }
-
-    let title = title
-        .as_ref()
-        .encode_utf16()
-        .chain(std::iter::once(0u16))
-        .collect::<Vec<_>>();
-
-    unsafe {
-        SetConsoleTitleW(PCWSTR(title.as_ptr()))?;
-    }
-
-    Ok(())
-}
-
-#[allow(unused)]
-fn enter_to_exit() -> Result<()> {
-    print!("\nPress ENTER to exit..");
-    std::io::stdout().flush()?;
-
-    // empty std input
-    std::io::stdin().read_line(&mut String::new())?;
 
     Ok(())
 }

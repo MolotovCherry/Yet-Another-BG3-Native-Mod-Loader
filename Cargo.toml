@@ -1,6 +1,39 @@
 [workspace]
 resolver = "2"
-members = ["crates/yet-another-bg3-mod-loader"]
+members = [
+    "crates/loader",
+    "crates/shared",
+    "crates/yet-another-bg3-mod-loader",
+]
+
+[workspace.dependencies]
+tracing = "0.1.40"
+eyre = "0.6.12"
+serde = { version = "1.0.210", features = ["derive"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
+shared = { path = "crates/shared" }
+native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
+unicase = "2.7.0"
+
+[workspace.dependencies.windows]
+version = "0.58.0"
+features = [
+    "Win32_Foundation",
+    "Win32_System_ApplicationInstallationAndServicing",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Threading",
+    "Win32_System_Memory",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_SystemServices",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_SystemInformation",
+    "Win32_Storage_FileSystem",
+    "Win32_Security",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Console",
+]
 
 [profile.dev]
 opt-level = 1
@@ -18,3 +51,14 @@ inherits = "release"
 debug = true
 strip = false
 debug-assertions = true
+
+# required so artifact dependencies in build.rs matches dev profile
+[profile.dev.build-override]
+opt-level = 1
+codegen-units = 256
+debug = false
+
+# required so artifact dependencies in build.rs build in full release mode
+[profile.release.build-override]
+opt-level = 3
+codegen-units = 1

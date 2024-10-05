@@ -1,12 +1,10 @@
 use std::{panic, path::Path};
 
 use human_panic::metadata;
+use shared::backtrace::CaptureBacktrace;
 use tracing::error;
 
-use crate::{
-    backtrace::CaptureBacktrace,
-    popup::{display_popup, MessageBoxIcon},
-};
+use crate::popup::{display_popup, MessageBoxIcon};
 
 #[allow(unused_variables)]
 pub fn set_hook() {

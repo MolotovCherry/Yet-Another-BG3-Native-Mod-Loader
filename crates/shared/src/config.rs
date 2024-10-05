@@ -1,11 +1,11 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use eyre::Result;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::popup::fatal_popup;
+use crate::paths::get_bg3_plugins_dir;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
@@ -33,15 +33,15 @@ impl Default for Core {
     }
 }
 
-pub fn get_config<P: AsRef<Path>>(path: P) -> Result<Config> {
-    let path = path.as_ref();
+pub fn get_config() -> Result<Config> {
+    let path = get_bg3_plugins_dir()?.join("config.toml");
 
     if !path.exists() {
         let json = toml::to_string_pretty(&Config::default())?;
 
-        if let Err(e) = fs::write(path, json) {
+        if let Err(e) = fs::write(&path, json) {
             error!("failed to save config: {e}");
-            fatal_popup("Fatal Error", "Failed to save config");
+            return Err(e.into());
         }
     }
 
@@ -49,7 +49,7 @@ pub fn get_config<P: AsRef<Path>>(path: P) -> Result<Config> {
         Ok(v) => v,
         Err(e) => {
             error!("failed to read config: {e}");
-            fatal_popup("Fatal Error", "Failed to read config");
+            return Err(e.into());
         }
     };
 
@@ -57,7 +57,7 @@ pub fn get_config<P: AsRef<Path>>(path: P) -> Result<Config> {
         Ok(v) => Ok(v),
         Err(e) => {
             error!("failed to deserialize config: {e}");
-            fatal_popup("Fatal Error", "Failed to deserialize config\n\nYour config probably has a mistake in it. Please verify it's correctly formatted as toml");
+            Err(e.into())
         }
     }
 }

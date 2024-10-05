@@ -22,9 +22,11 @@ use windows::Win32::{
 
 use crate::{helpers::OwnedHandle, popup::fatal_popup};
 
+pub type Pid = u32;
+
 #[derive(Debug)]
 pub enum CallType {
-    Pid(u32),
+    Pid(Pid),
     Timeout,
 }
 

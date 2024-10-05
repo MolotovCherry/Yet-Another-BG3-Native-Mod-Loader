@@ -1,0 +1,27 @@
+[package]
+name = "loader"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cherry"]
+homepage = "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+tracing.workspace = true
+tracing-subscriber.workspace = true
+eyre.workspace = true
+windows.workspace = true
+shared.workspace = true
+unicase.workspace = true
+native-plugin-lib.workspace = true
+
+[build-dependencies]
+winres = "0.1.12"
+
+[package.metadata.winres]
+ProductName = "Plugin Loader"
+FileDescription = "Dll loader for YABG3ML"
+OriginalFilename = "loader.dll"
