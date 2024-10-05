@@ -1,7 +1,6 @@
 pub mod commands;
 
 use std::{
-    convert::Infallible,
     io::{self, ErrorKind},
     sync::LazyLock,
 };
@@ -95,7 +94,7 @@ impl Server {
         Self
     }
 
-    pub fn recv(&self, cb: impl Fn(Command)) -> io::Result<Infallible> {
+    pub fn recv(&self, cb: impl Fn(Command)) -> io::Result<!> {
         let fut = async {
             let mut buf = Vec::with_capacity(4096);
             let mut tbuf = [0; 1024];
