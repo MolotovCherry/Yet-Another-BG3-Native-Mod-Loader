@@ -3,7 +3,7 @@ use std::{path::PathBuf, process};
 use eyre::{Context as _, Result};
 use shared::{
     config::{get_config, Config},
-    paths::get_bg3_plugins_dir,
+    paths::{get_bg3_local_dir, get_bg3_plugins_dir},
 };
 use tracing::{error, trace};
 use tracing_appender::non_blocking::WorkerGuard;
@@ -20,6 +20,16 @@ pub fn init(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>, PathBu
     // Nicely print any panic messages to the user
     set_hook();
 
+    let first_time = 'f: {
+        let mut plugins_dir = match get_bg3_local_dir() {
+            Ok(v) => v,
+            Err(_) => break 'f false,
+        };
+
+        plugins_dir.push("Plugins");
+        plugins_dir.exists()
+    };
+
     let plugins_dir = match get_bg3_plugins_dir() {
         Ok(v) => v,
         Err(e) => {
@@ -32,7 +42,7 @@ pub fn init(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>, PathBu
     let worker_guard = setup_logs(&plugins_dir, args).context("Failed to set up logs")?;
 
     // get/create config
-    let first_time = !plugins_dir.join("config.toml").exists();
+
     let config = get_config().context("Failed to get config")?;
 
     if first_time {
