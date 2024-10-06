@@ -1,4 +1,4 @@
-use std::{ffi::c_void, os::windows::ffi::EncodeWide};
+use std::ffi::c_void;
 
 use windows::{core::Free, Win32::Foundation::HANDLE};
 
@@ -36,35 +36,5 @@ impl Drop for OwnedHandle {
         unsafe {
             self.0.free();
         }
-    }
-}
-
-pub trait IsEqual {
-    fn is(&self, str: &[u16]) -> bool;
-}
-
-impl IsEqual for EncodeWide<'_> {
-    fn is(&self, str: &[u16]) -> bool {
-        let mut iter = str.iter();
-        let mut i = 0usize;
-
-        while iter.next().is_some_and(|n| *n != 0) {
-            i += 1;
-        }
-
-        let slice = &str[..i];
-
-        let mut wide_iter = self.clone().zip(slice.iter().copied());
-        loop {
-            let Some((a, b)) = wide_iter.next() else {
-                break;
-            };
-
-            if a != b {
-                return false;
-            }
-        }
-
-        true
     }
 }
