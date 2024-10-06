@@ -211,7 +211,7 @@ pub fn is_dirty(handle: &OwnedHandle, loader: &Path) -> Result<bool> {
                 if retry < 3 {
                     retry += 1;
                     total_retries += 1;
-                    std::thread::sleep(std::time::Duration::from_millis(50));
+                    thread::sleep(time::Duration::from_millis(50));
                     continue;
                 }
 

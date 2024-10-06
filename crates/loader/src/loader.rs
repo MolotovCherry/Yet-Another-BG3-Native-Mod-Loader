@@ -88,13 +88,14 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
         // do not join the handle, or it will panic
         // this is because we use ExitThread which yanks the thread out from
         // underneath rust. it does not expect this
-        thread::spawn(move || load_plugin(hinstance, path));
+        let name = name.to_owned();
+        thread::spawn(move || load_plugin(hinstance, name, path));
     }
 
     Ok(())
 }
 
-fn load_plugin(hinstance: HInstance, path: PathBuf) {
+fn load_plugin(hinstance: HInstance, name: String, path: PathBuf) {
     // wrap this in try{} block and return result
     // by doing this we can return the self library guard and
     // prevent a shutdown until the end of this scope
@@ -140,24 +141,24 @@ fn load_plugin(hinstance: HInstance, path: PathBuf) {
             // https://devblogs.microsoft.com/oldnewthing/20131105-00/?p=2733
             guard = Some(FreeSelfLibrary::new(hinstance.0)?);
 
-            trace!("running Init");
+            trace!(%name, "running Init");
 
             // SAFETY: Guaranteed by implementer to not be UB
             unsafe {
                 init();
             }
 
-            trace!("finished Init");
+            trace!(%name, "finished Init");
         }
 
         Ok::<_, Report>(guard)
     };
 
     if let Err(e) = result {
-        error!(path = %path.display(), %e, "load_plugin failed");
+        error!(%name, path = %path.display(), %e, "load_plugin failed");
     }
 
-    trace!("exit load plugin");
+    trace!(%name, "exit load plugin");
 
     // free library and exit thread here. you cannot rely on any extra code after this
 }

@@ -15,7 +15,7 @@ use helpers::{HInstance, Plugin, SuperLock};
 use loader::load_plugins;
 use logging::setup_logging;
 use native_plugin_lib::declare_plugin;
-use tracing::error;
+use tracing::{error, trace};
 use windows::Win32::{
     Foundation::HINSTANCE,
     System::{
@@ -66,6 +66,8 @@ extern "C-unwind" fn DllMain(
         }
 
         DLL_PROCESS_DETACH => {
+            trace!("detaching plugins");
+
             let mut plugins = LOADED_PLUGINS.super_lock();
             // drop all modules if we can
             plugins.clear();
