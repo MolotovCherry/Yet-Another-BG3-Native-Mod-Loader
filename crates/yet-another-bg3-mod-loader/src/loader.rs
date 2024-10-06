@@ -27,7 +27,7 @@ use crate::{helpers::OwnedHandle, popup::warn_popup, process_watcher::Pid};
 use dirty::is_dirty;
 
 pub fn run_loader(pid: Pid, loader: &Path) -> Result<()> {
-    let span = trace_span!("inject_plugins");
+    let span = trace_span!("loader");
     let _guard = span.enter();
 
     let process: OwnedHandle = {
@@ -72,7 +72,7 @@ pub fn run_loader(pid: Pid, loader: &Path) -> Result<()> {
     };
 
     // checks if process has already had injection done on it
-    let is_dirty = match is_dirty(&process) {
+    let is_dirty = match is_dirty(&process, &loader) {
         Ok(v) => v,
         Err(e) => {
             error!(?e, "failed dirty check");

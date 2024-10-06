@@ -3,7 +3,7 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
 use shared::{config::get_config, pipe::commands::Command};
-use tracing::{error, info, warn};
+use tracing::{error, info, trace, warn};
 use unicase::UniCase;
 use windows::{
     core::{s, PCWSTR},
@@ -64,8 +64,9 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
                 } = data.version;
 
                 let p_name = data.name;
+                let author = data.author;
 
-                format!("{p_name} v{major}.{minor}.{patch} ({name}.dll)")
+                format!("{p_name} by {author} v{major}.{minor}.{patch} ({name}.dll)")
             }
 
             Err(_) => format!("{name}.dll"),
@@ -107,8 +108,14 @@ fn load_plugin(hinstance: HInstance, path: PathBuf) {
             .collect::<Vec<_>>();
 
         // SAFETY: Standard function, and our string is formatted properly
-        let main_module = unsafe {
-            LoadLibraryW(PCWSTR::from_raw(plugin_path.as_ptr())).context("failed to load library")?
+        let main_module = {
+            let path = PCWSTR::from_raw(plugin_path.as_ptr());
+            let res = unsafe { LoadLibraryW(path) };
+
+            match res {
+                Ok(v) => v,
+                Err(e) => return Err(e).context("failed to load library")
+            }
         };
 
         // so plugin can be unloaded on dll exit
@@ -133,10 +140,14 @@ fn load_plugin(hinstance: HInstance, path: PathBuf) {
             // https://devblogs.microsoft.com/oldnewthing/20131105-00/?p=2733
             guard = Some(FreeSelfLibrary::new(hinstance.0)?);
 
+            trace!("running Init");
+
             // SAFETY: Guaranteed by implementer to not be UB
             unsafe {
                 init();
             }
+
+            trace!("finished Init");
         }
 
         Ok::<_, Report>(guard)
@@ -145,6 +156,8 @@ fn load_plugin(hinstance: HInstance, path: PathBuf) {
     if let Err(e) = result {
         error!(path = %path.display(), %e, "load_plugin failed");
     }
+
+    trace!("exit load plugin");
 
     // free library and exit thread here. you cannot rely on any extra code after this
 }

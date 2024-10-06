@@ -1,3 +1,5 @@
+#![feature(never_type)]
+
 mod cli;
 mod console;
 mod helpers;
@@ -7,6 +9,7 @@ mod panic;
 mod paths;
 mod popup;
 mod process_watcher;
+mod server;
 mod setup;
 mod single_instance;
 mod tmp_loader;

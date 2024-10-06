@@ -1,4 +1,4 @@
-use std::{path::PathBuf, process};
+use std::{path::PathBuf, process, thread};
 
 use eyre::{Context as _, Result};
 use shared::{
@@ -13,6 +13,7 @@ use crate::{
     logging::setup_logs,
     panic::set_hook,
     popup::{display_popup, fatal_popup, MessageBoxIcon},
+    server::server,
     tmp_loader::write_loader,
 };
 
@@ -46,19 +47,29 @@ pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, PathBuf)> {
 
     if first_time {
         display_popup(
-                "Finish Setup",
-                format!(
-                    "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. install_root in the config likely needs to be adjusted to the correct path. If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, the tools will automatically detect the correct root path and do not require install_root to be configured, otherwise you need to configure install_root",
-                    plugins_dir.display()
-                ),
-                MessageBoxIcon::Info,
-            );
+            "Finish Setup",
+            format!(
+                "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. install_root in the config likely needs to be adjusted to the correct path. If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, the tools will automatically detect the correct root path and do not require install_root to be configured, otherwise you need to configure install_root",
+                plugins_dir.display()
+            ),
+            MessageBoxIcon::Info,
+        );
+
         process::exit(0);
     }
 
     let loader = write_loader()?;
 
     trace!("Got config: {config:?}");
+
+    thread::spawn(|| {
+        let Err(e) = server();
+
+        fatal_popup(
+            "Server Error",
+            format!("Pipe server unexpectedly stopped. Please report this.\n\nError:\n{e}"),
+        );
+    });
 
     Ok((config, worker_guard, loader))
 }

@@ -1,6 +1,7 @@
 use std::os::windows::io::IntoRawHandle;
 use std::path::Path;
 use std::{collections::HashMap, fs::OpenOptions, os::windows::fs::OpenOptionsExt as _};
+use std::{thread, time};
 
 use eyre::{anyhow, bail, Result};
 use shared::paths::get_bg3_plugins_dir;
@@ -59,9 +60,11 @@ fn dir_id(path: &Path) -> Option<Id> {
 }
 
 // Determine whether the process has been tainted by previous dll injections
-pub fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
+pub fn is_dirty(handle: &OwnedHandle, loader: &Path) -> Result<bool> {
     let span = trace_span!("is_dirty");
     let _guard = span.enter();
+
+    let loader = loader.as_os_str().to_string_lossy().to_lowercase();
 
     let plugins_dir = get_bg3_plugins_dir()?;
 
@@ -76,7 +79,6 @@ pub fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
     );
 
     let mut is_plugin = move |path: &str| {
-        let path = path.to_lowercase();
         let path = Path::new(&path);
 
         // not a dll file
@@ -133,7 +135,7 @@ pub fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
                 retry = enum_proc_retries + 1,
                 "EnumProcessModulesEx failed; retrying"
             );
-            std::thread::sleep(std::time::Duration::from_millis(250));
+            thread::sleep(time::Duration::from_millis(250));
             enum_proc_retries += 1;
             continue;
         }
@@ -222,6 +224,12 @@ pub fn is_dirty(handle: &OwnedHandle) -> Result<bool> {
         let path = String::from_utf16_lossy(&name[..len as usize]);
 
         trace!("found loaded module @ {path}");
+
+        let path = path.to_lowercase();
+
+        if loader == path {
+            return Ok(true);
+        }
 
         if is_plugin(&path) {
             return Ok(true);
