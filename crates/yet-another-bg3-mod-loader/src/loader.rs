@@ -1,12 +1,17 @@
 mod dirty;
+mod get_module_base_addr_ex;
 
 use std::ffi::c_void;
+use std::iter;
 use std::os::windows::ffi::OsStrExt;
 use std::{mem, path::Path};
 
-use eyre::{Context, Result};
+use eyre::{bail, Context, Result};
+use get_module_base_addr_ex::GetModuleBaseEx;
 use native_plugin_lib::Version;
 use tracing::{error, info, trace_span};
+use windows::Win32::Foundation::WAIT_OBJECT_0;
+use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE};
 use windows::{
     core::{s, w, Error as WinError},
     Win32::{
@@ -26,7 +31,7 @@ use windows::{
 use crate::{helpers::OwnedHandle, popup::warn_popup, process_watcher::Pid};
 use dirty::is_dirty;
 
-pub fn run_loader(pid: Pid, loader: &Path) -> Result<()> {
+pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     let span = trace_span!("loader");
     let _guard = span.enter();
 
@@ -118,9 +123,13 @@ pub fn run_loader(pid: Pid, loader: &Path) -> Result<()> {
 
     info!("Running {loader_formatted}");
 
-    let loader = loader.as_os_str().encode_wide().collect::<Vec<_>>();
+    let loader_v = loader
+        .as_os_str()
+        .encode_wide()
+        .chain(iter::once(0))
+        .collect::<Vec<_>>();
     // 1 byte = u8, u16 = 2 bytes, len = number of elems in vector, so len * 2
-    let loader_path_len = loader.len() * size_of::<u16>();
+    let loader_path_len = loader_v.len() * size_of::<u16>();
 
     let alloc_addr = {
         let addr = unsafe {
@@ -139,7 +148,7 @@ pub fn run_loader(pid: Pid, loader: &Path) -> Result<()> {
 
             warn_popup(
                 "Process injection failure",
-                format!("Failed to allocate memory in target process\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. It's possible at this point that some plugins are injected, while others are not. Recommend restarting game and trying again\n\nError: {error:?}"),
+                format!("Failed to allocate memory in target process\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {error:?}"),
             );
 
             return Ok(());
@@ -153,7 +162,7 @@ pub fn run_loader(pid: Pid, loader: &Path) -> Result<()> {
         WriteProcessMemory(
             process.as_raw_handle(),
             alloc_addr,
-            loader.as_ptr() as *const _,
+            loader_v.as_ptr() as *const _,
             loader_path_len,
             None,
         )
@@ -162,9 +171,9 @@ pub fn run_loader(pid: Pid, loader: &Path) -> Result<()> {
     if let Err(e) = res {
         error!(?e, "Failed to write to process");
         warn_popup(
-                        "Process injection failure",
-                        format!("Failed to write to process memory\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. It's possible at this point that some plugins are injected, while others are not. Recommend restarting game and trying again\n\nError: {e}"),
-                    );
+            "Process injection failure",
+            format!("Failed to write to process memory\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {e}"),
+        );
         return Ok(());
     }
 
@@ -182,12 +191,45 @@ pub fn run_loader(pid: Pid, loader: &Path) -> Result<()> {
         )
     };
 
+    let handle = match res {
+        Ok(h) => h,
+        Err(e) => {
+            error!(?e, "Failed to create remote thread");
+            warn_popup(
+                "Process injection failure",
+                format!("Failed to create process remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {e}"),
+            );
+
+            return Ok(());
+        }
+    };
+
+    // wait for it to be done starting
+    let res = unsafe { WaitForSingleObject(handle, INFINITE) };
+    if res != WAIT_OBJECT_0 {
+        error!(?res, "object in wrong state");
+        bail!("wait object in wrong state");
+    }
+
+    // now call Init
+
+    let filename = loader.file_name().unwrap_or_default();
+    let Some(module) = GetModuleBaseEx(pid, filename) else {
+        bail!("failed to get base address of loader");
+    };
+
+    let init_addr = module.0 as usize + rva;
+    let init_fn = unsafe { mem::transmute::<usize, LPTHREAD_START_ROUTINE>(init_addr) };
+
+    let res =
+        unsafe { CreateRemoteThread(process.as_raw_handle(), None, 0, init_fn, None, 0, None) };
+
     if let Err(e) = res {
         error!(?e, "Failed to create remote thread");
         warn_popup(
-                        "Process injection failure",
-                        format!("Failed to create process remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. It's possible at this point that some plugins are injected, while others are not. Recommend restarting game and trying again\n\nError: {e}"),
-                    );
+            "Process injection failure",
+            format!("Failed to create process remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {e}"),
+        );
 
         return Ok(());
     }

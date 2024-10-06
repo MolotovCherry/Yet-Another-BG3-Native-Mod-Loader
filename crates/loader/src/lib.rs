@@ -6,8 +6,7 @@ mod panic;
 
 use std::{
     ffi::c_void,
-    sync::{LazyLock, Mutex},
-    thread,
+    sync::{LazyLock, Mutex, OnceLock},
 };
 
 use eyre::{Context as _, Error};
@@ -31,6 +30,7 @@ declare_plugin! {
 }
 
 static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(|| Mutex::default());
+static MODULE: OnceLock<HInstance> = OnceLock::new();
 
 #[no_mangle]
 extern "C-unwind" fn DllMain(
@@ -38,31 +38,11 @@ extern "C-unwind" fn DllMain(
     fdw_reason: u32,
     _lpv_reserved: *const c_void,
 ) -> bool {
-    let module = HInstance(module);
-
     match fdw_reason {
         DLL_PROCESS_ATTACH => {
             // not using these anyways
-            _ = unsafe { DisableThreadLibraryCalls(module.0) };
-
-            thread::spawn(move || {
-                // Set up a custom panic hook so we can log all panics
-                panic::set_hook();
-
-                let result = panic::catch_unwind(|| {
-                    setup_logging().context("failed to setup logging")?;
-
-                    load_plugins(module)?;
-
-                    Ok::<_, Error>(())
-                });
-
-                // If there was no panic, but error was bubbled up, then log the error
-                // Panic is already logged in the hook, so we can ignore that
-                if let Ok(Err(e)) = result {
-                    error!("{e}");
-                }
-            });
+            _ = unsafe { DisableThreadLibraryCalls(module) };
+            _ = MODULE.set(HInstance(module));
         }
 
         DLL_PROCESS_DETACH => {
@@ -77,4 +57,28 @@ extern "C-unwind" fn DllMain(
     }
 
     true
+}
+
+#[no_mangle]
+extern "system-unwind" fn Init(_lpthreadparameter: *mut c_void) -> u32 {
+    // Set up a custom panic hook so we can log all panics
+    panic::set_hook();
+
+    let module = *MODULE.get().unwrap();
+
+    let result = panic::catch_unwind(|| {
+        setup_logging().context("failed to setup logging")?;
+
+        load_plugins(module)?;
+
+        Ok::<_, Error>(())
+    });
+
+    // If there was no panic, but error was bubbled up, then log the error
+    // Panic is already logged in the hook, so we can ignore that
+    if let Ok(Err(e)) = result {
+        error!("{e}");
+    }
+
+    0
 }

@@ -90,7 +90,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         move |call| match call {
                 CallType::Pid(pid) => {
                     trace!("Received callback for pid {pid}, now loading");
-                    run_loader(pid, &loader).unwrap();
+                    run_loader(pid, (loader.0, &loader.1)).unwrap();
                 }
 
                 // only fires with injector

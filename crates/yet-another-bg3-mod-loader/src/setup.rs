@@ -17,7 +17,7 @@ use crate::{
     tmp_loader::write_loader,
 };
 
-pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, PathBuf)> {
+pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, (usize, PathBuf))> {
     // Nicely print any panic messages to the user
     set_hook();
 
