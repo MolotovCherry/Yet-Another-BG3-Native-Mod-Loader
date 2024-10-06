@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{env, fs};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -31,11 +31,14 @@ fn build_compressed() -> Result<(), Box<dyn Error>> {
 
     let hash = sha256::digest(&data);
 
-    let out_dir = env::var("OUT_DIR").unwrap();
-    let out_dir = Path::new(&out_dir);
-    let file = out_dir.join("loader.bin");
-    let mut out_file = fs::File::create(&file)?;
+    let out_dir = {
+        let dir = env::var("OUT_DIR")?;
+        PathBuf::from(dir)
+    };
 
+    let file = out_dir.join("loader.bin");
+
+    let mut out_file = fs::File::create(&file)?;
     zstd::stream::copy_encode(&*data, &mut out_file, 22)?;
 
     println!("cargo::rustc-env=LOADER_BIN={}", file.display());

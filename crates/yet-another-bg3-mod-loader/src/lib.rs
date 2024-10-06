@@ -16,10 +16,11 @@ use std::time::Duration;
 
 use clap::Parser;
 use eyre::Result;
+use paths::{get_game_binary_paths, Bg3Exes};
 use tracing::trace;
 
 use cli::Args;
-use loader::load_plugins;
+use loader::run_loader;
 use popup::fatal_popup;
 use process_watcher::CallType;
 use process_watcher::{ProcessWatcher, Timeout};
@@ -65,9 +66,9 @@ pub fn run(run_type: RunType) -> Result<()> {
         return Ok(());
     }
 
-    let (plugins_dir, config, _guard, loader) = init(&args)?;
+    let (config, _guard, loader) = init(&args)?;
 
-    //let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&config);
+    let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&config);
 
     let (polling_rate, timeout, oneshot) = if run_type == RunType::Watcher {
         // watcher tool
@@ -82,11 +83,11 @@ pub fn run(run_type: RunType) -> Result<()> {
     };
 
     let (waiter, stop_token) =
-        ProcessWatcher::new(&[r"C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2407.8.0_x64__8wekyb3d8bbwe\Notepad\Notepad.exe"], polling_rate, timeout, oneshot).run(
+        ProcessWatcher::new(&[bg3, bg3_dx11], polling_rate, timeout, oneshot).run(
         move |call| match call {
                 CallType::Pid(pid) => {
-                    trace!("Received callback for pid {pid}, now injecting");
-                    load_plugins(pid, &plugins_dir, &config, &loader).unwrap();
+                    trace!("Received callback for pid {pid}, now loading");
+                    run_loader(pid, &loader).unwrap();
                 }
 
                 // only fires with injector

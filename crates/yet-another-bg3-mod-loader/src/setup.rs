@@ -16,7 +16,7 @@ use crate::{
     tmp_loader::write_loader,
 };
 
-pub fn init(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>, PathBuf)> {
+pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, PathBuf)> {
     // Nicely print any panic messages to the user
     set_hook();
 
@@ -27,7 +27,7 @@ pub fn init(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>, PathBu
         };
 
         plugins_dir.push("Plugins");
-        plugins_dir.exists()
+        !plugins_dir.exists()
     };
 
     let plugins_dir = match get_bg3_plugins_dir() {
@@ -42,7 +42,6 @@ pub fn init(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>, PathBu
     let worker_guard = setup_logs(&plugins_dir, args).context("Failed to set up logs")?;
 
     // get/create config
-
     let config = get_config().context("Failed to get config")?;
 
     if first_time {
@@ -61,5 +60,5 @@ pub fn init(args: &Args) -> Result<(PathBuf, Config, Option<WorkerGuard>, PathBu
 
     trace!("Got config: {config:?}");
 
-    Ok((plugins_dir, config, worker_guard, loader))
+    Ok((config, worker_guard, loader))
 }
