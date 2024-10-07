@@ -29,7 +29,7 @@ declare_plugin! {
     "Plugin loader for Yet-Another-BG3-Mod-Loader"
 }
 
-static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(|| Mutex::default());
+static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(Mutex::default);
 static MODULE: OnceLock<HInstance> = OnceLock::new();
 
 #[no_mangle]

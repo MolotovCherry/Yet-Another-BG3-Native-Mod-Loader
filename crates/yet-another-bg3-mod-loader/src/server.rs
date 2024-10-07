@@ -47,9 +47,7 @@ pub fn server() -> io::Result<!> {
         Command::ErrorCantReadPluginDir => {
             warn_popup(
                 "Failed to read plugins dir",
-                format!(
-                    "Attempted to read plugins dir, but failed opening it\n\nDo you have correct perms? See log for more details",
-                ),
+                "Attempted to read plugins dir, but failed opening it\n\nDo you have correct perms? See log for more details",
             );
         }
     };

@@ -77,7 +77,7 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     };
 
     // checks if process has already had injection done on it
-    let is_dirty = match is_dirty(&process, &loader) {
+    let is_dirty = match is_dirty(&process, loader) {
         Ok(v) => v,
         Err(e) => {
             error!(?e, "failed dirty check");
@@ -100,7 +100,7 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     }
 
     let loader_formatted = {
-        let data = native_plugin_lib::get_plugin_data(&loader);
+        let data = native_plugin_lib::get_plugin_data(loader);
         let dll_name = loader.file_name().unwrap_or_default().to_string_lossy();
 
         if let Ok(guard) = data {
