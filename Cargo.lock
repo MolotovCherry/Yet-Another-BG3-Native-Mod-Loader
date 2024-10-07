@@ -1382,7 +1382,7 @@ dependencies = [
 [[package]]
 name = "native-plugin-lib"
 version = "0.1.0"
-source = "git+https://github.com/MolotovCherry/Native-Plugin-Lib#beb4e2a93ec24d3965661d07adce970ff14aac14"
+source = "git+https://github.com/MolotovCherry/Native-Plugin-Lib#7c6e90996f763c6732d3d0dab44a0012da5cd900"
 dependencies = [
  "eyre",
  "konst",
@@ -3307,7 +3307,7 @@ checksum = "b9cc00251562a284751c9973bace760d86c0276c471b4be569fe6b068ee97a56"
 
 [[package]]
 name = "yet-another-bg3-mod-loader"
-version = "0.2.7"
+version = "0.3.0"
 dependencies = [
  "clap",
  "eyre",
