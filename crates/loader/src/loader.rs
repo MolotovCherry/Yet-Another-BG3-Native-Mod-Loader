@@ -51,25 +51,26 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
             .to_str()
             .unwrap_or_default();
 
-        let data = native_plugin_lib::get_plugin_data(&path);
+        let name_formatted = {
+            let data = native_plugin_lib::get_plugin_data(&path);
+            match data {
+                Ok(guard) => {
+                    let data = guard.data();
 
-        let name_formatted = match data {
-            Ok(guard) => {
-                let data = guard.data();
+                    let Version {
+                        major,
+                        minor,
+                        patch,
+                    } = data.version;
 
-                let Version {
-                    major,
-                    minor,
-                    patch,
-                } = data.version;
+                    let p_name = data.name;
+                    let author = data.author;
 
-                let p_name = data.name;
-                let author = data.author;
+                    format!("{p_name} by {author} v{major}.{minor}.{patch} ({name}.dll)")
+                }
 
-                format!("{p_name} by {author} v{major}.{minor}.{patch} ({name}.dll)")
+                Err(_) => format!("{name}.dll"),
             }
-
-            Err(_) => format!("{name}.dll"),
         };
 
         let is_disabled = config

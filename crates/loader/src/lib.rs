@@ -33,7 +33,7 @@ static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(|| Mutex::de
 static MODULE: OnceLock<HInstance> = OnceLock::new();
 
 #[no_mangle]
-extern "C-unwind" fn DllMain(
+extern "stdcall-unwind" fn DllMain(
     module: HINSTANCE,
     fdw_reason: u32,
     _lpv_reserved: *const c_void,

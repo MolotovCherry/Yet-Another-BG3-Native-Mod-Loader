@@ -108,94 +108,100 @@ impl Server {
         Self::default()
     }
 
-    pub fn recv(&mut self, cb: impl Fn(Command)) -> io::Result<()> {
+    pub fn recv_all(&mut self, cb: impl Fn(Command)) -> io::Result<!> {
         let fut = async {
-            let server = ServerOptions::new()
-                .access_inbound(true)
-                .access_outbound(false)
-                .reject_remote_clients(true)
-                .pipe_mode(PipeMode::Byte)
-                .create(PIPE);
-
-            let server = match server {
-                Ok(s) => s,
-                Err(e) => {
-                    error!(%e, "failed to create pipe server");
-                    return Err(e);
-                }
-            };
-
-            if let Err(e) = server.connect().await {
-                error!(%e, "client failed to connect");
-                // not an error in the sense that it's not fatal
-                return Ok(());
-            }
-
             loop {
-                if server.readable().await.is_err() {
-                    break;
-                }
-
-                match server.try_read(&mut self.tbuf) {
-                    Ok(0) => break,
-
-                    Ok(n) => {
-                        let data = &self.tbuf[..n];
-                        self.buf.extend_from_slice(data);
-
-                        // message: <len:usize><message>
-                        // this will keep looping and process each msg len / message for as long as there's enough
-                        // data buffered
-                        loop {
-                            // 1. get msg len if it's not set and we have enough buffer to get it
-                            // <len><message>
-                            // ^---^
-                            if self.msg_len.is_none() && self.buf.len() >= size_of::<usize>() {
-                                self.msg_len = Some(usize::from_le_bytes(
-                                    self.buf[..size_of::<usize>()].try_into().unwrap(),
-                                ));
-
-                                continue;
-                            }
-                            // 2. process msg if we know the msg len and there's enough buffer to process it
-                            // <len><message>
-                            //      ^-------^
-                            else if let Some(len) = self.msg_len {
-                                if self.buf.len() < len + size_of::<usize>() {
-                                    break;
-                                }
-
-                                let data = &self.buf[size_of::<usize>()..len + size_of::<usize>()];
-
-                                if let Ok(command) = serde_json::from_slice::<Command>(data) {
-                                    cb(command);
-                                }
-
-                                self.buf.drain(..len + size_of::<usize>());
-                                self.msg_len = None;
-
-                                continue;
-                            }
-
-                            // there's no len or message left to process
-                            break;
-                        }
-
-                        continue;
-                    }
-
-                    Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
-
-                    Err(e) => {
-                        error!(%e, "pipe client error");
-                        break;
-                    }
-                }
+                self.recv_one(&cb).await?;
             }
-
-            Ok(())
         };
 
         RUNTIME.block_on(fut)
+    }
+
+    async fn recv_one(&mut self, cb: &impl Fn(Command)) -> Result<(), io::Error> {
+        let server = ServerOptions::new()
+            .access_inbound(true)
+            .access_outbound(false)
+            .reject_remote_clients(true)
+            .pipe_mode(PipeMode::Byte)
+            .create(PIPE);
+
+        let server = match server {
+            Ok(s) => s,
+            Err(e) => {
+                error!(%e, "failed to create pipe server");
+                return Err(e);
+            }
+        };
+
+        if let Err(e) = server.connect().await {
+            error!(%e, "client failed to connect");
+            // not an error in the sense that it's not fatal
+            return Ok(());
+        }
+
+        loop {
+            if server.readable().await.is_err() {
+                break;
+            }
+
+            match server.try_read(&mut self.tbuf) {
+                Ok(0) => break,
+
+                Ok(n) => {
+                    let data = &self.tbuf[..n];
+                    self.buf.extend_from_slice(data);
+
+                    // message: <len:usize><message>
+                    // this will keep looping and process each msg len / message for as long as there's enough
+                    // data buffered
+                    loop {
+                        // 1. get msg len if it's not set and we have enough buffer to get it
+                        // <len><message>
+                        // ^---^
+                        if self.msg_len.is_none() && self.buf.len() >= size_of::<usize>() {
+                            self.msg_len = Some(usize::from_le_bytes(
+                                self.buf[..size_of::<usize>()].try_into().unwrap(),
+                            ));
+
+                            continue;
+                        }
+                        // 2. process msg if we know the msg len and there's enough buffer to process it
+                        // <len><message>
+                        //      ^-------^
+                        else if let Some(len) = self.msg_len {
+                            if self.buf.len() < len + size_of::<usize>() {
+                                break;
+                            }
+
+                            let data = &self.buf[size_of::<usize>()..len + size_of::<usize>()];
+
+                            if let Ok(command) = serde_json::from_slice::<Command>(data) {
+                                cb(command);
+                            }
+
+                            self.buf.drain(..len + size_of::<usize>());
+                            self.msg_len = None;
+
+                            continue;
+                        }
+
+                        // there's no len or message left to process
+                        break;
+                    }
+
+                    continue;
+                }
+
+                Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
+
+                Err(e) => {
+                    error!(%e, "pipe client error");
+                    break;
+                }
+            }
+        }
+
+        Ok(())
     }
 }
