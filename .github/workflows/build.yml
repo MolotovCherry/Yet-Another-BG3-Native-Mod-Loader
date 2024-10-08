@@ -3,16 +3,26 @@ name: Build
 on:
   workflow_dispatch:
     inputs:
-        release:
-            description: 'Release'
-            required: true
-            default: false
-            type: boolean
-        release_mode:
-          description: 'Release Mode'
-          required: true
-          default: false
-          type: boolean
+      overwrite:
+        description: 'Overwrite file on upload'
+        required: true
+        default: false
+        type: boolean
+      prerelease:
+        description: 'Update PreRelease'
+        required: true
+        default: false
+        type: boolean
+      release:
+        description: 'Release'
+        required: true
+        default: false
+        type: boolean
+      release_mode:
+        description: 'Release Mode'
+        required: true
+        default: false
+        type: boolean
   push:
     branches: ["main"]
   pull_request:
@@ -73,3 +83,5 @@ jobs:
           file: "*.zip"
           draft: false
           update_latest_release: true
+          overwrite: ${{ inputs.overwrite }}
+          prerelease: ${{ inputs.prerelease }}
