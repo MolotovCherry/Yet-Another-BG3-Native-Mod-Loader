@@ -2,6 +2,17 @@ name: Build
 
 on:
   workflow_dispatch:
+    inputs:
+        release:
+            description: 'Release'
+            required: true
+            default: false
+            type: boolean
+        release_mode:
+          description: 'Release Mode'
+          required: true
+          default: false
+          type: boolean
   push:
     branches: ["main"]
   pull_request:
@@ -24,18 +35,17 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ github.event_name == 'release' && 'prod' || 'dev' }}
+          key: ${{ (github.event_name == 'release' || inputs.release_mode || inputs.release) && 'prod' || 'dev' }}
 
       - name: Build Release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || inputs.release_mode || inputs.release
         run: cargo build --release
 
       - name: Build Debug
-        if: github.event_name != 'release'
+        if: github.event_name != 'release' && !(inputs.release_mode || inputs.release)
         run: cargo build
 
       - name: Upload Artifacts
-        if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
           name: build
@@ -43,23 +53,23 @@ jobs:
             target/*/*.exe
 
       - name: Create staging folder
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || inputs.release
         run: |
           New-Item -ItemType Directory -Force -Path bin
 
       - name: Zip files up
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || inputs.release
         run: |
           Get-ChildItem -Path target/*/*.exe,assets/* | Copy-Item -Destination "bin"
           Compress-Archive -Path "bin" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-mod-loader-x64.zip"
           Get-ChildItem -Path "bin" -Recurse | Remove-Item -Force
 
       - name: Attach assets to release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || inputs.release
         uses: xresloader/upload-to-github-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           file: "*.zip"
           draft: false
-          release_id: ${{ github.event.release.id }}
+          update_latest_release: true
