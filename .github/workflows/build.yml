@@ -41,7 +41,6 @@ jobs:
           name: build
           path: |
             target/*/*.exe
-            target/*/*.dll
 
       - name: Create staging folder
         if: github.event_name == 'release'
@@ -51,7 +50,7 @@ jobs:
       - name: Zip files up
         if: github.event_name == 'release'
         run: |
-          Get-ChildItem -Path target/*/*.exe,assets/*,target/*/*.dll | Copy-Item -Destination "bin"
+          Get-ChildItem -Path target/*/*.exe,assets/* | Copy-Item -Destination "bin"
           Compress-Archive -Path "bin" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-mod-loader-x64.zip"
           Get-ChildItem -Path "bin" -Recurse | Remove-Item -Force
 
