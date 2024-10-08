@@ -3,6 +3,11 @@ name: Build
 on:
   workflow_dispatch:
     inputs:
+      latest:
+        description: 'Update latest release'
+        required: true
+        default: false
+        type: boolean
       overwrite:
         description: 'Overwrite file on upload'
         required: true
@@ -82,6 +87,6 @@ jobs:
         with:
           file: "*.zip"
           draft: false
-          update_latest_release: true
+          update_latest_release: ${{ inputs.latest }}
           overwrite: ${{ inputs.overwrite }}
           prerelease: ${{ inputs.prerelease }}
