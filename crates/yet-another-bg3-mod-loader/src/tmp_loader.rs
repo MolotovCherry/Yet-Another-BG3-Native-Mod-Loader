@@ -31,10 +31,13 @@ pub fn init_loader() -> Result<(usize, PathBuf)> {
     let data = fs::read(&loader_path)?;
     let hash = sha256::digest(&data);
 
-    if hash != LOADER_HASH {
+    // did we compile in CI? we need default behavior if so
+    let check_hash = option_env!("CI").is_some() || option_env!("CHECK_HASH").is_some();
+
+    if check_hash && hash != LOADER_HASH {
         fatal_popup(
             "loader dll mismatch",
-            format!("loader.dll is either the wrong file, or corrupted. Please redownload the program to get a fresh copy of the exe/dll.\n\nExpected a hash of:\n{LOADER_HASH}\n\nbut instead found:\n{hash}"),
+            format!("loader.dll is either the wrong file, or corrupted. Please redownload the program to get a fresh copy of the 2/dll.\n\nExpected a hash of:\n{LOADER_HASH}\n\nbut instead found:\n{hash}"),
         );
     }
 
