@@ -70,6 +70,7 @@ pub fn run(run_type: RunType) -> Result<()> {
     }
 
     let (config, _guard, loader) = init(&args)?;
+    let _loader_lock = loader.2;
 
     let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&config);
 

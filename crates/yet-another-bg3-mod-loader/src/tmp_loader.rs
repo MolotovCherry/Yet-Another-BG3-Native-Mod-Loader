@@ -1,13 +1,20 @@
-use std::{env, fs, path::PathBuf};
+use std::{
+    env,
+    fs::{File, OpenOptions},
+    io,
+    os::windows::prelude::OpenOptionsExt,
+    path::PathBuf,
+};
 
 use eyre::{Context, OptionExt as _, Result};
 use pelite::{pe::PeFile, pe64::exports::GetProcAddress};
+use windows::Win32::Storage::FileSystem::FILE_SHARE_READ;
 
 use crate::popup::fatal_popup;
 
 static LOADER_HASH: &str = env!("LOADER_HASH");
 
-pub fn init_loader() -> Result<(usize, PathBuf)> {
+pub fn init_loader() -> Result<(usize, PathBuf, File)> {
     let current_exe_path = env::current_exe().context("unable to find current exe path")?;
     let exe_name = current_exe_path
         .file_name()
@@ -28,7 +35,15 @@ pub fn init_loader() -> Result<(usize, PathBuf)> {
         );
     }
 
-    let data = fs::read(&loader_path)?;
+    let mut file = OpenOptions::new()
+        .read(true)
+        // permit shared read, but no delete/rename or write until dropped
+        .share_mode(FILE_SHARE_READ.0)
+        .open(&loader_path)?;
+
+    let mut data = Vec::new();
+    io::copy(&mut file, &mut data)?;
+
     let hash = sha256::digest(&data);
 
     // did we compile in CI? we need default behavior if so
@@ -43,7 +58,7 @@ pub fn init_loader() -> Result<(usize, PathBuf)> {
 
     let rva = get_init_rva(&data)?;
 
-    Ok((rva, loader_path))
+    Ok((rva, loader_path, file))
 }
 
 fn get_init_rva(data: &[u8]) -> Result<usize> {

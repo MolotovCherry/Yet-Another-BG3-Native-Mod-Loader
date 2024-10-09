@@ -1,4 +1,4 @@
-use std::{path::PathBuf, process, thread};
+use std::{fs::File, path::PathBuf, process, thread};
 
 use eyre::{Context as _, Result};
 use shared::{
@@ -17,7 +17,8 @@ use crate::{
     tmp_loader::init_loader,
 };
 
-pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, (usize, PathBuf))> {
+#[allow(clippy::type_complexity)]
+pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, (usize, PathBuf, File))> {
     // Nicely print any panic messages to the user
     set_hook();
 

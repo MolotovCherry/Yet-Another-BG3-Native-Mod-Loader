@@ -30,6 +30,5 @@ sha256 = "1.5.0"
 loader = { path = "../loader", artifact = "cdylib" }
 
 [package.metadata.winres]
-ProductName = "Yet Another BG3 Mod Loader"
-FileDescription = "Loads native plugins into BG3"
+FileDescription = "Yet Another BG3 Mod Loader"
 LegalCopyright = "Copyright (c) Cherry"
