@@ -17,10 +17,7 @@ use native_plugin_lib::declare_plugin;
 use tracing::{error, trace};
 use windows::Win32::{
     Foundation::HINSTANCE,
-    System::{
-        LibraryLoader::DisableThreadLibraryCalls,
-        SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
-    },
+    System::SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
 };
 
 declare_plugin! {
@@ -41,7 +38,11 @@ extern "stdcall-unwind" fn DllMain(
     match fdw_reason {
         DLL_PROCESS_ATTACH => {
             // not using these anyways
-            _ = unsafe { DisableThreadLibraryCalls(module) };
+            // But disabled cause we are using crt static
+            //
+            // > Consider calling DisableThreadLibraryCalls when receiving DLL_PROCESS_ATTACH, unless your DLL is
+            // > linked with static C run-time library (CRT).
+            // _ = unsafe { DisableThreadLibraryCalls(module) };
             _ = MODULE.set(HInstance(module));
         }
 
