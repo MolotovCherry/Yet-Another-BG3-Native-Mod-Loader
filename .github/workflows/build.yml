@@ -66,6 +66,7 @@ jobs:
           name: build
           path: |
             target/*/*.exe
+            target/*/deps/artifact/loader-*/cdylib/*.dll
 
       - name: Create staging folder
         if: github.event_name == 'release' || inputs.release
@@ -75,7 +76,7 @@ jobs:
       - name: Zip files up
         if: github.event_name == 'release' || inputs.release
         run: |
-          Get-ChildItem -Path target/*/*.exe,assets/* | Copy-Item -Destination "bin"
+          Get-ChildItem -Path target/*/*.exe,target/*/deps/artifact/loader-*/cdylib/*.dll,assets/* | Copy-Item -Destination "bin"
           Compress-Archive -Path "bin" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-mod-loader-x64.zip"
           Get-ChildItem -Path "bin" -Recurse | Remove-Item -Force
 
@@ -90,3 +91,4 @@ jobs:
           update_latest_release: ${{ inputs.latest }}
           overwrite: ${{ inputs.overwrite }}
           prerelease: ${{ inputs.prerelease }}
+          release_id: ${{ github.event_name == 'release' && github.event.release.id || 0 }}

@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::{env, fs};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -18,31 +18,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     res.compile()?;
 
-    build_compressed()?;
+    calc_hash()?;
 
     Ok(())
 }
 
-fn build_compressed() -> Result<(), Box<dyn Error>> {
+fn calc_hash() -> Result<(), Box<dyn Error>> {
     // https://github.com/rust-lang/cargo/issues/9096
     // https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies-environment-variables
+    //
+    // note, the dll here is target/*/deps/artifact/loader-*/cdylib/loader.dll, NOT target/loader.dll
     let env = env::var_os("CARGO_CDYLIB_FILE_LOADER").unwrap();
     let data = fs::read(&env)?;
 
     let hash = sha256::digest(&data);
 
-    let out_dir = {
-        let dir = env::var("OUT_DIR")?;
-        PathBuf::from(dir)
-    };
-
-    let file = out_dir.join("loader.bin");
-
-    let mut out_file = fs::File::create(&file)?;
-    zstd::stream::copy_encode(&*data, &mut out_file, 22)?;
-
-    println!("cargo::rustc-env=LOADER_BIN={}", file.display());
-    println!("cargo::rustc-env=LOADER_BIN_HASH={}", &hash[..8]);
+    println!("cargo::rustc-env=LOADER_HASH={hash}");
 
     Ok(())
 }

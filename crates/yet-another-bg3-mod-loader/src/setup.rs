@@ -14,7 +14,7 @@ use crate::{
     panic::set_hook,
     popup::{display_popup, fatal_popup, MessageBoxIcon},
     server::server,
-    tmp_loader::write_loader,
+    tmp_loader::init_loader,
 };
 
 pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, (usize, PathBuf))> {
@@ -58,7 +58,7 @@ pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, (usize, PathBuf
         process::exit(0);
     }
 
-    let loader = write_loader()?;
+    let loader = init_loader()?;
 
     trace!("Got config: {config:?}");
 

@@ -1,35 +1,49 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{env, fs, path::PathBuf};
 
-use eyre::{bail, Context, Result};
+use eyre::{Context, OptionExt as _, Result};
 use pelite::{pe::PeFile, pe64::exports::GetProcAddress};
 
-// The cdylib loader crate's data; see build.rs
-static LOADER_BIN: &[u8] = include_bytes!(env!("LOADER_BIN"));
-static LOADER_BIN_HASH: &str = env!("LOADER_BIN_HASH");
+use crate::popup::fatal_popup;
 
-pub fn write_loader() -> Result<(usize, PathBuf)> {
-    let tmpdir = tempfile::env::temp_dir();
-    if !tmpdir.exists() {
-        bail!("system tmpdir does not exist; please ensure your system is set up properly");
+static LOADER_HASH: &str = env!("LOADER_HASH");
+
+pub fn init_loader() -> Result<(usize, PathBuf)> {
+    let current_exe_path = env::current_exe().context("unable to find current exe path")?;
+    let exe_name = current_exe_path
+        .file_name()
+        .ok_or_eyre("filename not found")?
+        .to_string_lossy();
+
+    let loader_path = current_exe_path
+        .parent()
+        .ok_or_eyre("current exe parent dir not found")?
+        .join("loader.dll");
+
+    if !loader_path.exists() {
+        fatal_popup(
+            "Loader not found",
+            format!(
+                "`loader.dll` was not found. Please ensure this dll is in the same directory as {exe_name}"
+            ),
+        );
     }
 
-    let file = tmpdir.join(format!("loader-{LOADER_BIN_HASH}.dll"));
+    let data = fs::read(&loader_path)?;
+    let hash = sha256::digest(&data);
 
-    if !file.exists() {
-        let mut out_file = fs::File::create(&file).context("decompressing loader")?;
-        zstd::stream::copy_decode(LOADER_BIN, &mut out_file).context("writing tmp loader")?;
+    if hash != LOADER_HASH {
+        fatal_popup(
+            "loader dll mismatch",
+            format!("loader.dll is either the wrong file, or corrupted. Please redownload the program to get a fresh copy of the exe/dll.\n\nExpected a hash of:\n{LOADER_HASH}\n\nbut instead found:\n{hash}"),
+        );
     }
 
-    let rva = get_init_rva(&file)?;
+    let rva = get_init_rva(&data)?;
 
-    Ok((rva, file))
+    Ok((rva, loader_path))
 }
 
-fn get_init_rva(loader: &Path) -> Result<usize> {
-    let data = fs::read(loader)?;
+fn get_init_rva(data: &[u8]) -> Result<usize> {
     let loader = PeFile::from_bytes(&data)?;
     let rva = loader
         .get_export("Init")?

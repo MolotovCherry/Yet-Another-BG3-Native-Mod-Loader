@@ -19,13 +19,11 @@ tray-icon = "0.19.0"
 winit = "0.30.5"
 tracing-appender = "0.2.3"
 clap = { version = "4.5.18", features = ["derive"] }
-tempfile = "3.13.0"
-zstd = "0.13.2"
+sha256 = "1.5.0"
 pelite = "0.10.0"
 
 [build-dependencies]
 winres = "0.1.12"
-zstd = "0.13.2"
 sha256 = "1.5.0"
 # https://github.com/rust-lang/cargo/issues/9096
 # https://doc.rust-lang.org/beta/cargo/reference/unstable.html#artifact-dependencies

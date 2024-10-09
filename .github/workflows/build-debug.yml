@@ -29,3 +29,4 @@ jobs:
           name: build
           path: |
             target/*/*.exe
+            target/*/deps/artifact/loader-*/cdylib/*.dll
