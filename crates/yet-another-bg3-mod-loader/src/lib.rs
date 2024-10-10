@@ -2,6 +2,7 @@
 
 mod cli;
 mod console;
+mod event;
 mod helpers;
 mod loader;
 mod logging;
@@ -23,6 +24,7 @@ use paths::{get_game_binary_paths, Bg3Exes};
 use tracing::trace;
 
 use cli::Args;
+use event::Event;
 use loader::run_loader;
 use popup::fatal_popup;
 use process_watcher::CallType;
@@ -41,6 +43,7 @@ pub enum RunType {
 pub fn run(run_type: RunType) -> Result<()> {
     // This prohibits multiple app instances
     let _singleton = SingleInstance::new();
+    let _event = Event::new()?;
 
     let args = Args::parse();
 
