@@ -1,8 +1,7 @@
-use std::{
-    os::windows::ffi::{EncodeWide, OsStrExt as _},
-    path::Path,
-};
+use std::{os::windows::ffi::OsStrExt as _, path::Path};
 
+use tracing::error;
+use widestring::{U16CStr, U16Str};
 use windows::Win32::{
     Foundation::{ERROR_NO_MORE_FILES, HMODULE},
     System::Diagnostics::ToolHelp::{
@@ -22,14 +21,21 @@ pub fn GetModuleBaseEx<P: AsRef<Path>>(pid: u32, module: P) -> Option<HMODULE> {
     };
 
     if let Err(e) = unsafe { Module32FirstW(snap, &mut entry) } {
-        eprintln!("{e}");
+        error!("Module32FirstW: {e}");
         return None;
     }
 
-    let module = module.as_ref().as_os_str().encode_wide();
+    let module = module
+        .as_ref()
+        .as_os_str()
+        .encode_wide()
+        .collect::<Vec<_>>();
+
+    let module = U16Str::from_slice(&module);
 
     loop {
-        if module.is(&entry.szModule) {
+        let sz_module = unsafe { U16CStr::from_ptr_str(entry.szModule.as_ptr()) };
+        if module == sz_module {
             return Some(entry.hModule);
         }
 
@@ -37,41 +43,11 @@ pub fn GetModuleBaseEx<P: AsRef<Path>>(pid: u32, module: P) -> Option<HMODULE> {
             Ok(_) => continue,
             Err(e) if e.code() == ERROR_NO_MORE_FILES.to_hresult() => break,
             Err(e) => {
-                eprintln!("{e}");
+                error!("Module32FirstW: {e}");
                 break;
             }
         }
     }
 
     None
-}
-
-trait IsEqual {
-    fn is(&self, str: &[u16]) -> bool;
-}
-
-impl IsEqual for EncodeWide<'_> {
-    fn is(&self, str: &[u16]) -> bool {
-        let mut iter = str.iter();
-        let mut i = 0usize;
-
-        while iter.next().is_some_and(|n| *n != 0) {
-            i += 1;
-        }
-
-        let slice = &str[..i];
-
-        let mut wide_iter = self.clone().zip(slice.iter().copied());
-        loop {
-            let Some((a, b)) = wide_iter.next() else {
-                break;
-            };
-
-            if a != b {
-                return false;
-            }
-        }
-
-        true
-    }
 }
