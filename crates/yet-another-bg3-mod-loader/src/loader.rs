@@ -230,8 +230,8 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
 
     // now call Init
 
-    let filename = loader.file_name().unwrap_or_default();
-    let Some(module) = GetModuleBaseEx(pid, filename) else {
+    let module = loader.file_name().unwrap_or_default();
+    let Some(module) = GetModuleBaseEx(pid, module) else {
         bail!("failed to get base address of loader");
     };
 
