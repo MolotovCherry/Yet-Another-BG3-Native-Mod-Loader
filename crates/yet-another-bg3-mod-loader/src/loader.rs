@@ -9,7 +9,7 @@ use std::{mem, path::Path};
 use eyre::{bail, Context, Result};
 use get_module_base_addr_ex::GetModuleBaseEx;
 use native_plugin_lib::Version;
-use tracing::{error, info, trace_span};
+use tracing::{error, info, trace_span, warn};
 use windows::Win32::Foundation::WAIT_OBJECT_0;
 use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE};
 use windows::{
@@ -95,7 +95,8 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
 
     if is_dirty {
         // return ok as if nothing happened, however we will log this
-        warn_popup("Already patched", "The game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance.");
+        warn!("Aborting patcher. The game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance.");
+        warn_popup("Already patched", "Aborting patcher. The game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance.");
         return Ok(());
     }
 
