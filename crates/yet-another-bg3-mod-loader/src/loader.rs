@@ -1,9 +1,9 @@
 mod dirty;
 mod get_module_base_addr_ex;
 
-use std::ffi::c_void;
 use std::iter;
 use std::os::windows::ffi::OsStrExt;
+use std::{ffi::c_void, sync::OnceLock};
 use std::{mem, path::Path};
 
 use eyre::{bail, Context, Result};
@@ -59,7 +59,16 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
 
     // get loadlibraryw address as fn pointer
     #[allow(non_snake_case)]
-    let LoadLibraryW = {
+    let LoadLibraryW = 'b: {
+        type FarProc = unsafe extern "system" fn() -> isize;
+        type ThreadStartRoutine = unsafe extern "system" fn(*mut c_void) -> u32;
+
+        static CACHE: OnceLock<ThreadStartRoutine> = OnceLock::new();
+
+        if let Some(f) = CACHE.get() {
+            break 'b *f;
+        }
+
         let handle = {
             let handle = unsafe { GetModuleHandleW(w!("kernel32")) };
             handle.context("Failed to get kernel32 module handle")?
@@ -71,9 +80,9 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
             .ok_or(WinError::from_win32())
             .context("failed to get LoadLibraryW proc address")?;
 
-        type FarProc = unsafe extern "system" fn() -> isize;
-        type ThreadStartRoutine = unsafe extern "system" fn(*mut c_void) -> u32;
-        unsafe { mem::transmute::<FarProc, ThreadStartRoutine>(addr) }
+        let f = unsafe { mem::transmute::<FarProc, ThreadStartRoutine>(addr) };
+        _ = CACHE.set(f);
+        f
     };
 
     // checks if process has already had injection done on it
@@ -208,8 +217,15 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     // wait for it to be done starting
     let res = unsafe { WaitForSingleObject(handle, INFINITE) };
     if res != WAIT_OBJECT_0 {
-        error!(?res, "object in wrong state");
-        bail!("wait object in wrong state");
+        let err = unsafe { GetLastError() };
+        error!(?res, ?err, "object in wrong state");
+
+        warn_popup(
+            "Process injection failure",
+            format!("Failed to wait for remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {err:?}"),
+        );
+
+        return Ok(());
     }
 
     // now call Init
