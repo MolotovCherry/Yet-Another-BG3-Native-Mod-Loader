@@ -7,18 +7,26 @@ use shared::{
 };
 use tracing::{error, trace};
 use tracing_appender::non_blocking::WorkerGuard;
+use windows::Win32::Security::SE_DEBUG_NAME;
 
 use crate::{
     cli::Args,
+    is_admin::is_admin,
     logging::setup_logs,
     panic::set_hook,
     popup::{display_popup, fatal_popup, MessageBoxIcon},
+    privileges::set_privilege,
     server::server,
     tmp_loader::init_loader,
 };
 
 #[allow(clippy::type_complexity)]
 pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, (usize, PathBuf, File))> {
+    // enable unfettered access through debug privilege if we have admin access
+    if is_admin() {
+        set_privilege(SE_DEBUG_NAME, true)?;
+    }
+
     // Nicely print any panic messages to the user
     set_hook();
 

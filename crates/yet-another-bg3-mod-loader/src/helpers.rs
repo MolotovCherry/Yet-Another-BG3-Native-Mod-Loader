@@ -2,7 +2,8 @@ use std::ffi::c_void;
 
 use windows::{core::Free, Win32::Foundation::HANDLE};
 
-#[derive(Debug)]
+#[repr(transparent)]
+#[derive(Debug, Default)]
 pub struct OwnedHandle(HANDLE);
 
 impl OwnedHandle {
@@ -10,6 +11,10 @@ impl OwnedHandle {
     ///       to this since HANDLE: Copy
     pub fn as_raw_handle(&self) -> HANDLE {
         self.0
+    }
+
+    pub fn as_mut<U>(&mut self) -> *mut U {
+        (self as *mut Self).cast()
     }
 }
 
@@ -38,3 +43,15 @@ impl Drop for OwnedHandle {
         }
     }
 }
+
+/// Poor mans try {} blocks
+macro_rules! tri {
+    ($($code:tt)*) => {
+        (|| {
+            $(
+                $code
+            )*
+        })()
+    };
+}
+pub(crate) use tri;
