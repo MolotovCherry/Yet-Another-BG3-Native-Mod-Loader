@@ -14,7 +14,7 @@ use crate::helpers::OwnedHandle;
 #[allow(non_snake_case)]
 pub fn GetModuleBaseEx<P: AsRef<Path>>(process: &OwnedHandle, module: P) -> Option<HMODULE> {
     let module = module.as_ref();
-    trace!(module = %module.display(), "");
+    trace!(module = %module.display(), "GetModuleBaseEx checking for");
 
     let module = module.as_os_str().encode_wide().collect::<Vec<_>>();
 
