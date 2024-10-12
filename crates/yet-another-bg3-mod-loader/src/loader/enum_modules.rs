@@ -62,6 +62,16 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             )
         };
 
+        // To determine if the lphModule array is too small to hold all module handles for the process,
+        // compare the value returned in lpcbNeeded with the value specified in cb. If lpcbNeeded is greater
+        // than cb, increase the size of the array and call EnumProcessModulesEx again.
+        if lpcbneeded > size {
+            let n_modules = lpcbneeded as usize / size_of::<HMODULE>();
+            trace!(new_len = n_modules, "resizing to len");
+            modules.resize(n_modules, HMODULE::default());
+            continue;
+        }
+
         if let Err(e) = res {
             const ERROR_PARTIAL_COPY: HRESULT =
                 windows::Win32::Foundation::ERROR_PARTIAL_COPY.to_hresult();
@@ -85,15 +95,6 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
                     "error partial copy, but process is still alive, retry"
                 );
 
-                // To determine if the lphModule array is too small to hold all module handles for the process,
-                // compare the value returned in lpcbNeeded with the value specified in cb. If lpcbNeeded is greater
-                // than cb, increase the size of the array and call EnumProcessModulesEx again.
-                if lpcbneeded > size {
-                    let n_modules = lpcbneeded as usize / size_of::<HMODULE>();
-                    trace!(new_len = n_modules, "resizing to len");
-                    modules.resize(n_modules, HMODULE::default());
-                }
-
                 continue;
             }
 
@@ -108,16 +109,6 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             len = modules.len(),
             "EnumProcessModulesEx passed"
         );
-
-        // To determine if the lphModule array is too small to hold all module handles for the process,
-        // compare the value returned in lpcbNeeded with the value specified in cb. If lpcbNeeded is greater
-        // than cb, increase the size of the array and call EnumProcessModulesEx again.
-        if lpcbneeded > size {
-            let n_modules = lpcbneeded as usize / size_of::<HMODULE>();
-            trace!(new_len = n_modules, "resizing to len");
-            modules.resize(n_modules, HMODULE::default());
-            continue;
-        }
 
         break;
     }
