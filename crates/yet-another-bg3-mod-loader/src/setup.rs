@@ -52,7 +52,12 @@ pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, (usize, PathBuf
     let worker_guard = setup_logs(&plugins_dir, args).context("Failed to set up logs")?;
 
     // get/create config
-    let config = get_config().context("Failed to get config")?;
+    let config = match get_config() {
+        Ok(v) => v,
+        Err(e) => {
+            fatal_popup("Error reading config", format!("Failed to get config file. This probably means your config file is malformed.\n\nError: {e}"));
+        }
+    };
 
     if first_time {
         display_popup(
