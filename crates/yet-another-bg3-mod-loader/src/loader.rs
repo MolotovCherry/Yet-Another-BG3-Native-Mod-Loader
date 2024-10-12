@@ -8,7 +8,7 @@ use std::os::windows::ffi::OsStrExt;
 use std::{ffi::c_void, sync::OnceLock};
 use std::{mem, path::Path};
 
-use eyre::{bail, Context, Result};
+use eyre::{Context, Result};
 use get_module_base_ex::GetModuleBaseEx;
 use native_plugin_lib::Version;
 use tracing::{error, info, trace, trace_span, warn};
@@ -232,7 +232,12 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
 
     // now call Init
     let Some(module) = GetModuleBaseEx(&process, loader) else {
-        bail!("failed to get base address of loader");
+        warn_popup(
+            "Where is the module?",
+            "Failed to find get loader.dll module handle. ??? Maybe report this as a bug. Check the logs too.",
+        );
+
+        return Ok(());
     };
 
     let base = module.0 as usize;

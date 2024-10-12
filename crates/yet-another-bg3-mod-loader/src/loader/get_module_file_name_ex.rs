@@ -2,7 +2,7 @@ use eyre::{bail, Result};
 use tracing::{error, trace};
 use widestring::U16Str;
 use windows::Win32::{
-    Foundation::{GetLastError, ERROR_INSUFFICIENT_BUFFER, HMODULE},
+    Foundation::{GetLastError, HMODULE},
     System::ProcessStatus::GetModuleFileNameExW,
 };
 
@@ -16,26 +16,34 @@ pub fn get_module_file_name_ex_w<'a>(
     let len = loop {
         let len = unsafe { GetModuleFileNameExW(process.as_raw_handle(), module, buf) };
 
+        trace!(len, buf_len = buf.len(), "GetModuleFileNameExW returned");
+
         // If the buffer is too small to hold the module name, the string is truncated to nSize characters including the
         // terminating null character, the function returns nSize, and the function sets the last error to ERROR_INSUFFICIENT_BUFFER.
         // If the function fails, the return value is 0 (zero). To get extended error information, call GetLastError.
-        if len as usize == buf.len() || len == 0 {
+        if len as usize == buf.len() {
+            // buffer size insufficient
+            trace!(
+                new_len = buf.len() + 1024,
+                "GetModuleFileNameExW insufficient buffer size; increasing it and trying again"
+            );
+
+            buf.resize(buf.len() + 1024, 0u16);
+
+            continue;
+        }
+
+        if len == 0 {
             let err = unsafe { GetLastError() };
 
-            if err.is_ok() {
-                break len;
-            }
+            error!(
+                ?err,
+                len,
+                buf_len = buf.len(),
+                "GetModuleFileNameExW error handling"
+            );
 
-            if err == ERROR_INSUFFICIENT_BUFFER {
-                trace!("ERROR_INSUFFICIENT_BUFFER, increasing +1024");
-                buf.resize(buf.len() + 1024, 0u16);
-                continue;
-            }
-
-            if len == 0 {
-                error!(?err, "GetModuleBaseNameW returned 0");
-                bail!("{err:?}");
-            }
+            bail!("{err:?}");
         }
 
         break len;

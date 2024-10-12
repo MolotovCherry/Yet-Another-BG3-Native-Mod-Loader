@@ -1,6 +1,6 @@
 use std::{os::windows::prelude::OsStrExt as _, path::Path};
 
-use tracing::trace;
+use tracing::{error, trace};
 use widestring::U16Str;
 use windows::Win32::Foundation::HMODULE;
 
@@ -19,7 +19,7 @@ pub fn GetModuleBaseEx<P: AsRef<Path>>(process: &OwnedHandle, module: P) -> Opti
     let mut buf = vec![0u16; 1024];
 
     let mut entry = None;
-    enum_modules(process, |module| {
+    let res = enum_modules(process, |module| {
         let path = get_module_file_name_ex_w(process, module, &mut buf)?;
 
         trace!(path = %path.to_string_lossy(), "GetModuleBaseEx trying");
@@ -30,8 +30,11 @@ pub fn GetModuleBaseEx<P: AsRef<Path>>(process: &OwnedHandle, module: P) -> Opti
         }
 
         Ok(true)
-    })
-    .ok()?;
+    });
+
+    if let Err(e) = res {
+        error!(%e, path = %module_name.display(), "GetModuleBaseEx: error looking for module");
+    }
 
     entry
 }
