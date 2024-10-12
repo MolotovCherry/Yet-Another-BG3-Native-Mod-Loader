@@ -17,6 +17,7 @@ mod setup;
 mod single_instance;
 mod tmp_loader;
 mod tray;
+mod wapi;
 
 use std::time::Duration;
 

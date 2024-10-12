@@ -1,7 +1,4 @@
 mod dirty;
-mod enum_modules;
-mod get_module_base_ex;
-mod get_module_file_name_ex;
 
 use std::iter;
 use std::os::windows::ffi::OsStrExt;
@@ -9,7 +6,6 @@ use std::{ffi::c_void, sync::OnceLock};
 use std::{mem, path::Path};
 
 use eyre::{Context, Result};
-use get_module_base_ex::GetModuleBaseEx;
 use native_plugin_lib::Version;
 use tracing::{error, info, trace, trace_span, warn};
 use windows::Win32::Foundation::WAIT_OBJECT_0;
@@ -30,7 +26,10 @@ use windows::{
     },
 };
 
-use crate::{helpers::OwnedHandle, popup::warn_popup, process_watcher::Pid};
+use crate::{
+    helpers::OwnedHandle, popup::warn_popup, process_watcher::Pid,
+    wapi::get_module_base_ex::GetModuleBaseEx,
+};
 use dirty::is_dirty;
 
 pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {

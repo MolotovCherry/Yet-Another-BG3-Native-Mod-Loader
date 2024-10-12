@@ -20,7 +20,7 @@ pub fn GetModuleBaseEx<P: AsRef<Path>>(process: &OwnedHandle, module: P) -> Opti
 
     let mut entry = None;
     let res = enum_modules(process, |module| {
-        let path = get_module_file_name_ex_w(process, module, &mut buf)?;
+        let path = get_module_file_name_ex_w(process, Some(module), &mut buf)?;
 
         trace!(path = %path.to_string_lossy(), "GetModuleBaseEx trying");
 

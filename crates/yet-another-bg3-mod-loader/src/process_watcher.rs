@@ -10,17 +10,17 @@ use std::{
 };
 
 use eyre::{Error, Result};
-use tracing::{error, trace, trace_span};
+use tracing::{trace, trace_span};
 use unicase::UniCase;
 use windows::Win32::{
-    Foundation::{GetLastError, MAX_PATH},
-    System::{
-        ProcessStatus::{EnumProcesses, GetModuleFileNameExW},
-        Threading::{OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ},
-    },
+    Foundation::MAX_PATH,
+    System::Threading::{OpenProcess, PROCESS_QUERY_INFORMATION},
 };
 
-use crate::{helpers::OwnedHandle, popup::fatal_popup};
+use crate::{
+    helpers::OwnedHandle,
+    wapi::{get_module_file_name_ex::get_module_file_name_ex_w, get_processes::get_processes},
+};
 
 pub type Pid = u32;
 
@@ -103,7 +103,7 @@ impl ProcessWatcher {
 
     pub fn run(
         mut self,
-        callback: impl Fn(CallType) + Send + 'static,
+        cb: impl Fn(CallType) + Send + 'static,
     ) -> (ProcessWatcherWaiter, ProcessWatcherStopToken) {
         let (thread_sender, thread_receiver) = channel();
         let (wait_sender, wait_receiver) = channel();
@@ -112,12 +112,10 @@ impl ProcessWatcher {
 
         let thread = thread::spawn(move || {
             // we can avoid unsafe length setting shenanigans by prefilling it, instead of set_len
-            let mut pid_buffer = vec![0u32; 1024];
-            let mut new_pid_buffer = vec![0u32; 1024];
+            let mut pid_buf = vec![0u32; 1024];
+            let mut new_pid_buf = vec![0u32; 1024];
             // important to prefill it, that way len() returns the full amount for any ffi calls
-            let mut path_buffer = vec![0u16; MAX_PATH as usize];
-
-            let mut lpcneeded = 0;
+            let mut path_buf = vec![0u16; MAX_PATH as usize];
 
             let mut now = None;
             let mut end = None;
@@ -129,7 +127,6 @@ impl ProcessWatcher {
                 end = Some(d);
             }
 
-            let mut enum_retries = 0;
             'run: loop {
                 if let Some(now) = now {
                     trace!("initiating timeout check");
@@ -137,7 +134,7 @@ impl ProcessWatcher {
                     if now.elapsed() >= end.unwrap() {
                         trace!("detected a timeout");
 
-                        callback(CallType::Timeout);
+                        cb(CallType::Timeout);
 
                         if self.oneshot {
                             trace!("initiating oneshot channel event");
@@ -148,93 +145,45 @@ impl ProcessWatcher {
                     }
                 }
 
-                let cb = (pid_buffer.len() * 4).try_into().unwrap();
-
-                let enum_res =
-                    unsafe { EnumProcesses(pid_buffer.as_mut_ptr(), cb, &mut lpcneeded) };
-
-                // if lpcbNeeded equals cb, consider retrying the call with a larger array
-                //
-                // this intentionally keeps growing until it has enough capacity, and never shrinks itself
-                if lpcneeded == cb {
-                    trace!(
-                        "lpcneeded ({lpcneeded}) == cb; pid_buffer not large enough; increasing size to {}",
-                        pid_buffer.capacity() + 1024
-                    );
-
-                    pid_buffer.resize(pid_buffer.capacity() + 1024, 0);
-                    continue 'run;
-                }
-
-                if enum_res.is_err() && enum_retries < 4 {
-                    let Err(e) = enum_res else {
-                        unreachable!();
-                    };
-
-                    error!(error = ?e, "EnumProcesses failed");
-
-                    enum_retries += 1;
-                    continue;
-                }
-
-                if let Err(e) = enum_res {
-                    error!(error = ?e, "EnumProcesses failed");
-                    fatal_popup(
-                        "failed to get process list",
-                        "For some reason, EnumProcesses is unexpectedly failing. An error was logged to the logfile. Please report this",
-                    );
-                }
-
-                enum_retries = 0;
-
-                // To determine how many processes were enumerated, divide the lpcbNeeded value by sizeof(DWORD).
-                let num_processes = (lpcneeded / 4) as usize;
-                let pids = &pid_buffer[..num_processes];
-
-                trace!("found {num_processes} processes to check");
+                let pids = get_processes(&mut pid_buf);
 
                 // process list of pids, compare to last cached copy, find new ones and process those
-                self.process_pids(pids, &mut new_pid_buffer);
+                self.process_pids(pids, &mut new_pid_buf);
 
-                'pid_loop: for pid in new_pid_buffer.iter().copied() {
+                'pid_loop: for pid in new_pid_buf.iter().copied() {
                     let span_pid_loop = trace_span!("pid_loop", pid = pid);
                     let _guard = span_pid_loop.enter();
 
-                    let handle_res: Result<OwnedHandle, _> = unsafe {
-                        OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid)
-                            .map(|h| h.into())
+                    let process = {
+                        let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };
+
+                        match res {
+                            Ok(v) => OwnedHandle::new(v),
+                            Err(e) => {
+                                // failed to open process; probably we don't have correct perms to open it
+                                // there is a risk here that we don't have permission to open the game process, so it's skipped
+                                // in such a case, this tool should be run as admin. we have no way of knowing if that happened
+
+                                trace!("failed to open process: {e}");
+
+                                continue;
+                            }
+                        }
                     };
 
-                    let Ok(handle) = handle_res else {
-                        // failed to open process; probably we don't have correct perms to open it
-                        // there is a risk here that we don't have permission to open the game process, so it's skipped
-                        // in such a case, this tool should be run as admin. we have no way of knowing if that happened
-
-                        trace!("Failed to open process: {:?}", unsafe { GetLastError() });
-
+                    let Ok(path) = get_module_file_name_ex_w(&process, None, &mut path_buf) else {
                         continue;
                     };
 
-                    let written = unsafe {
-                        GetModuleFileNameExW(handle.as_raw_handle(), None, &mut path_buffer)
-                            as usize
-                    };
-
-                    if written == 0 {
-                        trace!("GetModuleFilenameExW wrote 0 len; ignoring");
-                        continue;
-                    }
-
-                    let new_process_path = &path_buffer[..written];
-                    let new_process_path = UniCase::new(String::from_utf16_lossy(new_process_path));
+                    let new_process_path = UniCase::new(path.to_string_lossy());
 
                     trace!("process @ {new_process_path}");
 
                     for process_path in &self.processes {
                         if process_path == &new_process_path {
-                            trace!("found match for {process_path} == {new_process_path}");
+                            trace!("found match for {process_path}");
 
-                            callback(CallType::Pid(pid));
+                            cb(CallType::Pid(pid));
 
                             if self.oneshot {
                                 trace!("we're on oneshot. sending event..");

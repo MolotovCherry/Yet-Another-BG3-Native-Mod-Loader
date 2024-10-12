@@ -10,9 +10,11 @@ use crate::helpers::OwnedHandle;
 
 pub fn get_module_file_name_ex_w<'a>(
     process: &OwnedHandle,
-    module: HMODULE,
+    module: Option<HMODULE>,
     buf: &'a mut Vec<u16>,
 ) -> Result<&'a U16Str> {
+    let module = module.unwrap_or_default();
+
     let len = loop {
         let len = unsafe { GetModuleFileNameExW(process.as_raw_handle(), module, buf) };
 

@@ -13,7 +13,7 @@ use windows::Win32::Storage::FileSystem::{
 
 use crate::{
     helpers::OwnedHandle,
-    loader::{enum_modules::enum_modules, get_module_file_name_ex::get_module_file_name_ex_w},
+    wapi::{enum_modules::enum_modules, get_module_file_name_ex::get_module_file_name_ex_w},
 };
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -115,7 +115,7 @@ pub fn is_dirty(process: &OwnedHandle, loader: &Path) -> Result<bool> {
     let mut detected = false;
     let mut buf = vec![0u16; 1024];
     enum_modules(process, |module| {
-        let path = get_module_file_name_ex_w(process, module, &mut buf)?;
+        let path = get_module_file_name_ex_w(process, Some(module), &mut buf)?;
         let os_path = path.to_os_string();
         let filename = Path::new(Path::new(&os_path).file_name().unwrap_or_default());
 

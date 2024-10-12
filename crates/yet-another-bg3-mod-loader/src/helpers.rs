@@ -7,6 +7,10 @@ use windows::{core::Free, Win32::Foundation::HANDLE};
 pub struct OwnedHandle(HANDLE);
 
 impl OwnedHandle {
+    pub fn new(handle: HANDLE) -> Self {
+        Self(handle)
+    }
+
     /// Note: This HANDLE gets dropped at end of scope; it is POSSIBLE to keep a reference
     ///       to this since HANDLE: Copy
     pub fn as_raw_handle(&self) -> HANDLE {
