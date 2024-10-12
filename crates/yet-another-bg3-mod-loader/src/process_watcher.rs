@@ -287,7 +287,9 @@ impl ProcessWatcher {
             }
         }
 
-        trace!("found new pids to check: {buffer:?}");
+        if !buffer.is_empty() {
+            trace!("found new pids to check: {buffer:?}");
+        }
 
         // this is important. It erases all the old entries in the table
         // clear the table to keep backing memory
