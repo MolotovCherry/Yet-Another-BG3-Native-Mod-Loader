@@ -13,6 +13,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Core {
     /// The game's root installation directory,
     /// e.g. C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3
