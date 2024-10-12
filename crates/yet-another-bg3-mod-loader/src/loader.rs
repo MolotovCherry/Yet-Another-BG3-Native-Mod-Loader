@@ -1,6 +1,6 @@
 mod dirty;
 mod enum_modules;
-mod get_module_base_addr_ex;
+mod get_module_base_ex;
 mod get_module_file_name_ex;
 
 use std::iter;
@@ -9,7 +9,7 @@ use std::{ffi::c_void, sync::OnceLock};
 use std::{mem, path::Path};
 
 use eyre::{bail, Context, Result};
-use get_module_base_addr_ex::GetModuleBaseEx;
+use get_module_base_ex::GetModuleBaseEx;
 use native_plugin_lib::Version;
 use tracing::{error, info, trace_span, warn};
 use windows::Win32::Foundation::WAIT_OBJECT_0;
