@@ -1,5 +1,7 @@
 mod dirty;
+mod enum_modules;
 mod get_module_base_addr_ex;
+mod get_module_file_name_ex;
 
 use std::iter;
 use std::os::windows::ffi::OsStrExt;
@@ -229,9 +231,7 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     }
 
     // now call Init
-
-    let module = loader.file_name().unwrap_or_default();
-    let Some(module) = GetModuleBaseEx(pid, module) else {
+    let Some(module) = GetModuleBaseEx(&process, loader) else {
         bail!("failed to get base address of loader");
     };
 

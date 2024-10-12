@@ -1,53 +1,43 @@
-use std::{os::windows::ffi::OsStrExt as _, path::Path};
-
-use tracing::error;
-use widestring::{U16CStr, U16Str};
-use windows::Win32::{
-    Foundation::{ERROR_NO_MORE_FILES, HMODULE},
-    System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, Module32FirstW, Module32NextW, MODULEENTRY32W, TH32CS_SNAPMODULE,
-        TH32CS_SNAPMODULE32,
-    },
+use std::{
+    ffi::OsString,
+    os::windows::prelude::{OsStrExt as _, OsStringExt as _},
+    path::Path,
 };
 
+use tracing::trace;
+use windows::Win32::Foundation::HMODULE;
+
+use super::{enum_modules::enum_modules, get_module_file_name_ex::get_module_file_name_ex_w};
+use crate::helpers::OwnedHandle;
+
+/// Note: This matches based on FULL path, not just the filename
 #[allow(non_snake_case)]
-pub fn GetModuleBaseEx<P: AsRef<Path>>(pid: u32, module: P) -> Option<HMODULE> {
-    let snap =
-        unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid).ok()? };
+pub fn GetModuleBaseEx<P: AsRef<Path>>(process: &OwnedHandle, module: P) -> Option<HMODULE> {
+    let module = module.as_ref();
+    trace!(module = %module.display(), "");
 
-    let mut entry = MODULEENTRY32W {
-        dwSize: size_of::<MODULEENTRY32W>() as _,
-        ..Default::default()
-    };
+    let module = module.as_os_str().encode_wide().collect::<Vec<_>>();
 
-    if let Err(e) = unsafe { Module32FirstW(snap, &mut entry) } {
-        error!("Module32FirstW: {e}");
-        return None;
-    }
+    let module_name = OsString::from_wide(&module);
+    let mut buf = vec![0u16; 1024];
 
-    let module = module
-        .as_ref()
-        .as_os_str()
-        .encode_wide()
-        .collect::<Vec<_>>();
+    let mut entry = None;
+    enum_modules(process, |module| {
+        let path = {
+            let path = get_module_file_name_ex_w(process, module, &mut buf)?;
+            path.to_os_string()
+        };
 
-    let module = U16Str::from_slice(&module);
+        trace!(path = %path.to_string_lossy(), "GetModuleBaseEx trying");
 
-    loop {
-        let sz_module = unsafe { U16CStr::from_ptr_str(entry.szModule.as_ptr()) };
-        if module == sz_module {
-            return Some(entry.hModule);
+        if module_name == path {
+            entry = Some(module);
+            return Ok(false);
         }
 
-        match unsafe { Module32NextW(snap, &mut entry) } {
-            Ok(_) => continue,
-            Err(e) if e.code() == ERROR_NO_MORE_FILES.to_hresult() => break,
-            Err(e) => {
-                error!("Module32FirstW: {e}");
-                break;
-            }
-        }
-    }
+        Ok(true)
+    })
+    .ok()?;
 
-    None
+    entry
 }
