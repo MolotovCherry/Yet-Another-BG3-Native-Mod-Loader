@@ -36,6 +36,7 @@ features = [
     "Win32_System_ProcessStatus",
     "Win32_System_Console",
     "Win32_Security_Authorization",
+    "Win32_System_Pipes",
 ]
 
 [profile.dev]

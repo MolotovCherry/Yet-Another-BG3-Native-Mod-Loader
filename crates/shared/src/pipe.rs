@@ -2,15 +2,30 @@ pub mod commands;
 
 use std::{
     io::{self, ErrorKind},
+    ops::ControlFlow,
+    os::windows::prelude::{AsHandle, AsRawHandle as _},
+    ptr::addr_of_mut,
     sync::LazyLock,
 };
 
-use commands::Command;
+use commands::Receive;
+use eyre::Result;
+use serde::Serialize;
 use tokio::{
     net::windows::named_pipe::{ClientOptions, NamedPipeClient, PipeMode, ServerOptions},
     runtime::{Builder, Runtime},
 };
-use tracing::error;
+use tracing::{error, trace};
+use windows::Win32::{
+    Foundation::HANDLE,
+    Security::{
+        InitializeSecurityDescriptor, SetSecurityDescriptorDacl, PSECURITY_DESCRIPTOR,
+        SECURITY_ATTRIBUTES, SECURITY_DESCRIPTOR,
+    },
+    System::{Pipes::GetNamedPipeClientProcessId, SystemServices::SECURITY_DESCRIPTOR_REVISION1},
+};
+
+use self::commands::Request;
 
 static RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
     Builder::new_current_thread()
@@ -40,7 +55,7 @@ impl Client {
         Ok(Self { pipe })
     }
 
-    pub fn send(&self, command: Command) -> io::Result<()> {
+    pub fn send<T: Serialize>(&self, command: T) -> io::Result<()> {
         let mut buf = Vec::with_capacity(4096);
         // <len><uninit>
         // ^---^ <-- zeroed data
@@ -108,23 +123,64 @@ impl Server {
         Self::default()
     }
 
-    pub fn recv_all(&mut self, cb: impl Fn(Command)) -> io::Result<!> {
+    pub fn recv_all(
+        &mut self,
+        cb: impl Fn(Receive),
+        mut auth: impl FnMut(u32, u64) -> ControlFlow<()>,
+    ) -> io::Result<!> {
+        // allow all access with security descriptor
+
+        let mut sd = SECURITY_DESCRIPTOR::default();
+
+        unsafe {
+            InitializeSecurityDescriptor(
+                PSECURITY_DESCRIPTOR(addr_of_mut!(sd).cast()),
+                SECURITY_DESCRIPTOR_REVISION1,
+            )?;
+        }
+
+        unsafe {
+            SetSecurityDescriptorDacl(
+                PSECURITY_DESCRIPTOR(addr_of_mut!(sd).cast()),
+                true,
+                None,
+                false,
+            )?;
+        }
+
+        let mut sa = SECURITY_ATTRIBUTES {
+            nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
+            lpSecurityDescriptor: addr_of_mut!(sd).cast(),
+            bInheritHandle: false.into(),
+        };
+
         let fut = async {
             loop {
-                self.recv_one(&cb).await?;
+                unsafe {
+                    self.recv_one(&mut sa, &cb, &mut auth).await?;
+                }
             }
         };
 
         RUNTIME.block_on(fut)
     }
 
-    async fn recv_one(&mut self, cb: &impl Fn(Command)) -> Result<(), io::Error> {
-        let server = ServerOptions::new()
-            .access_inbound(true)
-            .access_outbound(false)
-            .reject_remote_clients(true)
-            .pipe_mode(PipeMode::Byte)
-            .create(PIPE);
+    /// # Safety:
+    /// sa must be valid
+    async unsafe fn recv_one(
+        &mut self,
+        sa: &mut SECURITY_ATTRIBUTES,
+        cb: &impl Fn(Receive),
+        auth: &mut impl FnMut(u32, u64) -> ControlFlow<()>,
+    ) -> Result<(), io::Error> {
+        let server = unsafe {
+            ServerOptions::new()
+                .access_inbound(true)
+                .access_outbound(false)
+                .reject_remote_clients(true)
+                .pipe_mode(PipeMode::Byte)
+                .create_with_security_attributes_raw(PIPE, sa as *mut _ as *mut _)
+        };
 
         let server = match server {
             Ok(s) => s,
@@ -140,6 +196,7 @@ impl Server {
             return Ok(());
         }
 
+        let mut authed = false;
         loop {
             if server.readable().await.is_err() {
                 break;
@@ -176,7 +233,42 @@ impl Server {
 
                             let data = &self.buf[size_of::<usize>()..len + size_of::<usize>()];
 
-                            if let Ok(command) = serde_json::from_slice::<Command>(data) {
+                            if !authed {
+                                if let Ok(command) = serde_json::from_slice::<Request>(data) {
+                                    #[rustfmt::skip]
+                                    #[allow(irrefutable_let_patterns)]
+                                    let Request::Auth(auth_code) = command else {
+                                        trace!("auth not provided, disconnecting client");
+                                        _ = server.disconnect();
+                                        return Ok(());
+                                    };
+
+                                    trace!(auth_code, "pipe received auth");
+
+                                    let handle = HANDLE(server.as_handle().as_raw_handle());
+                                    let mut pid = 0;
+                                    let res =
+                                        unsafe { GetNamedPipeClientProcessId(handle, &mut pid) };
+                                    if let Err(e) = res {
+                                        error!(%e, "failed to get pipe client pid");
+                                        _ = server.disconnect();
+                                        return Ok(());
+                                    }
+
+                                    match auth(pid, auth_code) {
+                                        ControlFlow::Continue(_) => (),
+                                        ControlFlow::Break(_) => {
+                                            _ = server.disconnect();
+                                            return Ok(());
+                                        }
+                                    }
+
+                                    authed = true;
+                                } else {
+                                    _ = server.disconnect();
+                                    return Ok(());
+                                }
+                            } else if let Ok(command) = serde_json::from_slice::<Receive>(data) {
                                 cb(command);
                             }
 

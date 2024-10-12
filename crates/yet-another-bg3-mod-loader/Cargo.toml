@@ -25,6 +25,7 @@ tracing-appender = "0.2.3"
 clap = { version = "4.5.20", features = ["derive"] }
 pelite = "0.10.0"
 widestring = "1.1.0"
+rand = "0.8.5"
 
 [build-dependencies]
 winres.workspace = true

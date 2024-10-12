@@ -14,11 +14,14 @@ use helpers::{HInstance, Plugin, SuperLock};
 use loader::load_plugins;
 use logging::setup_logging;
 use native_plugin_lib::declare_plugin;
+use shared::pipe::commands::Request;
 use tracing::{error, trace};
 use windows::Win32::{
     Foundation::HINSTANCE,
     System::SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
 };
+
+use self::client::{TrySend as _, CLIENT};
 
 declare_plugin! {
     "Loader",
@@ -61,7 +64,7 @@ extern "stdcall-unwind" fn DllMain(
 }
 
 #[no_mangle]
-extern "system-unwind" fn Init(_lpthreadparameter: *mut c_void) -> u32 {
+extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
     // Set up a custom panic hook so we can log all panics
     panic::set_hook();
 
@@ -69,6 +72,9 @@ extern "system-unwind" fn Init(_lpthreadparameter: *mut c_void) -> u32 {
 
     let result = panic::catch_unwind(|| {
         setup_logging().context("failed to setup logging")?;
+
+        let access_code = unsafe { *lpthreadparameter.cast::<u64>() };
+        _ = CLIENT.try_send(Request::Auth(access_code));
 
         load_plugins(module)?;
 

@@ -1,18 +1,25 @@
-use std::io;
+use std::{
+    io,
+    ops::ControlFlow,
+    sync::atomic::{AtomicU32, AtomicU64, Ordering},
+};
 
 use shared::pipe::{
-    commands::{Command, Level},
+    commands::{Level, Receive},
     Server,
 };
 use tracing::{debug, error, info, trace, warn};
 
 use crate::popup::warn_popup;
 
+pub static AUTH: AtomicU64 = AtomicU64::new(0);
+pub static PID: AtomicU32 = AtomicU32::new(0);
+
 pub fn server() -> io::Result<!> {
     let mut server = Server::new();
 
     let cb = |cmd| match cmd {
-        Command::Log(mut msg) => {
+        Receive::Log(mut msg) => {
             let filename = msg.filename.unwrap_or_default();
             let line_number = msg.line_number.unwrap_or_default();
             let message = msg.fields.remove("message").unwrap_or_default();
@@ -44,7 +51,7 @@ pub fn server() -> io::Result<!> {
             }
         }
 
-        Command::ErrorCantReadPluginDir => {
+        Receive::ErrorCantReadPluginDir => {
             warn_popup(
                 "Failed to read plugins dir",
                 "Attempted to read plugins dir, but failed opening it\n\nDo you have correct perms? See log for more details",
@@ -52,5 +59,25 @@ pub fn server() -> io::Result<!> {
         }
     };
 
-    server.recv_all(cb)?;
+    let auth = |pid, code| {
+        let ppid = PID.load(Ordering::Acquire);
+
+        trace!(pid, ppid, "verifying pipe pid");
+
+        if ppid != pid {
+            return ControlFlow::Break(());
+        }
+
+        let passcode = AUTH.load(Ordering::Acquire);
+
+        trace!(code, passcode, "verifying pipe auth code");
+
+        if passcode == code {
+            ControlFlow::Continue(())
+        } else {
+            ControlFlow::Break(())
+        }
+    };
+
+    server.recv_all(cb, auth)?;
 }

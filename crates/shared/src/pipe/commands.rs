@@ -3,7 +3,12 @@ use std::{collections::HashMap, fmt::Display};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum Command {
+pub enum Request {
+    Auth(u64),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Receive {
     Log(LogMsg),
     ErrorCantReadPluginDir,
 }

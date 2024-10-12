@@ -4,7 +4,7 @@ use std::{
 };
 
 use eyre::Result;
-use shared::pipe::commands::Command;
+use shared::pipe::commands::Receive;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{fmt::MakeWriter, util::SubscriberInitExt, EnvFilter};
 
@@ -100,7 +100,7 @@ impl Write for PipeWriter<'_> {
                 .try_into()
                 .map_err(|e| io::Error::new(ErrorKind::InvalidData, e))?;
 
-        let c = Command::Log(data);
+        let c = Receive::Log(data);
 
         CLIENT.try_send(c)?;
 

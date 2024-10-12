@@ -1,8 +1,9 @@
 mod dirty;
+mod write;
 
-use std::iter;
 use std::os::windows::ffi::OsStrExt;
 use std::{ffi::c_void, sync::OnceLock};
+use std::{iter, sync::atomic::Ordering};
 use std::{mem, path::Path};
 
 use eyre::{Context, Result};
@@ -15,9 +16,7 @@ use windows::{
     Win32::{
         Foundation::GetLastError,
         System::{
-            Diagnostics::Debug::WriteProcessMemory,
             LibraryLoader::{GetModuleHandleW, GetProcAddress},
-            Memory::{VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE},
             Threading::{
                 CreateRemoteThread, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION,
                 PROCESS_VM_READ, PROCESS_VM_WRITE,
@@ -27,14 +26,21 @@ use windows::{
 };
 
 use crate::{
-    helpers::OwnedHandle, popup::warn_popup, process_watcher::Pid,
+    helpers::OwnedHandle,
+    popup::warn_popup,
+    process_watcher::Pid,
+    server::{AUTH, PID},
     wapi::get_module_base_ex::GetModuleBaseEx,
 };
 use dirty::is_dirty;
 
+use self::write::write_in;
+
 pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     let span = trace_span!("loader");
     let _guard = span.enter();
+
+    PID.store(pid, Ordering::Release);
 
     let process: OwnedHandle = {
         let process = unsafe {
@@ -142,51 +148,9 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     // 1 byte = u8, u16 = 2 bytes, len = number of elems in vector, so len * 2
     let loader_path_len = loader_v.len() * size_of::<u16>();
 
-    let alloc_addr = {
-        let addr = unsafe {
-            VirtualAllocEx(
-                process.as_raw_handle(),
-                None,
-                loader_path_len,
-                MEM_RESERVE | MEM_COMMIT,
-                PAGE_EXECUTE_READWRITE,
-            )
-        };
-
-        if addr.is_null() {
-            let error = unsafe { GetLastError() };
-            error!(?error, "virtualallocex failed to allocate memory");
-
-            warn_popup(
-                "Process injection failure",
-                format!("Failed to allocate memory in target process\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {error:?}"),
-            );
-
-            return Ok(());
-        }
-
-        addr
-    };
-
-    // Write the data to the process
-    let res = unsafe {
-        WriteProcessMemory(
-            process.as_raw_handle(),
-            alloc_addr,
-            loader_v.as_ptr() as *const _,
-            loader_path_len,
-            None,
-        )
-    };
-
-    if let Err(e) = res {
-        error!(?e, "Failed to write to process");
-        warn_popup(
-            "Process injection failure",
-            format!("Failed to write to process memory\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {e}"),
-        );
+    let Ok(ptr) = write_in(&process, loader_v.as_ptr(), loader_path_len) else {
         return Ok(());
-    }
+    };
 
     // start thread with dll
     // Note that the returned HANDLE is intentionally not closed!
@@ -196,7 +160,7 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
             None,
             0,
             Some(LoadLibraryW),
-            Some(alloc_addr),
+            Some(ptr),
             0,
             None,
         )
@@ -233,7 +197,7 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     let Some(module) = GetModuleBaseEx(&process, loader) else {
         warn_popup(
             "Where is the module?",
-            "Failed to find get loader.dll module handle. ??? Maybe report this as a bug. Check the logs too.",
+            "Failed to find loader.dll module handle. ??? Maybe report this as a bug. Check the logs too.",
         );
 
         return Ok(());
@@ -243,15 +207,34 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     let init_addr = base + rva;
 
     trace!(
-        base = format!("0x{base:x}"),
-        rva = format!("0x{rva:x}"),
-        "found loader.dll Init @ 0x{init_addr:x}"
+        base = %format!("0x{base:x}"),
+        rva = %format!("0x{rva:x}"),
+        addr = %format!("0x{init_addr:x}"),
+        "found loader.dll Init addr"
     );
+
+    let auth_code = rand::random::<u64>();
+    AUTH.store(auth_code, Ordering::Release);
+
+    trace!(auth_code, "generated auth");
+
+    let Ok(ptr) = write_in(&process, &auth_code, size_of::<u64>()) else {
+        return Ok(());
+    };
 
     let init_fn = unsafe { mem::transmute::<usize, LPTHREAD_START_ROUTINE>(init_addr) };
 
-    let res =
-        unsafe { CreateRemoteThread(process.as_raw_handle(), None, 0, init_fn, None, 0, None) };
+    let res = unsafe {
+        CreateRemoteThread(
+            process.as_raw_handle(),
+            None,
+            0,
+            init_fn,
+            Some(ptr),
+            0,
+            None,
+        )
+    };
 
     if let Err(e) = res {
         error!(?e, "Failed to create remote thread");

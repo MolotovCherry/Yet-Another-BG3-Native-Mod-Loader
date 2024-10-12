@@ -2,7 +2,7 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
 
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
-use shared::{config::get_config, paths::get_bg3_plugins_dir, pipe::commands::Command};
+use shared::{config::get_config, paths::get_bg3_plugins_dir, pipe::commands::Receive};
 use tracing::{error, info, trace, warn};
 use unicase::UniCase;
 use windows::{
@@ -24,7 +24,7 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
     let read_dir = fs::read_dir(plugins_dir).context("failed to read plugins_dir {plugins_dir}");
     let Ok(read_dir) = read_dir else {
         error!(?read_dir, "failed to read plugins dir");
-        CLIENT.try_send(Command::ErrorCantReadPluginDir)?;
+        CLIENT.try_send(Receive::ErrorCantReadPluginDir)?;
         return Ok(());
     };
 

@@ -17,6 +17,7 @@ windows.workspace = true
 shared.workspace = true
 unicase.workspace = true
 native-plugin-lib.workspace = true
+serde.workspace = true
 
 [build-dependencies]
 winres.workspace = true
