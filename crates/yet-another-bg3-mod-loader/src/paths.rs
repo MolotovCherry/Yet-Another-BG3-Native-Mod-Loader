@@ -5,11 +5,13 @@ use tracing::{error, trace};
 
 use crate::popup::fatal_popup;
 
+#[allow(dead_code)]
 pub struct Bg3Exes {
     pub bg3: String,
     pub bg3_dx11: String,
 }
 
+#[allow(dead_code)]
 pub fn get_game_binary_paths(config: &Config) -> Bg3Exes {
     let bin = config.core.install_root.join("bin");
 

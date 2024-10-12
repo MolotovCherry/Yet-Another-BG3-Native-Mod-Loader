@@ -23,7 +23,6 @@ use std::time::Duration;
 
 use clap::Parser;
 use eyre::Result;
-use paths::{get_game_binary_paths, Bg3Exes};
 use tracing::trace;
 
 use cli::Args;
@@ -75,10 +74,18 @@ pub fn run(run_type: RunType) -> Result<()> {
         return Ok(());
     }
 
-    let (config, _guard, loader) = init(&args)?;
+    let (_config, _guard, loader) = init(&args)?;
     let _loader_lock = loader.2;
 
-    let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&config);
+    #[cfg(not(feature = "test-injection"))]
+    let processes = {
+        use paths::{get_game_binary_paths, Bg3Exes};
+        let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&_config);
+        &[bg3, bg3_dx11]
+    };
+
+    #[cfg(feature = "test-injection")]
+    let processes = &[args.inject];
 
     let (polling_rate, timeout, oneshot) = if run_type == RunType::Watcher {
         // watcher tool
@@ -93,7 +100,7 @@ pub fn run(run_type: RunType) -> Result<()> {
     };
 
     let (waiter, stop_token) =
-        ProcessWatcher::new(&[bg3, bg3_dx11], polling_rate, timeout, oneshot).run(
+        ProcessWatcher::new(processes, polling_rate, timeout, oneshot).run(
         move |call| match call {
                 CallType::Pid(pid) => {
                     trace!("Received callback for pid {pid}, now loading");

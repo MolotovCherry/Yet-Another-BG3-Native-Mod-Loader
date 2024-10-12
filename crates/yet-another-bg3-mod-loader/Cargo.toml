@@ -6,6 +6,9 @@ authors = ["Cherry"]
 homepage = "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader"
 license = "MIT"
 
+[features]
+test-injection = []
+
 [dependencies]
 eyre.workspace = true
 tracing.workspace = true

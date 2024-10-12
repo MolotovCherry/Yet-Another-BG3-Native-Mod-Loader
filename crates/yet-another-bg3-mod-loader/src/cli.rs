@@ -16,4 +16,9 @@ pub struct Args {
     /// Print version
     #[arg(short = 'V', long, conflicts_with = "help")]
     pub version: bool,
+
+    /// Binary to test inject
+    #[cfg(feature = "test-injection")]
+    #[arg(long, required = true)]
+    pub inject: String,
 }
