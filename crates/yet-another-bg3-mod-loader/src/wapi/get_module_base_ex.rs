@@ -17,7 +17,6 @@ pub fn GetModuleBaseEx<P: AsRef<Path>>(process: &OwnedHandle, module: P) -> Opti
     let module_name = U16Str::from_slice(&module);
 
     let mut buf = vec![0u16; 1024];
-
     let mut entry = None;
     let res = enum_modules(process, |module| {
         let path = get_module_file_name_ex_w(process, Some(module), &mut buf)?;

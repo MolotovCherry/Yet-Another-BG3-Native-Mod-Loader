@@ -6,9 +6,12 @@ use eyre::{anyhow, Result};
 use shared::paths::get_bg3_plugins_dir;
 use tracing::{trace, trace_span};
 use widestring::U16Str;
-use windows::Win32::Storage::FileSystem::{
-    FileIdInfo, GetFileInformationByHandleEx, FILE_FLAG_BACKUP_SEMANTICS, FILE_ID_INFO,
-    FILE_SHARE_READ,
+use windows::Win32::{
+    Foundation::MAX_PATH,
+    Storage::FileSystem::{
+        FileIdInfo, GetFileInformationByHandleEx, FILE_FLAG_BACKUP_SEMANTICS, FILE_ID_INFO,
+        FILE_SHARE_READ,
+    },
 };
 
 use crate::{
@@ -113,7 +116,7 @@ pub fn is_dirty(process: &OwnedHandle, loader: &Path) -> Result<bool> {
     };
 
     let mut detected = false;
-    let mut buf = vec![0u16; 1024];
+    let mut buf = vec![0u16; MAX_PATH as usize];
     enum_modules(process, |module| {
         let path = get_module_file_name_ex_w(process, Some(module), &mut buf)?;
         let os_path = path.to_os_string();

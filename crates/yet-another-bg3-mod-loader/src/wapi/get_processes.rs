@@ -14,14 +14,16 @@ pub fn get_processes(buf: &mut Vec<Pid>) -> &[Pid] {
         // There is no indication given when the buffer is too small to store all process identifiers. Therefore, if lpcbNeeded
         // equals cb, consider retrying the call with a larger array.
         if lpcbneeded == size {
+            let new_len = buf.len() + 1024;
+
             trace!(
                 lpcbneeded,
                 size,
-                new_len = buf.len() + 1024,
+                new_len,
                 "lpcbneeded == cb; pid_buffer not large enough; increasing size",
             );
 
-            buf.resize(buf.len() + 1024, 0);
+            buf.resize(new_len, 0);
             continue;
         }
 

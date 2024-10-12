@@ -2,7 +2,7 @@ use eyre::{bail, Result};
 use tracing::{error, trace};
 use widestring::U16Str;
 use windows::Win32::{
-    Foundation::{GetLastError, HMODULE},
+    Foundation::{GetLastError, HMODULE, MAX_PATH},
     System::ProcessStatus::GetModuleFileNameExW,
 };
 
@@ -24,13 +24,15 @@ pub fn get_module_file_name_ex_w<'a>(
         // terminating null character, the function returns nSize, and the function sets the last error to ERROR_INSUFFICIENT_BUFFER.
         // If the function fails, the return value is 0 (zero). To get extended error information, call GetLastError.
         if len as usize == buf.len() {
+            let new_len = buf.len() + MAX_PATH as usize;
+
             // buffer size insufficient
             trace!(
-                new_len = buf.len() + 1024,
+                new_len,
                 "GetModuleFileNameExW insufficient buffer size; increasing it and trying again"
             );
 
-            buf.resize(buf.len() + 1024, 0u16);
+            buf.resize(new_len, 0u16);
 
             continue;
         }
