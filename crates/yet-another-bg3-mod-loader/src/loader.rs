@@ -11,7 +11,7 @@ use std::{mem, path::Path};
 use eyre::{bail, Context, Result};
 use get_module_base_ex::GetModuleBaseEx;
 use native_plugin_lib::Version;
-use tracing::{error, info, trace_span, warn};
+use tracing::{error, info, trace, trace_span, warn};
 use windows::Win32::Foundation::WAIT_OBJECT_0;
 use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE};
 use windows::{
@@ -235,7 +235,15 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
         bail!("failed to get base address of loader");
     };
 
-    let init_addr = module.0 as usize + rva;
+    let base = module.0 as usize;
+    let init_addr = base + rva;
+
+    trace!(
+        base = format!("0x{base:x}"),
+        rva = format!("0x{rva:x}"),
+        "found loader.dll Init @ 0x{init_addr:x}"
+    );
+
     let init_fn = unsafe { mem::transmute::<usize, LPTHREAD_START_ROUTINE>(init_addr) };
 
     let res =
