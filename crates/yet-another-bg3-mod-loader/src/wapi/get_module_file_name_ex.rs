@@ -20,8 +20,8 @@ pub fn get_module_file_name_ex_w<'a>(
 
         trace!(len, buf_len = buf.len(), "GetModuleFileNameExW returned");
 
-        // If the buffer is too small to hold the module name, the string is truncated to nSize characters including the
-        // terminating null character, the function returns nSize, and the function sets the last error to ERROR_INSUFFICIENT_BUFFER.
+        // If the size of the file name is larger than the value of the nSize parameter, the function succeeds but the
+        // file name is truncated and null-terminated.
         // If the function fails, the return value is 0 (zero). To get extended error information, call GetLastError.
         if len as usize == buf.len() {
             let new_len = buf.len() + MAX_PATH as usize;

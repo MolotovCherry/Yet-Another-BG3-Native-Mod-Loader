@@ -19,7 +19,10 @@ use windows::Win32::{
 
 use crate::{
     helpers::OwnedHandle,
-    wapi::{get_module_file_name_ex::get_module_file_name_ex_w, get_processes::get_processes},
+    wapi::{
+        get_processes::get_processes,
+        query_full_process_image_name::query_full_process_image_name_w,
+    },
 };
 
 pub type Pid = u32;
@@ -171,7 +174,7 @@ impl ProcessWatcher {
                         }
                     };
 
-                    let Ok(path) = get_module_file_name_ex_w(&process, None, &mut path_buf) else {
+                    let Ok(path) = query_full_process_image_name_w(&process, &mut path_buf) else {
                         continue;
                     };
 
