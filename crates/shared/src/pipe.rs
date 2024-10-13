@@ -251,6 +251,8 @@ impl Server {
                                         unsafe { GetNamedPipeClientProcessId(handle, &mut pid) };
                                     if let Err(e) = res {
                                         error!(%e, "failed to get pipe client pid");
+                                        self.buf.clear();
+                                        self.msg_len = None;
                                         _ = server.disconnect();
                                         return Ok(());
                                     }
@@ -265,6 +267,8 @@ impl Server {
 
                                     authed = true;
                                 } else {
+                                    self.buf.clear();
+                                    self.msg_len = None;
                                     _ = server.disconnect();
                                     return Ok(());
                                 }
