@@ -5,7 +5,7 @@ use shared::{
     config::{get_config, Config},
     paths::{get_bg3_local_dir, get_bg3_plugins_dir},
 };
-use tracing::{error, trace};
+use tracing::{error, trace, trace_span};
 use tracing_appender::non_blocking::WorkerGuard;
 use windows::Win32::Security::SE_DEBUG_NAME;
 
@@ -28,6 +28,9 @@ pub struct InitData {
 }
 
 pub fn init(args: &Args) -> Result<InitData> {
+    let span = trace_span!("setup");
+    let _guard = span.enter();
+
     // enable unfettered access through debug privilege if we have admin access
     if is_admin() {
         set_privilege(SE_DEBUG_NAME, true)?;

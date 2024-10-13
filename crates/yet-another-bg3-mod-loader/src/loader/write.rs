@@ -1,7 +1,7 @@
 use std::ffi::c_void;
 
 use eyre::{bail, Result};
-use tracing::error;
+use tracing::{error, trace_span};
 use windows::Win32::{
     Foundation::GetLastError,
     System::{
@@ -13,6 +13,9 @@ use windows::Win32::{
 use crate::{helpers::OwnedHandle, popup::warn_popup};
 
 pub fn write_in<T>(process: &OwnedHandle, data: *const T, size: usize) -> Result<*const c_void> {
+    let span = trace_span!("write_in");
+    let _guard = span.enter();
+
     let alloc_addr = {
         let addr = unsafe {
             VirtualAllocEx(

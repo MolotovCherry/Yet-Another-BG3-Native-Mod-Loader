@@ -11,7 +11,7 @@ use pelite::{
     pe::{PeFile, Rva},
     pe64::exports::GetProcAddress,
 };
-use tracing::trace;
+use tracing::{trace, trace_span};
 use windows::Win32::Storage::FileSystem::FILE_SHARE_READ;
 
 use crate::popup::fatal_popup;
@@ -26,6 +26,9 @@ pub struct Loader {
 }
 
 pub fn init_loader() -> Result<Loader> {
+    let span = trace_span!("init_loader");
+    let _guard = span.enter();
+
     let current_exe_path = env::current_exe().context("unable to find current exe path")?;
     let exe_name = current_exe_path
         .file_name()

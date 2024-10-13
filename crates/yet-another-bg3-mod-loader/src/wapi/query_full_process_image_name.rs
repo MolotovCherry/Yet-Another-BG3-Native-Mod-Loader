@@ -1,5 +1,5 @@
 use eyre::{bail, Result};
-use tracing::{error, trace};
+use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::{
     core::PWSTR,
@@ -15,6 +15,9 @@ pub fn query_full_process_image_name_w<'a>(
     process: &OwnedHandle,
     buf: &'a mut Vec<u16>,
 ) -> Result<&'a U16Str> {
+    let span = trace_span!("query_full_process_image_name_w");
+    let _guard = span.enter();
+
     loop {
         let mut size = buf.len() as u32;
 
@@ -34,7 +37,7 @@ pub fn query_full_process_image_name_w<'a>(
                 // buffer size insufficient
                 trace!(
                     new_len,
-                    "QueryFullProcessImageNameW insufficient buffer size; increasing it and trying again"
+                    "insufficient buffer size; increasing it and trying again"
                 );
 
                 buf.resize(new_len, 0u16);
@@ -42,7 +45,7 @@ pub fn query_full_process_image_name_w<'a>(
                 continue;
             }
 
-            error!(err = %e, "QueryFullProcessImageNameW");
+            error!(err = %e);
             bail!("QueryFullProcessImageNameW {e}");
         }
 

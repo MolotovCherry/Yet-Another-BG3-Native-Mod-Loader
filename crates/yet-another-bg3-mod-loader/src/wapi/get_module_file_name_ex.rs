@@ -1,5 +1,5 @@
 use eyre::{bail, Result};
-use tracing::{error, trace};
+use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::Win32::{
     Foundation::{GetLastError, HMODULE, MAX_PATH},
@@ -13,12 +13,15 @@ pub fn get_module_file_name_ex_w<'a>(
     module: Option<HMODULE>,
     buf: &'a mut Vec<u16>,
 ) -> Result<&'a U16Str> {
+    let span = trace_span!("get_module_file_name_ex_w");
+    let _guard = span.enter();
+
     let module = module.unwrap_or_default();
 
     let len = loop {
         let len = unsafe { GetModuleFileNameExW(process.as_raw_handle(), module, buf) };
 
-        trace!(len, buf_len = buf.len(), "GetModuleFileNameExW returned");
+        trace!(len, buf_len = buf.len(), "returned");
 
         // If the size of the file name is larger than the value of the nSize parameter, the function succeeds but the
         // file name is truncated and null-terminated.
@@ -29,7 +32,7 @@ pub fn get_module_file_name_ex_w<'a>(
             // buffer size insufficient
             trace!(
                 new_len,
-                "GetModuleFileNameExW insufficient buffer size; increasing it and trying again"
+                "insufficient buffer size; increasing it and trying again"
             );
 
             buf.resize(new_len, 0u16);
@@ -40,12 +43,7 @@ pub fn get_module_file_name_ex_w<'a>(
         if len == 0 {
             let err = unsafe { GetLastError() };
 
-            error!(
-                ?err,
-                len,
-                buf_len = buf.len(),
-                "GetModuleFileNameExW error handling"
-            );
+            error!(?err, len, buf_len = buf.len(), "error handling");
 
             bail!("{err:?}");
         }

@@ -1,5 +1,5 @@
 use eyre::Result;
-use tracing::{error, trace, warn};
+use tracing::{error, trace, trace_span, warn};
 use windows::Win32::{
     Foundation::{ERROR_PARTIAL_COPY, HMODULE, STILL_ACTIVE},
     System::{
@@ -17,6 +17,9 @@ pub fn enum_modules(
     process: &OwnedHandle,
     mut cb: impl FnMut(HMODULE) -> Result<bool>,
 ) -> Result<()> {
+    let span = trace_span!("enum_modules");
+    let _guard = span.enter();
+
     let mut modules: Vec<HMODULE> = vec![HMODULE::default(); 1024];
     inner_enum_modules(process, &mut modules)?;
 
@@ -81,23 +84,18 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
                     size,
                     len = modules.len(),
                     %e,
-                    "EnumProcessModulesEx did partial copy, but process is still alive, retrying"
+                    "did partial copy, but process is still alive, retrying"
                 );
 
                 continue;
             }
 
-            error!(%e, "EnumProcessModulesEx");
+            error!(%e);
 
             return Err(e.into());
         }
 
-        trace!(
-            lpcbneeded,
-            size,
-            len = modules.len(),
-            "EnumProcessModulesEx passed"
-        );
+        trace!(lpcbneeded, size, len = modules.len(), "passed");
 
         // To determine how many modules were enumerated by the call to EnumProcessModulesEx, divide the resulting
         // value in the lpcbNeeded parameter by sizeof(HMODULE).

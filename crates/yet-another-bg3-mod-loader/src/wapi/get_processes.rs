@@ -1,9 +1,12 @@
-use tracing::{error, trace};
+use tracing::{error, trace, trace_span};
 use windows::Win32::System::ProcessStatus::EnumProcesses;
 
 use crate::process_watcher::Pid;
 
 pub fn get_processes(buf: &mut Vec<Pid>) -> &[Pid] {
+    let span = trace_span!("get_processes");
+    let _guard = span.enter();
+
     let mut lpcbneeded = 0;
 
     loop {
@@ -28,7 +31,7 @@ pub fn get_processes(buf: &mut Vec<Pid>) -> &[Pid] {
         }
 
         if let Err(e) = enum_res {
-            error!(error = %e, "EnumProcesses failed");
+            error!(error = %e, "failed");
             continue;
         }
 
