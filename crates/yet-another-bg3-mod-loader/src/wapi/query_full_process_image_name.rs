@@ -42,7 +42,7 @@ pub fn query_full_process_image_name_w<'a>(
                 continue;
             }
 
-            error!("QueryFullProcessImageNameW: {e}");
+            error!(err = %e, "QueryFullProcessImageNameW");
             bail!("QueryFullProcessImageNameW {e}");
         }
 
