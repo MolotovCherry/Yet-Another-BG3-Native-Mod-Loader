@@ -1,10 +1,9 @@
 mod dirty;
 mod write;
 
-use std::os::windows::ffi::OsStrExt;
 use std::{ffi::c_void, sync::OnceLock};
 use std::{iter, sync::atomic::Ordering};
-use std::{mem, path::Path};
+use std::{mem, os::windows::prelude::OsStrExt as _};
 
 use eyre::{Context, Result};
 use native_plugin_lib::Version;
@@ -30,13 +29,14 @@ use crate::{
     popup::warn_popup,
     process_watcher::Pid,
     server::{AUTH, PID},
+    tmp_loader::Loader,
     wapi::get_module_base_ex::GetModuleBaseEx,
 };
 use dirty::is_dirty;
 
 use self::write::write_in;
 
-pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
+pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
     let span = trace_span!("loader");
     let _guard = span.enter();
 
@@ -93,7 +93,7 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     };
 
     // checks if process has already had injection done on it
-    let is_dirty = match is_dirty(&process, loader) {
+    let is_dirty = match is_dirty(&process, &loader.path) {
         Ok(v) => v,
         Err(e) => {
             error!(?e, "failed dirty check");
@@ -117,8 +117,12 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     }
 
     let loader_formatted = {
-        let data = native_plugin_lib::get_plugin_data(loader);
-        let dll_name = loader.file_name().unwrap_or_default().to_string_lossy();
+        let data = native_plugin_lib::get_plugin_data(&loader.path);
+        let dll_name = loader
+            .path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy();
 
         if let Ok(guard) = data {
             let data = guard.data();
@@ -141,6 +145,7 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     info!("Running {loader_formatted}");
 
     let loader_v = loader
+        .path
         .as_os_str()
         .encode_wide()
         .chain(iter::once(0))
@@ -194,7 +199,7 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     }
 
     // now call Init
-    let Some(module) = GetModuleBaseEx(&process, loader) else {
+    let Some(module) = GetModuleBaseEx(&process, &loader.path) else {
         warn_popup(
             "Where is the module?",
             "Failed to find loader.dll module handle. ??? Maybe report this as a bug. Check the logs too.",
@@ -204,11 +209,11 @@ pub fn run_loader(pid: Pid, (rva, loader): (usize, &Path)) -> Result<()> {
     };
 
     let base = module.0 as usize;
-    let init_addr = base + rva;
+    let init_addr = base + loader.rva as usize;
 
     trace!(
         base = %format!("0x{base:x}"),
-        rva = %format!("0x{rva:x}"),
+        rva = %format!("0x{:x}", loader.rva),
         addr = %format!("0x{init_addr:x}"),
         "found loader.dll Init addr"
     );

@@ -1,4 +1,4 @@
-use std::{fs::File, path::PathBuf, process, thread};
+use std::{process, thread};
 
 use eyre::{Context as _, Result};
 use shared::{
@@ -17,11 +17,16 @@ use crate::{
     popup::{display_popup, fatal_popup, MessageBoxIcon},
     privileges::set_privilege,
     server::server,
-    tmp_loader::init_loader,
+    tmp_loader::{init_loader, Loader},
 };
 
-#[allow(clippy::type_complexity)]
-pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, (usize, PathBuf, File))> {
+pub struct InitData {
+    pub config: Config,
+    pub worker: Option<WorkerGuard>,
+    pub loader: Loader,
+}
+
+pub fn init(args: &Args) -> Result<InitData> {
     // enable unfettered access through debug privilege if we have admin access
     if is_admin() {
         set_privilege(SE_DEBUG_NAME, true)?;
@@ -85,5 +90,11 @@ pub fn init(args: &Args) -> Result<(Config, Option<WorkerGuard>, (usize, PathBuf
         );
     });
 
-    Ok((config, worker_guard, loader))
+    let init = InitData {
+        config,
+        worker: worker_guard,
+        loader,
+    };
+
+    Ok(init)
 }

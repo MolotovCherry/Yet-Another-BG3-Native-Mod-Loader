@@ -74,13 +74,14 @@ pub fn run(run_type: RunType) -> Result<()> {
         return Ok(());
     }
 
-    let (_config, _guard, loader) = init(&args)?;
-    let _loader_lock = loader.2;
+    let mut init = init(&args)?;
+    let _loader_lock = init.loader.file.take();
+    let _worker_guard = init.worker.take();
 
     #[cfg(not(feature = "test-injection"))]
     let processes = {
         use paths::{get_game_binary_paths, Bg3Exes};
-        let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&_config);
+        let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&init.config);
         &[bg3, bg3_dx11]
     };
 
@@ -104,7 +105,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         move |call| match call {
                 CallType::Pid(pid) => {
                     trace!("Received callback for pid {pid}, now loading");
-                    run_loader(pid, (loader.0, &loader.1)).unwrap();
+                    run_loader(pid, &init.loader).unwrap();
                 }
 
                 // only fires with injector

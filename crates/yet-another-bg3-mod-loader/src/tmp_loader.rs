@@ -7,14 +7,24 @@ use std::{
 };
 
 use eyre::{Context, OptionExt as _, Result};
-use pelite::{pe::PeFile, pe64::exports::GetProcAddress};
+use pelite::{
+    pe::{PeFile, Rva},
+    pe64::exports::GetProcAddress,
+};
 use windows::Win32::Storage::FileSystem::FILE_SHARE_READ;
 
 use crate::popup::fatal_popup;
 
 static LOADER_HASH: &str = env!("LOADER_HASH");
 
-pub fn init_loader() -> Result<(usize, PathBuf, File)> {
+#[derive(Debug)]
+pub struct Loader {
+    pub rva: Rva,
+    pub path: PathBuf,
+    pub file: Option<File>,
+}
+
+pub fn init_loader() -> Result<Loader> {
     let current_exe_path = env::current_exe().context("unable to find current exe path")?;
     let exe_name = current_exe_path
         .file_name()
@@ -58,15 +68,21 @@ pub fn init_loader() -> Result<(usize, PathBuf, File)> {
 
     let rva = get_init_rva(&data)?;
 
-    Ok((rva, loader_path, file))
+    let loader = Loader {
+        rva,
+        path: loader_path,
+        file: Some(file),
+    };
+
+    Ok(loader)
 }
 
-fn get_init_rva(data: &[u8]) -> Result<usize> {
+fn get_init_rva(data: &[u8]) -> Result<Rva> {
     let loader = PeFile::from_bytes(&data)?;
     let rva = loader
         .get_export("Init")?
         .symbol()
         .ok_or(pelite::Error::Null)?;
 
-    Ok(rva as usize)
+    Ok(rva)
 }
