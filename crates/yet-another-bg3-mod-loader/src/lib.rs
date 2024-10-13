@@ -23,7 +23,7 @@ use std::time::Duration;
 
 use clap::Parser;
 use eyre::Result;
-use tracing::trace;
+use tracing::{error, trace};
 
 use cli::Args;
 use event::Event;
@@ -34,6 +34,8 @@ use process_watcher::{ProcessWatcher, Timeout};
 use setup::init;
 use single_instance::SingleInstance;
 use tray::AppTray;
+
+use self::popup::warn_popup;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum RunType {
@@ -104,14 +106,18 @@ pub fn run(run_type: RunType) -> Result<()> {
         ProcessWatcher::new(processes, polling_rate, timeout, oneshot).run(
         move |call| match call {
                 CallType::Pid(pid) => {
-                    trace!("Received callback for pid {pid}, now loading");
-                    run_loader(pid, &init.loader).unwrap();
+                    trace!(pid, "Received callback for pid, now loading");
+                    let res = run_loader(pid, &init.loader);
+                    if let Err(e) = res {
+                        error!(err = %e, "run_loader failed");
+                        warn_popup("run loader failed", format!("run_loader unexpectedly failed. program will continue running, but depending on the error may not function properly.\n\nError: {e}"));
+                    }
                 }
 
                 // only fires with injector
                 CallType::Timeout => {
                     fatal_popup(
-                        "Fatal Error",
+                        "Timeout",
                         "Game process was not found.\n\nThis can happen for 1 of 2 reasons:\n\nEither the game isn't running, so this tool timed out waiting for it\n\nOr the game wasn't detected because your `install_root` config value isn't correct\n\nIn rare cases, it could be that the program doesn't have permission to open the game process, so it skips it. In such a case, you should run this as admin (only as a last resort; in normal cases this is not needed)",
                     );
                 }
