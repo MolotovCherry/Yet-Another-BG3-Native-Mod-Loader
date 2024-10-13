@@ -11,6 +11,7 @@ use pelite::{
     pe::{PeFile, Rva},
     pe64::exports::GetProcAddress,
 };
+use tracing::trace;
 use windows::Win32::Storage::FileSystem::FILE_SHARE_READ;
 
 use crate::popup::fatal_popup;
@@ -57,7 +58,22 @@ pub fn init_loader() -> Result<Loader> {
     let hash = sha256::digest(&data);
 
     // did we compile in CI? we need default behavior if so
-    let check_hash = option_env!("CI").is_some() || option_env!("CHECK_HASH").is_some();
+    let ci = option_env!("CI").is_some();
+    // whether to force hash checking regardless of CI build
+    let checked = option_env!("CHECK_HASH").is_some();
+    let check_hash = ci || checked;
+
+    trace!(
+        expected_hash = %LOADER_HASH,
+        calculated_hash = %hash,
+        "This is a {} {} build",
+        if ci { "CI" } else { "non-CI" },
+        if check_hash {
+            "checked hash"
+        } else {
+            "unchecked hash"
+        }
+    );
 
     if check_hash && hash != LOADER_HASH {
         fatal_popup(
@@ -83,6 +99,8 @@ fn get_init_rva(data: &[u8]) -> Result<Rva> {
         .get_export("Init")?
         .symbol()
         .ok_or(pelite::Error::Null)?;
+
+    trace!(rva = %format!("0x{rva:x}"), "Found loader.dll Init rva");
 
     Ok(rva)
 }

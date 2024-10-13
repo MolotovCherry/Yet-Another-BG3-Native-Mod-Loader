@@ -168,7 +168,7 @@ impl ProcessWatcher {
                                 // there is a risk here that we don't have permission to open the game process, so it's skipped
                                 // in such a case, this tool should be run as admin. we have no way of knowing if that happened
 
-                                trace!("failed to open process: {e}");
+                                trace!(err = %e, "failed to open process");
 
                                 continue;
                             }
@@ -181,11 +181,11 @@ impl ProcessWatcher {
 
                     let new_process_path = UniCase::new(path.to_string_lossy());
 
-                    trace!("process @ {new_process_path}");
+                    trace!(path = %new_process_path, "found process");
 
                     for process_path in &self.processes {
                         if process_path == &new_process_path {
-                            trace!("found match for {process_path}");
+                            trace!(path = %process_path, "found process match");
 
                             cb(CallType::Pid(pid));
 
@@ -241,7 +241,7 @@ impl ProcessWatcher {
         }
 
         if !buffer.is_empty() {
-            trace!("found new pids to check: {buffer:?}");
+            trace!(pids = ?buffer, "found new pids to check");
         }
 
         // this is important. It erases all the old entries in the table

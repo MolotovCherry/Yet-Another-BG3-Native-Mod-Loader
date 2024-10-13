@@ -21,6 +21,7 @@ use crate::{
 };
 
 pub struct InitData {
+    #[cfg_attr(feature = "test-injection", allow(dead_code))]
     pub config: Config,
     pub worker: Option<WorkerGuard>,
     pub loader: Loader,
