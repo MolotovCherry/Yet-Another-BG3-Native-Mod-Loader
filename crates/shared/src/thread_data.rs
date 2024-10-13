@@ -1,8 +1,7 @@
-use serde::{Deserialize, Serialize};
-
 use crate::pipe::commands::Level;
 
-#[derive(Serialize, Deserialize)]
+#[repr(C)]
+#[derive(Copy, Clone)]
 pub struct ThreadData {
     /// the authentication code
     pub auth: u64,

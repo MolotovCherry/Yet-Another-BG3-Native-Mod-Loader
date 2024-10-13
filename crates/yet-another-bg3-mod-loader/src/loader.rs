@@ -154,7 +154,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
     // 1 byte = u8, u16 = 2 bytes, len = number of elems in vector, so len * 2
     let loader_path_len = loader_v.len() * size_of::<u16>();
 
-    let Ok(ptr) = write_in(&process, loader_v.as_ptr(), loader_path_len) else {
+    let Ok(ptr) = (unsafe { write_in(&process, loader_v.as_ptr(), loader_path_len) }) else {
         return Ok(());
     };
 
@@ -224,19 +224,12 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
 
     trace!(auth_code, "generated auth");
 
-    let thread_data = {
-        let t = ThreadData {
-            auth: auth_code,
-            level: LevelFilter::current().into(),
-        };
-
-        let json = serde_json::to_string(&t)?.into_bytes();
-        let mut data = json.len().to_le_bytes().to_vec();
-        data.extend_from_slice(&json);
-        data
+    let thread_data = ThreadData {
+        auth: auth_code,
+        level: LevelFilter::current().into(),
     };
 
-    let Ok(ptr) = write_in(&process, thread_data.as_ptr(), thread_data.len()) else {
+    let Ok(ptr) = (unsafe { write_in(&process, &thread_data, size_of::<ThreadData>()) }) else {
         return Ok(());
     };
 

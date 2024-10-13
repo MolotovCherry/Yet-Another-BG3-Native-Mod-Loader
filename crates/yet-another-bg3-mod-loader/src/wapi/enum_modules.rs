@@ -1,5 +1,5 @@
 use eyre::Result;
-use tracing::{error, info, trace};
+use tracing::{error, trace, warn};
 use windows::Win32::{
     Foundation::{ERROR_PARTIAL_COPY, HMODULE, STILL_ACTIVE},
     System::{
@@ -69,8 +69,6 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
         }
 
         if let Err(e) = res {
-            error!(%e, "EnumProcessModulesEx");
-
             // This can be caused by:
             // - Process was terminated
             // - Missing permissions (try running as admin)
@@ -78,18 +76,18 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult() == e.code() {
                 // retry again because it must've been a simple error
 
-                trace!(
+                warn!(
                     lpcbneeded,
                     size,
                     len = modules.len(),
                     %e,
-                    "error partial copy, but process is still alive, retry"
+                    "EnumProcessModulesEx did partial copy, but process is still alive, retrying"
                 );
-
-                info!("EnumProcessModulesEx did partial copy, but process is alive; trying again");
 
                 continue;
             }
+
+            error!(%e, "EnumProcessModulesEx");
 
             return Err(e.into());
         }

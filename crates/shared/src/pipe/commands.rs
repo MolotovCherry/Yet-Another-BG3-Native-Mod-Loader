@@ -36,7 +36,8 @@ impl Display for Span {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Level {
     Off,
