@@ -7,7 +7,8 @@ use std::{mem, os::windows::prelude::OsStrExt as _};
 
 use eyre::{Context, Result};
 use native_plugin_lib::Version;
-use tracing::{error, info, trace, trace_span, warn};
+use shared::thread_data::ThreadData;
+use tracing::{error, info, level_filters::LevelFilter, trace, trace_span, warn};
 use windows::Win32::Foundation::WAIT_OBJECT_0;
 use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE};
 use windows::{
@@ -223,7 +224,19 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
 
     trace!(auth_code, "generated auth");
 
-    let Ok(ptr) = write_in(&process, &auth_code, size_of::<u64>()) else {
+    let thread_data = {
+        let t = ThreadData {
+            auth: auth_code,
+            level: LevelFilter::current().into(),
+        };
+
+        let json = serde_json::to_string(&t)?.into_bytes();
+        let mut data = json.len().to_le_bytes().to_vec();
+        data.extend_from_slice(&json);
+        data
+    };
+
+    let Ok(ptr) = write_in(&process, thread_data.as_ptr(), thread_data.len()) else {
         return Ok(());
     };
 

@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use serde::{Deserialize, Serialize};
+use tracing::level_filters::LevelFilter;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Request {
@@ -38,6 +39,7 @@ impl Display for Span {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Level {
+    Off,
     Trace,
     Debug,
     Info,
@@ -45,14 +47,31 @@ pub enum Level {
     Error,
 }
 
-impl From<Level> for tracing::Level {
+impl From<LevelFilter> for Level {
+    fn from(value: LevelFilter) -> Self {
+        match value.into_level() {
+            Some(l) => match l {
+                tracing::Level::TRACE => Self::Trace,
+                tracing::Level::DEBUG => Self::Debug,
+                tracing::Level::INFO => Self::Info,
+                tracing::Level::WARN => Self::Warn,
+                tracing::Level::ERROR => Self::Error,
+            },
+
+            None => Self::Off,
+        }
+    }
+}
+
+impl From<Level> for LevelFilter {
     fn from(value: Level) -> Self {
         match value {
-            Level::Trace => tracing::Level::TRACE,
-            Level::Debug => tracing::Level::DEBUG,
-            Level::Info => tracing::Level::INFO,
-            Level::Warn => tracing::Level::WARN,
-            Level::Error => tracing::Level::ERROR,
+            Level::Off => Self::OFF,
+            Level::Trace => Self::TRACE,
+            Level::Debug => Self::DEBUG,
+            Level::Info => Self::INFO,
+            Level::Warn => Self::WARN,
+            Level::Error => Self::ERROR,
         }
     }
 }

@@ -6,6 +6,7 @@ mod panic;
 
 use std::{
     ffi::c_void,
+    ptr, slice,
     sync::{LazyLock, Mutex, OnceLock},
 };
 
@@ -14,8 +15,8 @@ use helpers::{HInstance, Plugin, SuperLock};
 use loader::load_plugins;
 use logging::setup_logging;
 use native_plugin_lib::declare_plugin;
-use shared::pipe::commands::Request;
-use tracing::{error, trace};
+use shared::{pipe::commands::Request, thread_data::ThreadData};
+use tracing::{error, level_filters::LevelFilter, trace};
 use windows::Win32::{
     Foundation::HINSTANCE,
     System::SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
@@ -70,11 +71,37 @@ extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
 
     let module = *MODULE.get().unwrap();
 
-    let result = panic::catch_unwind(|| {
-        setup_logging().context("failed to setup logging")?;
+    // extract and process thread data
 
-        let access_code = unsafe { *lpthreadparameter.cast::<u64>() };
-        _ = CLIENT.try_send(Request::Auth(access_code));
+    let len = {
+        let mut size = [0u8; size_of::<usize>()];
+
+        unsafe {
+            ptr::copy_nonoverlapping(
+                lpthreadparameter.cast::<u8>(),
+                size.as_mut_ptr(),
+                size_of::<usize>(),
+            );
+        }
+
+        usize::from_le_bytes(size)
+    };
+
+    let ptr = unsafe { lpthreadparameter.byte_add(size_of::<usize>()) };
+    let data = unsafe { slice::from_raw_parts(ptr.cast::<u8>(), len) };
+    let data = serde_json::from_slice::<ThreadData>(data);
+
+    if let Ok(ref data) = data {
+        _ = CLIENT.try_send(Request::Auth(data.auth));
+    }
+
+    let level = match data {
+        Ok(v) => v.level.into(),
+        Err(_) => LevelFilter::OFF,
+    };
+
+    let result = panic::catch_unwind(|| {
+        setup_logging(level).context("failed to setup logging")?;
 
         load_plugins(module)?;
 

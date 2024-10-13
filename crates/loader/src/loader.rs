@@ -24,7 +24,7 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
     let read_dir = fs::read_dir(plugins_dir).context("failed to read plugins_dir {plugins_dir}");
     let Ok(read_dir) = read_dir else {
         error!(?read_dir, "failed to read plugins dir");
-        CLIENT.try_send(Receive::ErrorCantReadPluginDir)?;
+        _ = CLIENT.try_send(Receive::ErrorCantReadPluginDir);
         return Ok(());
     };
 

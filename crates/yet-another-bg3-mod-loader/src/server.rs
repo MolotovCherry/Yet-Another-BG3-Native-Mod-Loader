@@ -29,6 +29,8 @@ pub fn server() -> io::Result<!> {
             let fields = msg.fields;
 
             match msg.level {
+                Level::Off => (),
+
                 Level::Trace => {
                     trace!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
                 }

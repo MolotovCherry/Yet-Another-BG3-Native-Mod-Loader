@@ -6,34 +6,21 @@ use std::{
 use eyre::Result;
 use shared::pipe::commands::Receive;
 use tracing::level_filters::LevelFilter;
-use tracing_subscriber::{fmt::MakeWriter, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{fmt::MakeWriter, util::SubscriberInitExt};
 
 use crate::{
     client::{TrySend, CLIENT},
     helpers::SuperLock,
 };
 
-const LOG_ENV: &str = "YABG3ML_LOG";
-
-pub fn setup_logging() -> Result<()> {
-    let default = if cfg!(debug_assertions) {
-        LevelFilter::TRACE
-    } else {
-        LevelFilter::INFO
-    };
-
-    let env_filter = EnvFilter::builder()
-        .with_default_directive(default.into())
-        .with_env_var(LOG_ENV)
-        .from_env_lossy();
-
+pub fn setup_logging(level: LevelFilter) -> Result<()> {
     let maker = PipeMaker::new()?;
 
     tracing_subscriber::fmt()
         .with_line_number(true)
         .with_file(true)
         .json()
-        .with_env_filter(env_filter)
+        .with_max_level(level)
         .with_writer(maker)
         .finish()
         .init();

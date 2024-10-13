@@ -16,6 +16,7 @@ native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib"
 unicase = "2.7.0"
 winres = "0.1.12"
 sha256 = "1.5.0"
+serde_json = "1.0.128"
 
 [workspace.dependencies.windows]
 version = "0.58.0"
