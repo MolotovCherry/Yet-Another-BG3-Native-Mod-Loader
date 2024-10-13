@@ -154,7 +154,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
     // 1 byte = u8, u16 = 2 bytes, len = number of elems in vector, so len * 2
     let loader_path_len = loader_v.len() * size_of::<u16>();
 
-    let Ok(ptr) = (unsafe { write_in(&process, loader_v.as_ptr(), loader_path_len) }) else {
+    let Ok(ptr) = write_in(&process, loader_v.as_ptr(), loader_path_len) else {
         return Ok(());
     };
 
@@ -229,7 +229,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
         level: LevelFilter::current().into(),
     };
 
-    let Ok(ptr) = (unsafe { write_in(&process, &thread_data, size_of::<ThreadData>()) }) else {
+    let Ok(ptr) = write_in(&process, &thread_data, size_of::<ThreadData>()) else {
         return Ok(());
     };
 
