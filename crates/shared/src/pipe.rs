@@ -36,6 +36,9 @@ static RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
 
 pub const PIPE: &str = r"\\.\pipe\yabg3ml";
 
+pub type Pid = u32;
+pub type Auth = u64;
+
 pub struct Client {
     pipe: NamedPipeClient,
 }
@@ -126,7 +129,7 @@ impl Server {
     pub fn recv_all(
         &mut self,
         cb: impl Fn(Receive),
-        mut auth: impl FnMut(u32, u64) -> ControlFlow<()>,
+        mut auth: impl FnMut(Pid, Auth) -> ControlFlow<()>,
     ) -> io::Result<!> {
         // allow all access with security descriptor
 
@@ -173,7 +176,7 @@ impl Server {
         &mut self,
         sa: &mut SECURITY_ATTRIBUTES,
         cb: &impl Fn(Receive),
-        auth: &mut impl FnMut(u32, u64) -> ControlFlow<()>,
+        auth: &mut impl FnMut(Pid, Auth) -> ControlFlow<()>,
     ) -> Result<(), io::Error> {
         let server = unsafe {
             ServerOptions::new()
