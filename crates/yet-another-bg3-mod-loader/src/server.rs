@@ -55,7 +55,7 @@ pub fn server() -> io::Result<!> {
     let auth = |pid, code| {
         let ppid = PID.load(Ordering::Acquire);
 
-        trace!(pid, ppid, "verifying pipe pid");
+        trace!(pid, ppid, "verifying pid");
 
         if ppid != pid {
             return ControlFlow::Break(());
@@ -63,7 +63,7 @@ pub fn server() -> io::Result<!> {
 
         let passcode = AUTH.load(Ordering::Acquire);
 
-        trace!(code, passcode, "verifying pipe auth code");
+        trace!(code, passcode, "verifying auth code");
 
         if passcode == code {
             ControlFlow::Continue(())

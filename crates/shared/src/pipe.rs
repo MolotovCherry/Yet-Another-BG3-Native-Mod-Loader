@@ -15,7 +15,7 @@ use tokio::{
     net::windows::named_pipe::{ClientOptions, NamedPipeClient, PipeMode, ServerOptions},
     runtime::{Builder, Runtime},
 };
-use tracing::{error, trace};
+use tracing::{error, trace, trace_span};
 use windows::Win32::{
     Foundation::HANDLE,
     Security::{
@@ -131,6 +131,9 @@ impl Server {
         cb: impl Fn(Receive),
         mut auth: impl FnMut(Pid, Auth) -> ControlFlow<()>,
     ) -> io::Result<!> {
+        let span = trace_span!("pipe server");
+        let _guard = span.enter();
+
         // allow all access with security descriptor
 
         let mut sd = SECURITY_DESCRIPTOR::default();
@@ -190,7 +193,7 @@ impl Server {
         let server = match server {
             Ok(s) => s,
             Err(e) => {
-                error!(%e, "failed to create pipe server");
+                error!(%e, "failed to create server");
                 return Err(e);
             }
         };
@@ -248,14 +251,14 @@ impl Server {
                                         return Ok(());
                                     };
 
-                                    trace!(auth_code, "pipe received auth");
+                                    trace!(auth_code, "received auth");
 
                                     let handle = HANDLE(server.as_handle().as_raw_handle());
                                     let mut pid = 0;
                                     let res =
                                         unsafe { GetNamedPipeClientProcessId(handle, &mut pid) };
                                     if let Err(e) = res {
-                                        error!(%e, "failed to get pipe client pid");
+                                        error!(%e, "failed to get client pid");
                                         _ = server.disconnect();
                                         return Ok(());
                                     }
@@ -293,7 +296,7 @@ impl Server {
                 Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
 
                 Err(e) => {
-                    error!(%e, "pipe client error");
+                    error!(%e, "client error");
                     break;
                 }
             }

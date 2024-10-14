@@ -181,7 +181,7 @@ impl ProcessWatcher {
 
                     let new_process_path = UniCase::new(path.to_string_lossy());
 
-                    trace!(path = %new_process_path, "found process");
+                    trace!(process = %new_process_path, "found");
 
                     for process_path in &self.processes {
                         if process_path == &new_process_path {
