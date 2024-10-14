@@ -47,7 +47,7 @@ pub fn QueryFullProcessImageNameRs<'a>(
                 continue;
             }
 
-            error!(err = %e);
+            error!("{e}");
             bail!("QueryFullProcessImageNameW: {e}");
         }
 

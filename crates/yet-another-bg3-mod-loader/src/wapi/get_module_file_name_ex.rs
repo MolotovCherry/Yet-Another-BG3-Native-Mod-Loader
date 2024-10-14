@@ -23,8 +23,6 @@ pub fn GetModuleFileNameExRs<'a>(
     let len = loop {
         let len = unsafe { GetModuleFileNameExW(process.as_raw_handle(), module, buf) };
 
-        trace!(len, buf_len = buf.len(), "returned");
-
         // If the size of the file name is larger than the value of the nSize parameter, the function succeeds but the
         // file name is truncated and null-terminated.
         // If the function fails, the return value is 0 (zero). To get extended error information, call GetLastError.
@@ -45,7 +43,7 @@ pub fn GetModuleFileNameExRs<'a>(
         if len == 0 {
             let err = unsafe { GetLastError() };
 
-            error!(?err, len, buf_len = buf.len(), "error handling");
+            error!("{err:?}");
 
             bail!("GetModuleFileNameExRs: {err:?}");
         }

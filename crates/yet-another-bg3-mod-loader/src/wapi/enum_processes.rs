@@ -33,7 +33,7 @@ pub fn EnumProcessesRs(buf: &mut Vec<Pid>) -> &[Pid] {
         }
 
         if let Err(e) = enum_res {
-            error!(error = %e, "failed");
+            error!("{e}");
             continue;
         }
 

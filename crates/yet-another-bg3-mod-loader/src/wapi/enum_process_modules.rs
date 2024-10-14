@@ -106,12 +106,10 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
                 continue;
             }
 
-            error!(%e);
+            error!("{e}");
 
             bail!("EnumProcessModulesExRs: {e}");
         }
-
-        trace!(lpcbneeded, size, len = modules.len(), "passed");
 
         // To determine how many modules were enumerated by the call to EnumProcessModulesEx, divide the resulting
         // value in the lpcbNeeded parameter by sizeof(HMODULE).
