@@ -1,4 +1,7 @@
-use std::ffi::c_void;
+use std::{
+    ffi::c_void,
+    sync::{Mutex, MutexGuard},
+};
 
 use windows::{core::Free, Win32::Foundation::HANDLE};
 
@@ -38,6 +41,20 @@ impl Drop for OwnedHandle {
     fn drop(&mut self) {
         unsafe {
             self.0.free();
+        }
+    }
+}
+
+pub trait SuperLock<T> {
+    fn super_lock(&self) -> MutexGuard<T>;
+}
+
+impl<T> SuperLock<T> for Mutex<T> {
+    /// Always get a mutex guard regardless of poison status
+    fn super_lock(&self) -> MutexGuard<T> {
+        match self.lock() {
+            Ok(v) => v,
+            Err(p) => p.into_inner(),
         }
     }
 }

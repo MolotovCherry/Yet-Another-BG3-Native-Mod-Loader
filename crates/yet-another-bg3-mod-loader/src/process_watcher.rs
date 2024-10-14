@@ -3,15 +3,15 @@ use std::{
     mem::ManuallyDrop,
     sync::{
         mpsc::{channel, Receiver, RecvTimeoutError, Sender},
-        Mutex,
+        LazyLock, Mutex,
     },
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
 
 use eyre::{Error, Result};
-use shared::utils::OwnedHandle;
-use tracing::{trace, trace_span};
+use shared::utils::{OwnedHandle, SuperLock};
+use tracing::{trace, trace_span, Span};
 use unicase::UniCase;
 use windows::Win32::{
     Foundation::MAX_PATH,
@@ -23,6 +23,8 @@ use crate::wapi::{
 };
 
 pub type Pid = u32;
+
+pub static CURRENT_PID: LazyLock<Mutex<Span>> = LazyLock::new(|| Mutex::new(Span::none()));
 
 #[derive(Debug)]
 pub enum CallType {
@@ -153,6 +155,8 @@ impl ProcessWatcher {
                 'pid_loop: for pid in new_pid_buf.iter().copied() {
                     let span_pid_loop = trace_span!("pid_loop", pid = pid);
                     let _guard = span_pid_loop.enter();
+
+                    *CURRENT_PID.super_lock() = span_pid_loop.clone();
 
                     let process = {
                         let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };

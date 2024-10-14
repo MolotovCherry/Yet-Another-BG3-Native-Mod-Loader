@@ -4,14 +4,11 @@ use std::{
 };
 
 use eyre::Result;
-use shared::{config::Config, pipe::commands::Receive};
+use shared::{config::Config, pipe::commands::Receive, utils::SuperLock as _};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{fmt::MakeWriter, util::SubscriberInitExt};
 
-use crate::{
-    client::{TrySend, CLIENT},
-    utils::SuperLock,
-};
+use crate::client::{TrySend, CLIENT};
 
 pub fn setup_logging(config: &Config, level: LevelFilter) -> Result<()> {
     let maker = PipeMaker::new()?;

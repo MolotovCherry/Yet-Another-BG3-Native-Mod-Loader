@@ -2,7 +2,12 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
 
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
-use shared::{config::Config, paths::get_bg3_plugins_dir, popup::warn_popup, utils::tri};
+use shared::{
+    config::Config,
+    paths::get_bg3_plugins_dir,
+    popup::warn_popup,
+    utils::{tri, SuperLock as _},
+};
 use tracing::{error, info, trace, warn};
 use unicase::UniCase;
 use windows::{
@@ -10,10 +15,7 @@ use windows::{
     Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW},
 };
 
-use crate::{
-    utils::{FreeSelfLibrary, SuperLock},
-    HInstance, Plugin, LOADED_PLUGINS,
-};
+use crate::{utils::FreeSelfLibrary, HInstance, Plugin, LOADED_PLUGINS};
 
 pub fn load_plugins(config: &Config, hinstance: HInstance) -> Result<()> {
     let plugins_dir = get_bg3_plugins_dir()?;

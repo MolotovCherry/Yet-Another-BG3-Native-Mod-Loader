@@ -1,11 +1,12 @@
+use shared::utils::SuperLock as _;
 use tracing::{error, trace, trace_span};
 use windows::Win32::System::ProcessStatus::EnumProcesses;
 
-use crate::process_watcher::Pid;
+use crate::process_watcher::{Pid, CURRENT_PID};
 
 #[allow(non_snake_case)]
 pub fn EnumProcessesRs(buf: &mut Vec<Pid>) -> &[Pid] {
-    let span = trace_span!("EnumProcessesRs");
+    let span = trace_span!(parent: CURRENT_PID.super_lock().clone(), "EnumProcessesRs");
     let _guard = span.enter();
 
     let mut lpcbneeded = 0;

@@ -1,5 +1,5 @@
 use eyre::{bail, Result};
-use shared::utils::OwnedHandle;
+use shared::utils::{OwnedHandle, SuperLock as _};
 use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::Win32::{
@@ -7,13 +7,15 @@ use windows::Win32::{
     System::ProcessStatus::GetModuleFileNameExW,
 };
 
+use crate::process_watcher::CURRENT_PID;
+
 #[allow(non_snake_case)]
 pub fn GetModuleFileNameExRs<'a>(
     process: &OwnedHandle,
     module: Option<HMODULE>,
     buf: &'a mut Vec<u16>,
 ) -> Result<&'a U16Str> {
-    let span = trace_span!("GetModuleFileNameExRs");
+    let span = trace_span!(parent: CURRENT_PID.super_lock().clone(), "GetModuleFileNameExRs");
     let _guard = span.enter();
 
     let module = module.unwrap_or_default();
@@ -45,7 +47,7 @@ pub fn GetModuleFileNameExRs<'a>(
 
             error!(?err, len, buf_len = buf.len(), "error handling");
 
-            bail!("{err:?}");
+            bail!("GetModuleFileNameExRs: {err:?}");
         }
 
         break len;

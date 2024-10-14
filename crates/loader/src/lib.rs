@@ -14,8 +14,11 @@ use std::{
 use eyre::{Context as _, Error};
 use native_plugin_lib::declare_plugin;
 use shared::{
-    config::get_config, pipe::commands::Request, popup::warn_popup, thread_data::ThreadData,
-    utils::OwnedHandle,
+    config::get_config,
+    pipe::commands::Request,
+    popup::warn_popup,
+    thread_data::ThreadData,
+    utils::{OwnedHandle, SuperLock as _},
 };
 use tracing::{error, trace};
 use windows::{
@@ -32,7 +35,7 @@ use windows::{
 use client::{TrySend as _, CLIENT};
 use loader::load_plugins;
 use logging::setup_logging;
-use utils::{HInstance, Plugin, SuperLock};
+use utils::{HInstance, Plugin};
 
 declare_plugin! {
     "Loader",

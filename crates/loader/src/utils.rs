@@ -1,5 +1,3 @@
-use std::sync::{Mutex, MutexGuard};
-
 use eyre::Result;
 use windows::{
     core::PCSTR,
@@ -10,20 +8,6 @@ use windows::{
         },
     },
 };
-
-pub trait SuperLock<T> {
-    fn super_lock(&self) -> MutexGuard<T>;
-}
-
-impl<T> SuperLock<T> for Mutex<T> {
-    /// Always get a mutex guard regardless of poison status
-    fn super_lock(&self) -> MutexGuard<T> {
-        match self.lock() {
-            Ok(v) => v,
-            Err(p) => p.into_inner(),
-        }
-    }
-}
 
 /// Container for a loaded plugin. Frees itself on drop
 #[derive(Default)]

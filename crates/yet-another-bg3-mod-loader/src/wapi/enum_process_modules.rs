@@ -4,7 +4,7 @@ use std::{
 };
 
 use eyre::{bail, Result};
-use shared::utils::OwnedHandle;
+use shared::utils::{OwnedHandle, SuperLock as _};
 use tracing::{error, trace, trace_span, warn};
 use windows::Win32::{
     Foundation::{ERROR_PARTIAL_COPY, HMODULE, STILL_ACTIVE},
@@ -14,6 +14,8 @@ use windows::Win32::{
     },
 };
 
+use crate::process_watcher::CURRENT_PID;
+
 /// IMPORTANT
 /// Do not call CloseHandle on any of the handles returned by this function. The information comes from a
 /// snapshot, so there are no resources to be freed.
@@ -22,7 +24,7 @@ pub fn EnumProcessModulesExRs(
     process: &OwnedHandle,
     mut cb: impl FnMut(HMODULE) -> Result<bool>,
 ) -> Result<()> {
-    let span = trace_span!("EnumProcessModulesExRs");
+    let span = trace_span!(parent: CURRENT_PID.super_lock().clone(), "EnumProcessModulesExRs");
     let _guard = span.enter();
 
     let mut modules: Vec<HMODULE> = vec![HMODULE::default(); 1024];
@@ -85,7 +87,7 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             // - Issues with disk / file(s) corrupt
             if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult() == e.code() {
                 if timer.elapsed() > time::Duration::from_secs(1) {
-                    bail!("EnumProcessModulesEx still failing after 1 second grace period; aborting injection");
+                    bail!("EnumProcessModulesExRs: still failing after 1 second grace period; aborting injection");
                 }
 
                 // retry again because it must've been a simple error
@@ -106,7 +108,7 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
 
             error!(%e);
 
-            bail!("EnumProcessModulesEx: {e}");
+            bail!("EnumProcessModulesExRs: {e}");
         }
 
         trace!(lpcbneeded, size, len = modules.len(), "passed");
