@@ -4,12 +4,9 @@ use std::{
     sync::atomic::{AtomicU32, AtomicU64, Ordering},
 };
 
-use shared::{
-    pipe::{
-        commands::{Level, Receive},
-        Server,
-    },
-    popup::warn_popup,
+use shared::pipe::{
+    commands::{Level, Receive},
+    Server,
 };
 use tracing::{debug, error, info, trace, warn};
 
@@ -52,13 +49,6 @@ pub fn server() -> io::Result<!> {
                     error!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
                 }
             }
-        }
-
-        Receive::ErrorCantReadPluginDir => {
-            warn_popup(
-                "Failed to read plugins dir",
-                "Attempted to read plugins dir, but failed opening it\n\nDo you have correct perms? See log for more details",
-            );
         }
     };
 

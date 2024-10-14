@@ -2,7 +2,7 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
 
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
-use shared::{config::get_config, paths::get_bg3_plugins_dir, pipe::commands::Receive, utils::tri};
+use shared::{config::get_config, paths::get_bg3_plugins_dir, popup::warn_popup, utils::tri};
 use tracing::{error, info, trace, warn};
 use unicase::UniCase;
 use windows::{
@@ -11,7 +11,6 @@ use windows::{
 };
 
 use crate::{
-    client::{TrySend, CLIENT},
     utils::{FreeSelfLibrary, SuperLock},
     HInstance, Plugin, LOADED_PLUGINS,
 };
@@ -23,7 +22,12 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
     let read_dir = fs::read_dir(plugins_dir).context("failed to read plugins_dir {plugins_dir}");
     let Ok(read_dir) = read_dir else {
         error!(?read_dir, "failed to read plugins dir");
-        _ = CLIENT.try_send(Receive::ErrorCantReadPluginDir);
+
+        warn_popup(
+            "Failed to read plugins dir",
+            "Attempted to read plugins dir, but failed opening it\n\nDo you have correct perms? See log for more details",
+        );
+
         return Ok(());
     };
 

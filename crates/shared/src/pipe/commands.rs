@@ -11,7 +11,6 @@ pub enum Request {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Receive {
     Log(LogMsg),
-    ErrorCantReadPluginDir,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
