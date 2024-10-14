@@ -97,7 +97,7 @@ extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
         let data = unsafe { &*lpthreadparameter.cast::<ThreadData>() };
         _ = CLIENT.try_send(Request::Auth(data.auth));
 
-        setup_logging(data.level.into()).context("failed to setup logging")?;
+        setup_logging(&data.log).context("failed to setup logging")?;
 
         load_plugins(module)?;
 

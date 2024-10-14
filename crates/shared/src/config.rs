@@ -42,14 +42,14 @@ pub struct Log {
     /// configure logger level; also settlable through env var YABG3ML_LOG
     pub level: String,
     /// whether to display log targets
-    pub targets: bool,
+    pub target: bool,
 }
 
 impl Default for Log {
     fn default() -> Self {
         Self {
             level: "info".into(),
-            targets: Default::default(),
+            target: Default::default(),
         }
     }
 }

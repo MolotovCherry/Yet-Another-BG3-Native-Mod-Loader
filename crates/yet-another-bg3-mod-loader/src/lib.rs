@@ -104,7 +104,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         move |call| match call {
                 CallType::Pid(pid) => {
                     trace!(pid, "Received callback for pid, now loading");
-                    let res = run_loader(pid, &init.loader);
+                    let res = run_loader(init.config, pid, &init.loader);
                     if let Err(e) = res {
                         error!(err = %e, "run_loader failed");
                         warn_popup("run loader failed", format!("run_loader unexpectedly failed. program will continue running, but depending on the error may not function properly.\n\nError: {e}"));

@@ -31,7 +31,7 @@ pub fn setup_logs<P: AsRef<Path>>(
 
         tracing_subscriber::fmt()
             .with_env_filter(filter)
-            .with_target(config.log.targets)
+            .with_target(config.log.target)
             .without_time()
             .init();
     } else {
@@ -45,7 +45,7 @@ pub fn setup_logs<P: AsRef<Path>>(
         tracing_subscriber::fmt()
             .with_env_filter(filter)
             .with_writer(non_blocking)
-            .with_target(config.log.targets)
+            .with_target(config.log.target)
             .without_time()
             .with_ansi(false)
             .init();

@@ -7,7 +7,12 @@ use std::{mem, os::windows::prelude::OsStrExt as _};
 
 use eyre::{Context, Result};
 use native_plugin_lib::Version;
-use shared::{popup::warn_popup, thread_data::ThreadData, utils::OwnedHandle};
+use shared::{
+    config::Config,
+    popup::warn_popup,
+    thread_data::{LogData, ThreadData},
+    utils::OwnedHandle,
+};
 use tracing::{error, info, level_filters::LevelFilter, trace, trace_span, warn};
 use windows::Win32::Foundation::WAIT_OBJECT_0;
 use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE};
@@ -32,10 +37,9 @@ use crate::{
     wapi::get_module_base_ex::GetModuleBaseEx,
 };
 use dirty::is_dirty;
+use write::write_in;
 
-use self::write::write_in;
-
-pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
+pub fn run_loader(config: &Config, pid: Pid, loader: &Loader) -> Result<()> {
     let span = trace_span!("loader");
     let _guard = span.enter();
 
@@ -224,7 +228,10 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
 
     let thread_data = ThreadData {
         auth: auth_code,
-        level: LevelFilter::current().into(),
+        log: LogData {
+            level: LevelFilter::current().into(),
+            target: config.log.target,
+        },
     };
 
     let Ok(ptr) = write_in(&process, &thread_data, size_of::<ThreadData>()) else {
