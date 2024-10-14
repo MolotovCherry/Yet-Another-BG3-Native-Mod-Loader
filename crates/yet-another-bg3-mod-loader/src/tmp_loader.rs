@@ -11,7 +11,7 @@ use pelite::{
     pe::{PeFile, Rva},
     pe64::exports::GetProcAddress,
 };
-use tracing::{trace, trace_span};
+use tracing::{error, trace, trace_span};
 use windows::Win32::Storage::FileSystem::FILE_SHARE_READ;
 
 use crate::popup::fatal_popup;
@@ -67,8 +67,6 @@ pub fn init_loader() -> Result<Loader> {
     let check_hash = ci || checked;
 
     trace!(
-        expected_hash = %LOADER_HASH,
-        calculated_hash = %hash,
         "This is a {} {} build",
         if ci { "CI" } else { "non-CI" },
         if check_hash {
@@ -79,9 +77,11 @@ pub fn init_loader() -> Result<Loader> {
     );
 
     if check_hash && hash != LOADER_HASH {
+        error!(expected_hash = %LOADER_HASH, calculated_hash = %hash, "loader dll failed hash check");
+
         fatal_popup(
             "loader dll mismatch",
-            format!("loader.dll is either the wrong file, or corrupted. Please redownload the program to get a fresh copy of the exe/dll.\n\nExpected a hash of:\n{LOADER_HASH}\n\nbut instead found:\n{hash}"),
+            "loader.dll is either the wrong file, or got corrupted. Please redownload the program to get a fresh copy of the exe/dll.",
         );
     }
 
