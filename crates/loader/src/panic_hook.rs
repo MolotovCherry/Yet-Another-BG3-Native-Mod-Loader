@@ -1,5 +1,4 @@
 use std::panic;
-pub use std::panic::catch_unwind;
 
 use tracing::error;
 

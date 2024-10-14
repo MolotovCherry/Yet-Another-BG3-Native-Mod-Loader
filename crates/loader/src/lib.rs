@@ -1,25 +1,23 @@
 mod client;
 mod loader;
 mod logging;
-mod panic;
+mod panic_hook;
 mod utils;
 
 use std::{
     ffi::c_void,
+    panic,
     sync::{LazyLock, Mutex, Once, OnceLock},
     thread,
 };
 
 use eyre::{Context as _, Error};
-use loader::load_plugins;
-use logging::setup_logging;
 use native_plugin_lib::declare_plugin;
 use shared::{
     config::get_config, pipe::commands::Request, popup::warn_popup, thread_data::ThreadData,
     utils::OwnedHandle,
 };
 use tracing::{error, trace};
-use utils::{HInstance, Plugin, SuperLock};
 use windows::{
     core::w,
     Win32::{
@@ -31,7 +29,10 @@ use windows::{
     },
 };
 
-use self::client::{TrySend as _, CLIENT};
+use client::{TrySend as _, CLIENT};
+use loader::load_plugins;
+use logging::setup_logging;
+use utils::{HInstance, Plugin, SuperLock};
 
 declare_plugin! {
     "Loader",
@@ -85,7 +86,7 @@ extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
     }
 
     // Set up a custom panic hook so we can log all panics
-    panic::set_hook();
+    panic_hook::set_hook();
 
     let module = *MODULE.get().unwrap();
 
