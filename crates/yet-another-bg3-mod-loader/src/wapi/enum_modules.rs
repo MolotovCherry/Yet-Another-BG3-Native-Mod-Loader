@@ -1,4 +1,9 @@
-use eyre::Result;
+use std::{
+    thread,
+    time::{self, Instant},
+};
+
+use eyre::{bail, Result};
 use shared::utils::OwnedHandle;
 use tracing::{error, trace, trace_span, warn};
 use windows::Win32::{
@@ -45,6 +50,8 @@ fn is_alive(process: &OwnedHandle) -> bool {
 }
 
 fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Result<()> {
+    let timer = Instant::now();
+
     loop {
         let mut lpcbneeded = 0;
 
@@ -76,6 +83,10 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             // - Missing permissions (try running as admin)
             // - Issues with disk / file(s) corrupt
             if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult() == e.code() {
+                if timer.elapsed() > time::Duration::from_secs(1) {
+                    bail!("EnumProcessModulesEx still failing after 1 second grace period; aborting injection");
+                }
+
                 // retry again because it must've been a simple error
 
                 warn!(
@@ -85,6 +96,9 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
                     %e,
                     "did partial copy, but process is still alive, retrying"
                 );
+
+                // give time for EnumProcessModulesEx to stabilize
+                thread::sleep(time::Duration::from_millis(20));
 
                 continue;
             }
