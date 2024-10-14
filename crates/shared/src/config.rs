@@ -1,7 +1,7 @@
-use std::fs;
 use std::path::PathBuf;
+use std::{fs, sync::LazyLock};
 
-use eyre::Result;
+use eyre::{Report, Result};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -54,31 +54,35 @@ impl Default for Log {
     }
 }
 
-pub fn get_config() -> Result<Config> {
-    let path = get_bg3_plugins_dir()?.join("config.toml");
+pub fn get_config() -> Result<&'static Config> {
+    static CONFIG: LazyLock<Result<Config>> = LazyLock::new(|| {
+        let path = get_bg3_plugins_dir()?.join("config.toml");
 
-    if !path.exists() {
-        let json = toml::to_string_pretty(&Config::default())?;
+        if !path.exists() {
+            let json = toml::to_string_pretty(&Config::default())?;
 
-        if let Err(e) = fs::write(&path, json) {
-            error!("failed to save config: {e}");
-            return Err(e.into());
+            if let Err(e) = fs::write(&path, json) {
+                error!("failed to save config: {e}");
+                return Err(e.into());
+            }
         }
-    }
 
-    let config = match fs::read_to_string(path) {
-        Ok(v) => v,
-        Err(e) => {
-            error!("failed to read config: {e}");
-            return Err(e.into());
-        }
-    };
+        let config = match fs::read_to_string(path) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("failed to read config: {e}");
+                return Err(e.into());
+            }
+        };
 
-    match toml::from_str::<Config>(&config) {
-        Ok(v) => Ok(v),
-        Err(e) => {
-            error!("failed to deserialize config: {e}");
-            Err(e.into())
+        match toml::from_str::<Config>(&config) {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                error!("failed to deserialize config: {e}");
+                Err(e.into())
+            }
         }
-    }
+    });
+
+    CONFIG.as_ref().map_err(|e| Report::new(&**e))
 }

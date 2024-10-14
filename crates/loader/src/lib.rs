@@ -14,7 +14,6 @@ use std::{
 use eyre::{Context as _, Error};
 use native_plugin_lib::declare_plugin;
 use shared::{
-    config::get_config,
     pipe::commands::Request,
     popup::warn_popup,
     thread_data::ThreadData,
@@ -98,11 +97,9 @@ extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
         let data = unsafe { &*lpthreadparameter.cast::<ThreadData>() };
         _ = CLIENT.try_send(Request::Auth(data.auth));
 
-        let config = get_config()?;
+        setup_logging(data.level.into()).context("failed to setup logging")?;
 
-        setup_logging(&config, data.level.into()).context("failed to setup logging")?;
-
-        load_plugins(&config, module)?;
+        load_plugins(module)?;
 
         Ok::<_, Error>(())
     });

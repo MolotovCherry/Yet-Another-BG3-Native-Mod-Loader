@@ -80,7 +80,7 @@ pub fn run(run_type: RunType) -> Result<()> {
     #[cfg(not(feature = "test-injection"))]
     let processes = {
         use paths::{get_game_binary_paths, Bg3Exes};
-        let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(&init.config);
+        let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(init.config);
         &[bg3, bg3_dx11]
     };
 

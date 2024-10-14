@@ -3,7 +3,7 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
 use shared::{
-    config::Config,
+    config::get_config,
     paths::get_bg3_plugins_dir,
     popup::warn_popup,
     utils::{tri, SuperLock as _},
@@ -17,8 +17,9 @@ use windows::{
 
 use crate::{utils::FreeSelfLibrary, HInstance, Plugin, LOADED_PLUGINS};
 
-pub fn load_plugins(config: &Config, hinstance: HInstance) -> Result<()> {
+pub fn load_plugins(hinstance: HInstance) -> Result<()> {
     let plugins_dir = get_bg3_plugins_dir()?;
+    let config = get_config()?;
 
     let read_dir = fs::read_dir(plugins_dir).context("failed to read plugins_dir {plugins_dir}");
     let Ok(read_dir) = read_dir else {

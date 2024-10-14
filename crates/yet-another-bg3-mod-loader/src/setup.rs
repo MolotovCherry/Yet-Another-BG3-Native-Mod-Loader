@@ -22,7 +22,7 @@ use crate::{
 
 pub struct InitData {
     #[cfg_attr(feature = "test-injection", allow(dead_code))]
-    pub config: Config,
+    pub config: &'static Config,
     pub worker: Option<WorkerGuard>,
     pub loader: Loader,
 }
@@ -66,7 +66,7 @@ pub fn init(args: &Args) -> Result<InitData> {
     };
 
     // start logger
-    let worker_guard = setup_logs(&config, &plugins_dir, args).context("Failed to set up logs")?;
+    let worker_guard = setup_logs(config, &plugins_dir, args).context("Failed to set up logs")?;
 
     if first_time {
         display_popup(
