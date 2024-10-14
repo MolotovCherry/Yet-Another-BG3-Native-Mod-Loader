@@ -85,7 +85,7 @@ pub struct ProcessWatcher {
 impl ProcessWatcher {
     /// timeout is in ms
     /// processes must be full path to exe
-    pub fn new<S: AsRef<str> + Clone>(
+    pub fn new<S: AsRef<str>>(
         processes: &[S],
         polling_rate: Duration,
         timeout: Timeout,
@@ -205,7 +205,7 @@ impl ProcessWatcher {
 
                 if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
                     trace!(?signal, "signal thread_receiver exited");
-                    break 'run;
+                    break;
                 }
             }
 
