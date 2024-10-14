@@ -48,11 +48,19 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
         }
 
         // check if plugin is disallowed or allowed
-        let name = path
-            .file_stem()
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default();
+        let name = {
+            let name = path
+                .file_stem()
+                .unwrap_or_default()
+                .to_str()
+                .unwrap_or_default();
+
+            if name.is_empty() {
+                "<unknown>"
+            } else {
+                name
+            }
+        };
 
         let name_formatted = {
             let data = native_plugin_lib::get_plugin_data(&path);
