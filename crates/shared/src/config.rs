@@ -8,8 +8,10 @@ use tracing::error;
 use crate::paths::get_bg3_plugins_dir;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct Config {
     pub core: Core,
+    pub log: Log,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,6 +32,24 @@ impl Default for Core {
             // the default location for most people
             install_root: r"C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3".into(),
             disabled: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Log {
+    /// configure logger level; also settlable through env var YABG3ML_LOG
+    pub level: String,
+    /// whether to display log targets
+    pub targets: bool,
+}
+
+impl Default for Log {
+    fn default() -> Self {
+        Self {
+            level: "info".into(),
+            targets: Default::default(),
         }
     }
 }

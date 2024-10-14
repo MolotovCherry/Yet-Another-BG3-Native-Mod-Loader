@@ -1,8 +1,8 @@
 mod client;
-mod utils;
 mod loader;
 mod logging;
 mod panic;
+mod utils;
 
 use std::{
     ffi::c_void,
@@ -11,14 +11,15 @@ use std::{
 };
 
 use eyre::{Context as _, Error};
-use utils::{HInstance, Plugin, SuperLock};
 use loader::load_plugins;
 use logging::setup_logging;
 use native_plugin_lib::declare_plugin;
 use shared::{
-    pipe::commands::Request, popup::warn_popup, thread_data::ThreadData, utils::OwnedHandle,
+    config::get_config, pipe::commands::Request, popup::warn_popup, thread_data::ThreadData,
+    utils::OwnedHandle,
 };
 use tracing::{error, trace};
+use utils::{HInstance, Plugin, SuperLock};
 use windows::{
     core::w,
     Win32::{
@@ -93,9 +94,11 @@ extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
         let data = unsafe { &*lpthreadparameter.cast::<ThreadData>() };
         _ = CLIENT.try_send(Request::Auth(data.auth));
 
-        setup_logging(data.level.into()).context("failed to setup logging")?;
+        let config = get_config()?;
 
-        load_plugins(module)?;
+        setup_logging(&config, data.level.into()).context("failed to setup logging")?;
+
+        load_plugins(&config, module)?;
 
         Ok::<_, Error>(())
     });

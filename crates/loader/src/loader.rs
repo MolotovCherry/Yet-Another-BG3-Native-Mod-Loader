@@ -2,7 +2,7 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
 
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
-use shared::{config::get_config, paths::get_bg3_plugins_dir, popup::warn_popup, utils::tri};
+use shared::{config::Config, paths::get_bg3_plugins_dir, popup::warn_popup, utils::tri};
 use tracing::{error, info, trace, warn};
 use unicase::UniCase;
 use windows::{
@@ -15,9 +15,8 @@ use crate::{
     HInstance, Plugin, LOADED_PLUGINS,
 };
 
-pub fn load_plugins(hinstance: HInstance) -> Result<()> {
+pub fn load_plugins(config: &Config, hinstance: HInstance) -> Result<()> {
     let plugins_dir = get_bg3_plugins_dir()?;
-    let config = get_config()?;
 
     let read_dir = fs::read_dir(plugins_dir).context("failed to read plugins_dir {plugins_dir}");
     let Ok(read_dir) = read_dir else {

@@ -4,7 +4,7 @@ use std::{
 };
 
 use eyre::Result;
-use shared::pipe::commands::Receive;
+use shared::{config::Config, pipe::commands::Receive};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{fmt::MakeWriter, util::SubscriberInitExt};
 
@@ -13,7 +13,7 @@ use crate::{
     utils::SuperLock,
 };
 
-pub fn setup_logging(level: LevelFilter) -> Result<()> {
+pub fn setup_logging(config: &Config, level: LevelFilter) -> Result<()> {
     let maker = PipeMaker::new()?;
 
     tracing_subscriber::fmt()
@@ -22,6 +22,7 @@ pub fn setup_logging(level: LevelFilter) -> Result<()> {
         .json()
         .with_max_level(level)
         .with_writer(maker)
+        .with_target(config.log.targets)
         .finish()
         .init();
 

@@ -57,9 +57,6 @@ pub fn init(args: &Args) -> Result<InitData> {
         }
     };
 
-    // start logger
-    let worker_guard = setup_logs(&plugins_dir, args).context("Failed to set up logs")?;
-
     // get/create config
     let config = match get_config() {
         Ok(v) => v,
@@ -67,6 +64,9 @@ pub fn init(args: &Args) -> Result<InitData> {
             fatal_popup("Error reading config", format!("Failed to get config file. Most likely either it failed to read the file, or your config file is malformed.\n\nError: {e}"));
         }
     };
+
+    // start logger
+    let worker_guard = setup_logs(&config, &plugins_dir, args).context("Failed to set up logs")?;
 
     if first_time {
         display_popup(
