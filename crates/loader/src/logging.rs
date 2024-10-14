@@ -4,7 +4,9 @@ use std::{
 };
 
 use eyre::Result;
-use shared::{pipe::commands::Receive, thread_data::LogData, utils::SuperLock as _};
+use shared::{
+    pipe::commands::Receive, popup::warn_popup, thread_data::LogData, utils::SuperLock as _,
+};
 use tracing_subscriber::{fmt::MakeWriter, util::SubscriberInitExt};
 
 use crate::client::{TrySend, CLIENT};
@@ -79,10 +81,13 @@ impl Write for PipeWriter<'_> {
 
         let v = BufClear(self.buf.super_lock());
 
-        let data =
-            v.0.as_slice()
-                .try_into()
-                .map_err(|e| io::Error::new(ErrorKind::InvalidData, e))?;
+        let data = match v.0.as_slice().try_into() {
+            Ok(v) => v,
+            Err(e) => {
+                warn_popup("Conversion failed", format!("loader.dll pipe LogMsg serialization failed. This IS a bug, please report it (along with your config file)!\n\nError: {e}"));
+                return Err(io::Error::new(ErrorKind::InvalidData, e));
+            }
+        };
 
         let c = Receive::Log(data);
 
