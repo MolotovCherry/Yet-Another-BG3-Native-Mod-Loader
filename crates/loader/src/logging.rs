@@ -10,7 +10,7 @@ use tracing_subscriber::{fmt::MakeWriter, util::SubscriberInitExt};
 
 use crate::{
     client::{TrySend, CLIENT},
-    helpers::SuperLock,
+    utils::SuperLock,
 };
 
 pub fn setup_logging(level: LevelFilter) -> Result<()> {

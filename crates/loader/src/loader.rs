@@ -12,7 +12,7 @@ use windows::{
 
 use crate::{
     client::{TrySend, CLIENT},
-    helpers::{FreeSelfLibrary, SuperLock},
+    utils::{FreeSelfLibrary, SuperLock},
     HInstance, Plugin, LOADED_PLUGINS,
 };
 

@@ -1,5 +1,5 @@
 mod client;
-mod helpers;
+mod utils;
 mod loader;
 mod logging;
 mod panic;
@@ -11,7 +11,7 @@ use std::{
 };
 
 use eyre::{Context as _, Error};
-use helpers::{HInstance, Plugin, SuperLock};
+use utils::{HInstance, Plugin, SuperLock};
 use loader::load_plugins;
 use logging::setup_logging;
 use native_plugin_lib::declare_plugin;
