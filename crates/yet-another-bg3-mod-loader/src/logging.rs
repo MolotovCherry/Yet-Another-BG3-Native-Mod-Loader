@@ -26,7 +26,7 @@ pub fn setup_logs<P: AsRef<Path>>(
         #[cfg(not(debug_assertions))]
         {
             use crate::console::debug_console;
-            debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
+            debug_console("Yet Another BG3 Mod Loader Debug Console")?;
         }
 
         tracing_subscriber::fmt()

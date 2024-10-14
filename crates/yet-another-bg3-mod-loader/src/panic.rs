@@ -37,7 +37,7 @@ pub fn make_msg<P: AsRef<Path>>(file_path: Option<P>) -> Result<String, std::fmt
 
     let mut buffer = String::new();
 
-    let name = "Yet Another BG3 Native Mod Loader";
+    let name = "Yet Another BG3 Mod Loader";
 
     writeln!(buffer, "Well, this is embarrassing.\n")?;
 
