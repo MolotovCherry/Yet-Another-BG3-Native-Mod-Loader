@@ -46,6 +46,7 @@ pub fn setup_logs<P: AsRef<Path>>(
             .with_env_filter(filter)
             .with_writer(non_blocking)
             .with_target(config.log.targets)
+            .without_time()
             .with_ansi(false)
             .init();
     }
