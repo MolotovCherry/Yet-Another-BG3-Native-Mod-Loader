@@ -17,7 +17,7 @@ pub fn server() -> io::Result<!> {
     let mut server = Server::new();
 
     let cb = |cmd| {
-        let span = trace_span!("loader.dll");
+        let span = trace_span!("dll");
         let _guard = span.enter();
 
         match cmd {
@@ -34,23 +34,23 @@ pub fn server() -> io::Result<!> {
                     Level::Off => (),
 
                     Level::Trace => {
-                        trace!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                        trace!(target: "loader", ?target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
                     }
 
                     Level::Debug => {
-                        debug!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                        debug!(target: "loader", ?target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
                     }
 
                     Level::Info => {
-                        info!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                        info!(target: "loader", ?target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
                     }
 
                     Level::Warn => {
-                        warn!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                        warn!(target: "loader", ?target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
                     }
 
                     Level::Error => {
-                        error!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                        error!(target: "loader", ?target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
                     }
                 }
             }

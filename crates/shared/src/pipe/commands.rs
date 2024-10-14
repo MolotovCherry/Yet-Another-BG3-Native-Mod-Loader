@@ -16,7 +16,7 @@ pub enum Receive {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LogMsg {
     pub level: Level,
-    pub target: String,
+    pub target: Option<String>,
     pub filename: Option<String>,
     pub line_number: Option<u32>,
     pub span: Option<Span>,
