@@ -7,7 +7,7 @@ use std::{mem, os::windows::prelude::OsStrExt as _};
 
 use eyre::{Context, Result};
 use native_plugin_lib::Version;
-use shared::thread_data::ThreadData;
+use shared::{popup::warn_popup, thread_data::ThreadData, utils::OwnedHandle};
 use tracing::{error, info, level_filters::LevelFilter, trace, trace_span, warn};
 use windows::Win32::Foundation::WAIT_OBJECT_0;
 use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE};
@@ -26,8 +26,6 @@ use windows::{
 };
 
 use crate::{
-    helpers::OwnedHandle,
-    popup::warn_popup,
     process_watcher::Pid,
     server::{AUTH, PID},
     tmp_loader::Loader,

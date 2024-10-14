@@ -10,6 +10,7 @@ use std::{
 };
 
 use eyre::{Error, Result};
+use shared::utils::OwnedHandle;
 use tracing::{trace, trace_span};
 use unicase::UniCase;
 use windows::Win32::{
@@ -17,12 +18,8 @@ use windows::Win32::{
     System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION},
 };
 
-use crate::{
-    helpers::OwnedHandle,
-    wapi::{
-        get_processes::get_processes,
-        query_full_process_image_name::query_full_process_image_name_w,
-    },
+use crate::wapi::{
+    get_processes::get_processes, query_full_process_image_name::query_full_process_image_name_w,
 };
 
 pub type Pid = u32;

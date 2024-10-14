@@ -1,11 +1,11 @@
 use std::{os::windows::prelude::OsStrExt as _, path::Path};
 
+use shared::utils::OwnedHandle;
 use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::Win32::Foundation::HMODULE;
 
 use super::{enum_modules::enum_modules, get_module_file_name_ex::get_module_file_name_ex_w};
-use crate::helpers::OwnedHandle;
 
 /// Note: This matches based on FULL path, not just the filename
 #[allow(non_snake_case)]

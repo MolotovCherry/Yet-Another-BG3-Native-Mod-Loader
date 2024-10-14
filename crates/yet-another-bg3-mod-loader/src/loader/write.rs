@@ -1,6 +1,7 @@
 use std::ffi::c_void;
 
 use eyre::{bail, Result};
+use shared::{popup::warn_popup, utils::OwnedHandle};
 use tracing::{error, trace_span};
 use windows::Win32::{
     Foundation::GetLastError,
@@ -9,8 +10,6 @@ use windows::Win32::{
         Memory::{VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_READWRITE},
     },
 };
-
-use crate::{helpers::OwnedHandle, popup::warn_popup};
 
 pub fn write_in<T>(process: &OwnedHandle, data: *const T, size: usize) -> Result<*const c_void> {
     let span = trace_span!("write_in");

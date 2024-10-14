@@ -11,10 +11,9 @@ use pelite::{
     pe::{PeFile, Rva},
     pe64::exports::GetProcAddress,
 };
+use shared::popup::fatal_popup;
 use tracing::{error, trace, trace_span};
 use windows::Win32::Storage::FileSystem::FILE_SHARE_READ;
-
-use crate::popup::fatal_popup;
 
 static LOADER_HASH: &str = env!("LOADER_HASH");
 

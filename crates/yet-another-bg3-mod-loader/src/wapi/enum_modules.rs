@@ -1,4 +1,5 @@
 use eyre::Result;
+use shared::utils::OwnedHandle;
 use tracing::{error, trace, trace_span, warn};
 use windows::Win32::{
     Foundation::{ERROR_PARTIAL_COPY, HMODULE, STILL_ACTIVE},
@@ -7,8 +8,6 @@ use windows::Win32::{
         Threading::GetExitCodeProcess,
     },
 };
-
-use crate::helpers::OwnedHandle;
 
 /// IMPORTANT
 /// Do not call CloseHandle on any of the handles returned by this function. The information comes from a

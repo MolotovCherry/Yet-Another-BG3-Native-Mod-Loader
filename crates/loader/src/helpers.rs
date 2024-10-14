@@ -75,15 +75,3 @@ impl Drop for FreeSelfLibrary {
         unsafe { FreeLibraryAndExitThread(self.0, 0) };
     }
 }
-
-/// Poor mans try {} blocks
-macro_rules! tri {
-    ($($code:tt)*) => {
-        (|| {
-            $(
-                $code
-            )*
-        })()
-    };
-}
-pub(crate) use tri;

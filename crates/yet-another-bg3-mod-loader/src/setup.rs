@@ -4,6 +4,7 @@ use eyre::{Context as _, Result};
 use shared::{
     config::{get_config, Config},
     paths::{get_bg3_local_dir, get_bg3_plugins_dir},
+    popup::{display_popup, fatal_popup, MessageBoxIcon},
 };
 use tracing::{error, trace, trace_span};
 use tracing_appender::non_blocking::WorkerGuard;
@@ -14,7 +15,6 @@ use crate::{
     is_admin::is_admin,
     logging::setup_logs,
     panic::set_hook,
-    popup::{display_popup, fatal_popup, MessageBoxIcon},
     privileges::set_privilege,
     server::server,
     tmp_loader::{init_loader, Loader},

@@ -1,4 +1,5 @@
 use eyre::Result;
+use shared::utils::OwnedHandle;
 use windows::{
     core::PCWSTR,
     Win32::{
@@ -10,8 +11,6 @@ use windows::{
         System::Threading::{GetCurrentProcess, OpenProcessToken},
     },
 };
-
-use crate::helpers::OwnedHandle;
 
 pub fn set_privilege(name: PCWSTR, state: bool) -> Result<()> {
     let process: OwnedHandle = {

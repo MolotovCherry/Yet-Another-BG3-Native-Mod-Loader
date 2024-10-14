@@ -4,13 +4,14 @@ use std::{
     sync::atomic::{AtomicU32, AtomicU64, Ordering},
 };
 
-use shared::pipe::{
-    commands::{Level, Receive},
-    Server,
+use shared::{
+    pipe::{
+        commands::{Level, Receive},
+        Server,
+    },
+    popup::warn_popup,
 };
 use tracing::{debug, error, info, trace, warn};
-
-use crate::popup::warn_popup;
 
 pub static AUTH: AtomicU64 = AtomicU64::new(0);
 pub static PID: AtomicU32 = AtomicU32::new(0);

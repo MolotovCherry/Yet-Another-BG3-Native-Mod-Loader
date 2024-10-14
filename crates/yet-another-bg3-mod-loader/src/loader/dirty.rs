@@ -3,7 +3,7 @@ use std::path::Path;
 use std::{collections::HashMap, fs::OpenOptions, os::windows::fs::OpenOptionsExt as _};
 
 use eyre::{anyhow, Result};
-use shared::paths::get_bg3_plugins_dir;
+use shared::{paths::get_bg3_plugins_dir, utils::OwnedHandle};
 use tracing::{trace, trace_span};
 use widestring::U16Str;
 use windows::Win32::{
@@ -14,10 +14,7 @@ use windows::Win32::{
     },
 };
 
-use crate::{
-    helpers::OwnedHandle,
-    wapi::{enum_modules::enum_modules, get_module_file_name_ex::get_module_file_name_ex_w},
-};
+use crate::wapi::{enum_modules::enum_modules, get_module_file_name_ex::get_module_file_name_ex_w};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct Id(u64, u128);

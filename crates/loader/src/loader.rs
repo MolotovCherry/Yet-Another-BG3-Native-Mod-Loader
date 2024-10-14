@@ -2,7 +2,7 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
 
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
-use shared::{config::get_config, paths::get_bg3_plugins_dir, pipe::commands::Receive};
+use shared::{config::get_config, paths::get_bg3_plugins_dir, pipe::commands::Receive, utils::tri};
 use tracing::{error, info, trace, warn};
 use unicase::UniCase;
 use windows::{
@@ -12,7 +12,6 @@ use windows::{
 
 use crate::{
     client::{TrySend, CLIENT},
-    helpers::tri,
     helpers::{FreeSelfLibrary, SuperLock},
     HInstance, Plugin, LOADED_PLUGINS,
 };

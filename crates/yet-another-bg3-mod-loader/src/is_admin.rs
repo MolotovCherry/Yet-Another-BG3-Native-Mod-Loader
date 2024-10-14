@@ -1,10 +1,9 @@
 use eyre::Error;
+use shared::utils::{tri, OwnedHandle};
 use windows::Win32::{
     Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY},
     System::Threading::{GetCurrentProcess, OpenProcessToken},
 };
-
-use crate::helpers::{tri, OwnedHandle};
 
 pub fn is_admin() -> bool {
     let res = tri! {

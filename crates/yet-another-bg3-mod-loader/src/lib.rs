@@ -3,7 +3,6 @@
 mod cli;
 mod console;
 mod event;
-mod helpers;
 mod is_admin;
 mod loader;
 mod logging;
@@ -23,19 +22,17 @@ use std::time::Duration;
 
 use clap::Parser;
 use eyre::Result;
+use shared::popup::{fatal_popup, warn_popup};
 use tracing::{error, trace};
 
 use cli::Args;
 use event::Event;
 use loader::run_loader;
-use popup::fatal_popup;
 use process_watcher::CallType;
 use process_watcher::{ProcessWatcher, Timeout};
 use setup::init;
 use single_instance::SingleInstance;
 use tray::AppTray;
-
-use self::popup::warn_popup;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum RunType {

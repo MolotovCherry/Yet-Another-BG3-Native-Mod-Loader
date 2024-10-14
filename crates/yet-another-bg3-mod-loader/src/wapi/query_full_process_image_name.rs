@@ -1,4 +1,5 @@
 use eyre::{bail, Result};
+use shared::utils::OwnedHandle;
 use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::{
@@ -8,8 +9,6 @@ use windows::{
         System::Threading::{QueryFullProcessImageNameW, PROCESS_NAME_WIN32},
     },
 };
-
-use crate::helpers::OwnedHandle;
 
 pub fn query_full_process_image_name_w<'a>(
     process: &OwnedHandle,

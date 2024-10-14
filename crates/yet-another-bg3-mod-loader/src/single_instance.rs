@@ -1,3 +1,4 @@
+use shared::{popup::fatal_popup, utils::OwnedHandle};
 use windows::{
     core::w,
     Win32::{
@@ -5,8 +6,6 @@ use windows::{
         System::Threading::CreateMutexW,
     },
 };
-
-use crate::{helpers::OwnedHandle, popup::fatal_popup};
 
 #[allow(unused)]
 pub struct SingleInstance(OwnedHandle);

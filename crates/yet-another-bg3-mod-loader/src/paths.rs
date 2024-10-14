@@ -1,9 +1,7 @@
 use std::{fs, path::Path};
 
-use shared::config::Config;
+use shared::{config::Config, popup::fatal_popup};
 use tracing::{error, trace};
-
-use crate::popup::fatal_popup;
 
 #[allow(dead_code)]
 pub struct Bg3Exes {

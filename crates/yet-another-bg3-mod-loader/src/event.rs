@@ -1,4 +1,5 @@
 use eyre::Result;
+use shared::utils::OwnedHandle;
 use windows::{
     core::w,
     Win32::{
@@ -12,8 +13,6 @@ use windows::{
         System::Threading::CreateEventW,
     },
 };
-
-use crate::helpers::OwnedHandle;
 
 #[allow(dead_code)]
 pub struct Event(OwnedHandle);

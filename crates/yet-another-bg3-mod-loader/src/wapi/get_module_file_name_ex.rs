@@ -1,12 +1,11 @@
 use eyre::{bail, Result};
+use shared::utils::OwnedHandle;
 use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::Win32::{
     Foundation::{GetLastError, HMODULE, MAX_PATH},
     System::ProcessStatus::GetModuleFileNameExW,
 };
-
-use crate::helpers::OwnedHandle;
 
 pub fn get_module_file_name_ex_w<'a>(
     process: &OwnedHandle,
