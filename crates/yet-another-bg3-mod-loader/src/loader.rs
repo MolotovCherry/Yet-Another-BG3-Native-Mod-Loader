@@ -57,7 +57,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
             Ok(v) => v.into(),
             Err(e) => {
                 error!(?e, "failed to open process");
-                warn_popup("Can't open process", format!("Failed to open the game process.\n\nThis could be due to a few reasons:\n1. when the program attempted to open the process, it was already gone\n2. you need higher permissions, e.g. admin perms to open it (try running this as admin)\n\nIf this isn't a perm problem, just try again\n\nError: {e}"));
+                warn_popup("Can't open process", format!("Failed to open the game process.\n\nThis could be due to a few reasons:\n1. when the program attempted to open the process, it was already gone\n2. you need higher permissions, e.g. admin perms to open it (try running this as admin)\n\nIf this isn't a perm problem, just try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"));
                 return Ok(());
             }
         }
@@ -100,7 +100,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
             warn_popup(
                 "Failed process patch check",
                 format!(
-                    "The process patch detection failed. Skipping process injection. Please try again.\n\n{e}",
+                    "The process patch detection failed. Skipping process injection. Please try patching the game again. Press OK to continue; this tool will continue to operate normally.\n\n{e}",
                 ),
             );
 
@@ -111,7 +111,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
     if is_dirty {
         // return ok as if nothing happened, however we will log this
         warn!("Aborting patcher. The game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance.");
-        warn_popup("Already patched", "Aborting patcher. The game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance.");
+        warn_popup("Already patched", "Aborting patcher. The game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance. Press OK to continue; this tool will continue to operate normally.");
         return Ok(());
     }
 
@@ -176,7 +176,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
             error!(?e, "Failed to create remote thread");
             warn_popup(
                 "Process injection failure",
-                format!("Failed to create process remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {e}"),
+                format!("Failed to create process remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Please restart the game and try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"),
             );
 
             return Ok(());
@@ -191,7 +191,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
 
         warn_popup(
             "Process injection failure",
-            format!("Failed to wait for remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {err:?}"),
+            format!("Failed to wait for remote thread\n\nThis is a rare occurence. Press OK to continue; this tool will continue to operate normally. If this keeps happening, please report it. If not, this warning is safe to ignore.\n\nError: {err:?}"),
         );
 
         return Ok(());
@@ -201,7 +201,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
     let Some(module) = GetModuleBaseEx(&process, &loader.path) else {
         warn_popup(
             "Where is the module?",
-            "Failed to find loader.dll module handle. ??? Maybe report this as a bug. Check the logs too.",
+            "Failed to find loader.dll module handle. This could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Press OK to continue; this tool will continue to operate normally. If this keeps happening, please report it. If not, this warning is safe to ignore.",
         );
 
         return Ok(());
@@ -249,7 +249,7 @@ pub fn run_loader(pid: Pid, loader: &Loader) -> Result<()> {
         error!(?e, "Failed to create remote thread");
         warn_popup(
             "Process injection failure",
-            format!("Failed to create process remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {e}"),
+            format!("Failed to create process remote thread\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Please restart the game and try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"),
         );
 
         return Ok(());
