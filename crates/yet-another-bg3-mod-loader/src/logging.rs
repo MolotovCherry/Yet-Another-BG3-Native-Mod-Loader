@@ -16,7 +16,8 @@ pub fn setup_logs<P: AsRef<Path>>(
     let mut worker_guard: Option<WorkerGuard> = None;
 
     // env var takes precedence over config value
-    let env = env::var("YABG3ML_LOG").unwrap_or_else(|_| config.log.level.clone());
+    let env = env::var("YABG3ML_LOG");
+    let env = env.as_deref().unwrap_or(&config.log.level);
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .parse_lossy(env);
