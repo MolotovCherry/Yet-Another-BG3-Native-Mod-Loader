@@ -3,8 +3,9 @@ use windows::Win32::System::ProcessStatus::EnumProcesses;
 
 use crate::process_watcher::Pid;
 
-pub fn get_processes(buf: &mut Vec<Pid>) -> &[Pid] {
-    let span = trace_span!("get_processes");
+#[allow(non_snake_case)]
+pub fn EnumProcessesRs(buf: &mut Vec<Pid>) -> &[Pid] {
+    let span = trace_span!("EnumProcessesRs");
     let _guard = span.enter();
 
     let mut lpcbneeded = 0;

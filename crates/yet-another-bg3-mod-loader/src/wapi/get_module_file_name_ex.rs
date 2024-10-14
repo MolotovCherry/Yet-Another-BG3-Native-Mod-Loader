@@ -7,12 +7,13 @@ use windows::Win32::{
     System::ProcessStatus::GetModuleFileNameExW,
 };
 
-pub fn get_module_file_name_ex_w<'a>(
+#[allow(non_snake_case)]
+pub fn GetModuleFileNameExRs<'a>(
     process: &OwnedHandle,
     module: Option<HMODULE>,
     buf: &'a mut Vec<u16>,
 ) -> Result<&'a U16Str> {
-    let span = trace_span!("get_module_file_name_ex_w");
+    let span = trace_span!("GetModuleFileNameExRs");
     let _guard = span.enter();
 
     let module = module.unwrap_or_default();

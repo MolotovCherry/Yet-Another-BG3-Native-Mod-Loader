@@ -19,7 +19,7 @@ use windows::Win32::{
 };
 
 use crate::wapi::{
-    get_processes::get_processes, query_full_process_image_name::query_full_process_image_name_w,
+    enum_processes::EnumProcessesRs, query_full_process_image_name::QueryFullProcessImageNameRs,
 };
 
 pub type Pid = u32;
@@ -145,7 +145,7 @@ impl ProcessWatcher {
                     }
                 }
 
-                let pids = get_processes(&mut pid_buf);
+                let pids = EnumProcessesRs(&mut pid_buf);
 
                 // process list of pids, compare to last cached copy, find new ones and process those
                 self.process_pids(pids, &mut new_pid_buf);
@@ -171,7 +171,7 @@ impl ProcessWatcher {
                         }
                     };
 
-                    let Ok(path) = query_full_process_image_name_w(&process, &mut path_buf) else {
+                    let Ok(path) = QueryFullProcessImageNameRs(&process, &mut path_buf) else {
                         continue;
                     };
 

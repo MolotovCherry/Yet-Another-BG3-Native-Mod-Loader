@@ -17,11 +17,12 @@ use windows::Win32::{
 /// IMPORTANT
 /// Do not call CloseHandle on any of the handles returned by this function. The information comes from a
 /// snapshot, so there are no resources to be freed.
-pub fn enum_modules(
+#[allow(non_snake_case)]
+pub fn EnumProcessModulesExRs(
     process: &OwnedHandle,
     mut cb: impl FnMut(HMODULE) -> Result<bool>,
 ) -> Result<()> {
-    let span = trace_span!("enum_modules");
+    let span = trace_span!("EnumProcessModulesExRs");
     let _guard = span.enter();
 
     let mut modules: Vec<HMODULE> = vec![HMODULE::default(); 1024];
@@ -103,7 +104,7 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
                 continue;
             }
 
-            error!(%e, "EnumProcessModulesEx");
+            error!(%e);
 
             bail!("EnumProcessModulesEx: {e}");
         }

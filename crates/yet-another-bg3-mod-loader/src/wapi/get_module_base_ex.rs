@@ -5,7 +5,7 @@ use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::Win32::Foundation::HMODULE;
 
-use super::{enum_modules::enum_modules, get_module_file_name_ex::get_module_file_name_ex_w};
+use super::{enum_process_modules::EnumProcessModulesExRs, get_module_file_name_ex::GetModuleFileNameExRs};
 
 /// Note: This matches based on FULL path, not just the filename
 #[allow(non_snake_case)]
@@ -21,8 +21,8 @@ pub fn GetModuleBaseEx<P: AsRef<Path>>(process: &OwnedHandle, module: P) -> Opti
 
     let mut buf = vec![0u16; 1024];
     let mut entry = None;
-    let res = enum_modules(process, |module| {
-        let path = get_module_file_name_ex_w(process, Some(module), &mut buf)?;
+    let res = EnumProcessModulesExRs(process, |module| {
+        let path = GetModuleFileNameExRs(process, Some(module), &mut buf)?;
 
         trace!(path = %path.to_string_lossy(), "trying");
 

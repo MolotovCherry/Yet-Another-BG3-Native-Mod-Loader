@@ -14,7 +14,9 @@ use windows::Win32::{
     },
 };
 
-use crate::wapi::{enum_modules::enum_modules, get_module_file_name_ex::get_module_file_name_ex_w};
+use crate::wapi::{
+    enum_process_modules::EnumProcessModulesExRs, get_module_file_name_ex::GetModuleFileNameExRs,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct Id(u64, u128);
@@ -114,8 +116,8 @@ pub fn is_dirty(process: &OwnedHandle, loader: &Path) -> Result<bool> {
 
     let mut detected = false;
     let mut buf = vec![0u16; MAX_PATH as usize];
-    enum_modules(process, |module| {
-        let path = get_module_file_name_ex_w(process, Some(module), &mut buf)?;
+    EnumProcessModulesExRs(process, |module| {
+        let path = GetModuleFileNameExRs(process, Some(module), &mut buf)?;
         let os_path = path.to_os_string();
         let filename = Path::new(Path::new(&os_path).file_name().unwrap_or_default());
 

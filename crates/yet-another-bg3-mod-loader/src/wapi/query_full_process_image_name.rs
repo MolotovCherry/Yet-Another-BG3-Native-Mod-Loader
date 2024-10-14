@@ -10,11 +10,12 @@ use windows::{
     },
 };
 
-pub fn query_full_process_image_name_w<'a>(
+#[allow(non_snake_case)]
+pub fn QueryFullProcessImageNameRs<'a>(
     process: &OwnedHandle,
     buf: &'a mut Vec<u16>,
 ) -> Result<&'a U16Str> {
-    let span = trace_span!("query_full_process_image_name_w");
+    let span = trace_span!("QueryFullProcessImageNameRs");
     let _guard = span.enter();
 
     loop {
