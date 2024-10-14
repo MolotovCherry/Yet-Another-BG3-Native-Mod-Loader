@@ -15,7 +15,7 @@ use tracing::{trace, trace_span};
 use unicase::UniCase;
 use windows::Win32::{
     Foundation::MAX_PATH,
-    System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION},
+    System::Threading::{OpenProcess, PROCESS_QUERY_INFORMATION},
 };
 
 use crate::wapi::{
@@ -155,8 +155,7 @@ impl ProcessWatcher {
                     let _guard = span_pid_loop.enter();
 
                     let process = {
-                        let res =
-                            unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) };
+                        let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };
 
                         match res {
                             Ok(v) => OwnedHandle::new(v),
