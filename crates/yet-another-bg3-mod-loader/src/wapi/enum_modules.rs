@@ -103,9 +103,9 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
                 continue;
             }
 
-            error!(%e);
+            error!(%e, "EnumProcessModulesEx");
 
-            return Err(e.into());
+            bail!("EnumProcessModulesEx: {e}");
         }
 
         trace!(lpcbneeded, size, len = modules.len(), "passed");
