@@ -131,7 +131,7 @@ impl Server {
         cb: impl Fn(Receive),
         mut auth: impl FnMut(Pid, Auth) -> ControlFlow<()>,
     ) -> io::Result<!> {
-        let span = trace_span!("pipe server");
+        let span = trace_span!("pipe");
         let _guard = span.enter();
 
         // allow all access with security descriptor
@@ -242,6 +242,9 @@ impl Server {
                             let data = &self.buf[size_of::<usize>()..len + size_of::<usize>()];
 
                             if !authed {
+                                let span = trace_span!("auth");
+                                let _guard = span.enter();
+
                                 if let Ok(command) = serde_json::from_slice::<Request>(data) {
                                     #[rustfmt::skip]
                                     #[allow(irrefutable_let_patterns)]
@@ -277,6 +280,9 @@ impl Server {
                                     return Ok(());
                                 }
                             } else if let Ok(command) = serde_json::from_slice::<Receive>(data) {
+                                let span = trace_span!("cb");
+                                let _guard = span.enter();
+
                                 cb(command);
                             }
 

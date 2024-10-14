@@ -8,7 +8,7 @@ use shared::pipe::{
     commands::{Level, Receive},
     Server,
 };
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, trace, trace_span, warn};
 
 pub static AUTH: AtomicU64 = AtomicU64::new(0);
 pub static PID: AtomicU32 = AtomicU32::new(0);
@@ -16,37 +16,42 @@ pub static PID: AtomicU32 = AtomicU32::new(0);
 pub fn server() -> io::Result<!> {
     let mut server = Server::new();
 
-    let cb = |cmd| match cmd {
-        Receive::Log(mut msg) => {
-            let filename = msg.filename.unwrap_or_default();
-            let line_number = msg.line_number.unwrap_or_default();
-            let message = msg.fields.remove("message").unwrap_or_default();
-            let target = msg.target;
-            let span = msg.span;
-            let spans = msg.spans;
-            let fields = msg.fields;
+    let cb = |cmd| {
+        let span = trace_span!("loader.dll");
+        let _guard = span.enter();
 
-            match msg.level {
-                Level::Off => (),
+        match cmd {
+            Receive::Log(mut msg) => {
+                let filename = msg.filename.unwrap_or_default();
+                let line_number = msg.line_number.unwrap_or_default();
+                let message = msg.fields.remove("message").unwrap_or_default();
+                let target = msg.target;
+                let span = msg.span;
+                let spans = msg.spans;
+                let fields = msg.fields;
 
-                Level::Trace => {
-                    trace!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
-                }
+                match msg.level {
+                    Level::Off => (),
 
-                Level::Debug => {
-                    debug!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
-                }
+                    Level::Trace => {
+                        trace!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                    }
 
-                Level::Info => {
-                    info!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
-                }
+                    Level::Debug => {
+                        debug!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                    }
 
-                Level::Warn => {
-                    warn!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
-                }
+                    Level::Info => {
+                        info!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                    }
 
-                Level::Error => {
-                    error!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                    Level::Warn => {
+                        warn!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                    }
+
+                    Level::Error => {
+                        error!(target: "loader", %target, %filename, line_number, ?span, ?spans, ?fields, "{message}")
+                    }
                 }
             }
         }
