@@ -9,14 +9,12 @@
 Loader.dll is the dll that gets injected. It is responsible for doing the actual
 loading of dll plugins into the game process.
 
-The reason this functionality is separated into a dll is because this allows
+This functionality is separated into a dll because this allows
 us to do complicated/custom logic inside the target application rather than
-doing a lot of work just to make one remote process call. While it theoretically
-is possible to define custom logic in the core app, write the executable machine
-code over, then execute that, this is also extraordinarily difficult since the
-generated machine code might have dependencies on code elsewhere in the binary,
-which is something we can't account for. It would have to be completely dependency
-free, which requires extremely careful writing. 🥺
+doing a lot of work just to make one tiny remote process call. 🥺
+
+Loader.dll is not compatible with the native plugin system. It requires usage of
+the support application to properly function.
 
  _    _ _                     _                      _     _ _  ___
 | |  | | |                   | |                    | |   (_) ||__ \
@@ -28,7 +26,7 @@ free, which requires extremely careful writing. 🥺
                                         |_|
 ---------------------------------------------------------------------
 
-Keep loader.dll in the same folder as bg3_injector.exe and bg3_watcher.exe
+Keep loader.dll bundled together with bg3_injector.exe and bg3_watcher.exe
 No additional setup is required.
 
  _____      _   _     _        __ _ _                        _            _           _ ___
@@ -43,6 +41,5 @@ No additional setup is required.
 
 The application does file hash checks to ensure loader.dll is the same loader.dll
 that shipped with the binary. It is not possible to mix and match loader.dll with
-different app versions, or to accidentally use the wrong file. You can rest assured
-that if the application runs without an error, it is the correct file. This also means
-that if for some reason the dll got corrupted, you'd also be alerted.
+different app versions, to accidentally use the wrong file, or to use a corrupted dll.
+If the application starts without error, it is the correct file.
