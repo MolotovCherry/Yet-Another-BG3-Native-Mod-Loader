@@ -12,7 +12,7 @@ use tracing_subscriber::{fmt::MakeWriter, util::SubscriberInitExt};
 use crate::client::{TrySend, CLIENT};
 
 pub fn setup_logging(data: &LogData) -> Result<()> {
-    let maker = PipeMaker::new()?;
+    let maker = PipeMaker::new();
 
     tracing_subscriber::fmt()
         .with_line_number(true)
@@ -32,12 +32,10 @@ struct PipeMaker {
 }
 
 impl PipeMaker {
-    fn new() -> io::Result<Self> {
-        let s = Self {
+    fn new() -> Self {
+        Self {
             buf: Mutex::new(Vec::with_capacity(4096)),
-        };
-
-        Ok(s)
+        }
     }
 }
 
