@@ -21,7 +21,7 @@ use std::time::Duration;
 
 use clap::Parser;
 use eyre::Result;
-use shared::popup::{fatal_popup, warn_popup};
+use shared::popup::fatal_popup;
 use tracing::{error, trace};
 
 use cli::Args;
@@ -106,7 +106,7 @@ pub fn run(run_type: RunType) -> Result<()> {
                     let res = run_loader(init.config, pid, &init.loader);
                     if let Err(e) = res {
                         error!(err = %e, "run_loader failed");
-                        warn_popup("run loader failed", format!("run_loader unexpectedly failed. Program will continue running, but depending on the error may not function properly. You might want to report this.\n\nError: {e}"));
+                        fatal_popup("run loader failed", format!("run_loader unexpectedly failed. You should report this.\n\nError: {e}"));
                     }
                 }
 
