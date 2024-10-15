@@ -8,7 +8,6 @@ mod loader;
 mod logging;
 mod panic;
 mod paths;
-mod popup;
 mod privileges;
 mod process_watcher;
 mod server;
