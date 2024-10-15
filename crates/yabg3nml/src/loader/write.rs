@@ -36,10 +36,10 @@ pub fn write_in<T>(process: &OwnedHandle, data: *const T, size: usize) -> Result
 
             warn_popup(
                 "Allocation failure",
-                format!("Failed to allocate in target process\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {error}"),
+                format!("Failed to allocate in target process. Patching has been aborted on this process.\n\nThis could be due to multiple reasons, but in any case, winapi returned an error. Recommend restarting game and trying again. Press OK to continue; this tool will continue to operate normally.\n\nError: {error}"),
             );
 
-            bail!("failed to allocate");
+            bail!("{error}");
         }
 
         addr
@@ -60,10 +60,10 @@ pub fn write_in<T>(process: &OwnedHandle, data: *const T, size: usize) -> Result
 
         warn_popup(
             "Write failure",
-            format!("Failed to write to process memory\n\nThis could be due to multiple reasons, but in any case, winapi returned an error that we cannot recover from. Recommend restarting game and trying again\n\nError: {e}"),
+            format!("Failed to write to process memory. Patching has been aborted on this process.\n\nThis could be due to multiple reasons, but in any case, winapi returned an error. Recommend restarting game and trying again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"),
         );
 
-        bail!("failed to write to process");
+        bail!("{e}");
     }
 
     Ok(alloc_addr)
