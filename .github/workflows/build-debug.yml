@@ -12,6 +12,11 @@ jobs:
     runs-on: windows-2022
 
     steps:
+      # attempt to increase windows runner speed
+      # https://github.com/actions/runner-images/issues/7320#issuecomment-1477640384
+      - run: Set-MpPreference -DisableRealtimeMonitoring $true
+        shell: powershell
+
       - name: Checkout
         uses: actions/checkout@v4
 
