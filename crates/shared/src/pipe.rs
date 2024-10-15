@@ -34,7 +34,7 @@ static RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
         .expect("failed to start runtime")
 });
 
-pub const PIPE: &str = r"\\.\pipe\yabg3ml";
+pub const PIPE: &str = r"\\.\pipe\yabg3nml";
 
 pub type Pid = u32;
 pub type Auth = u64;

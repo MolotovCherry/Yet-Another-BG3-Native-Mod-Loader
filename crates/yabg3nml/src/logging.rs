@@ -16,7 +16,7 @@ pub fn setup_logs<P: AsRef<Path>>(
     let mut worker_guard: Option<WorkerGuard> = None;
 
     // env var takes precedence over config value
-    let env = env::var("YABG3ML_LOG");
+    let env = env::var("YABG3NML_LOG");
     let env = env.as_deref().unwrap_or(&config.log.level);
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
@@ -26,7 +26,7 @@ pub fn setup_logs<P: AsRef<Path>>(
         #[cfg(not(debug_assertions))]
         {
             use crate::console::debug_console;
-            debug_console("Yet Another BG3 Mod Loader Debug Console")?;
+            debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
         }
 
         tracing_subscriber::fmt()
@@ -38,7 +38,7 @@ pub fn setup_logs<P: AsRef<Path>>(
         let plugins_dir = plugins_dir.as_ref();
         let logs_dir = plugins_dir.join("logs");
 
-        let file_appender = tracing_appender::rolling::daily(logs_dir, "ya-bg3-mod-loader");
+        let file_appender = tracing_appender::rolling::daily(logs_dir, "ya-bg3-native-mod-loader");
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
         worker_guard = Some(_guard);

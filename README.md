@@ -1,5 +1,5 @@
-# Yet-Another-BG3-Mod-Loader
-[![Build](https://github.com/MolotovCherry/Yet-Another-BG3-Mod-Loader/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/MolotovCherry/Yet-Another-BG3-Mod-Loader/actions/workflows/build.yml)
+# Yet-Another-BG3-Native-Mod-Loader
+[![Build](https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader/actions/workflows/build.yml)
 
 This is a dll plugin mod loader for Baldur's Gate 3
 

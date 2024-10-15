@@ -39,7 +39,7 @@ impl Default for Core {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Log {
-    /// configure logger level; also settlable through env var YABG3ML_LOG
+    /// configure logger level; also settlable through env var YABG3NML_LOG
     pub level: String,
     /// whether to display log targets
     pub target: bool,

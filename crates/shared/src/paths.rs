@@ -44,7 +44,7 @@ pub fn get_bg3_local_dir() -> Result<PathBuf> {
         _ = CACHE.set(local.clone());
         Ok(local)
     } else {
-        bail!("Bg3 local appdata directory does not exist")
+        bail!("BG3 local appdata directory does not exist")
     }
 }
 

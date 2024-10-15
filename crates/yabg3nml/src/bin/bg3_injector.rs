@@ -2,8 +2,8 @@
 
 use eyre::Result;
 
-use yet_another_bg3_mod_loader::RunType;
+use yabg3nml::RunType;
 
 fn main() -> Result<()> {
-    yet_another_bg3_mod_loader::run(RunType::Injector)
+    yabg3nml::run(RunType::Injector)
 }

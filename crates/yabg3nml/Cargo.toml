@@ -1,5 +1,5 @@
 [package]
-name = "yet-another-bg3-mod-loader"
+name = "yabg3nml"
 version = "0.3.0"
 edition = "2021"
 authors = ["Cherry"]
@@ -35,5 +35,5 @@ sha256.workspace = true
 loader = { path = "../loader", artifact = "cdylib" }
 
 [package.metadata.winres]
-FileDescription = "Yet Another BG3 Mod Loader"
+FileDescription = "Yet Another BG3 Native Mod Loader"
 LegalCopyright = "Copyright (c) Cherry"

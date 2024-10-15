@@ -39,7 +39,7 @@ use utils::{HInstance, Plugin};
 declare_plugin! {
     "Loader",
     "Cherry",
-    "Plugin loader for Yet-Another-BG3-Mod-Loader"
+    "Plugin loader for Yet-Another-BG3-Native-Mod-Loader"
 }
 
 static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(Mutex::default);
@@ -61,7 +61,7 @@ extern "stdcall-unwind" fn DllMain(
             // _ = unsafe { DisableThreadLibraryCalls(module) };
             _ = MODULE.set(HInstance(module));
 
-            if !is_yabg3ml() {
+            if !is_yabg3nml() {
                 unsupported_operation();
             }
         }
@@ -82,7 +82,7 @@ extern "stdcall-unwind" fn DllMain(
 
 #[no_mangle]
 extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
-    if !is_yabg3ml() {
+    if !is_yabg3nml() {
         unsupported_operation();
         return 0;
     }
@@ -113,9 +113,9 @@ extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
     0
 }
 
-/// Detects if yabg3ml injected this dll.
+/// Detects if yabg3nml injected this dll.
 /// This is safe to use from DllMain
-fn is_yabg3ml() -> bool {
+fn is_yabg3nml() -> bool {
     static CACHE: OnceLock<bool> = OnceLock::new();
 
     *CACHE.get_or_init(|| {
@@ -123,7 +123,7 @@ fn is_yabg3ml() -> bool {
             OpenEventW(
                 SYNCHRONIZATION_SYNCHRONIZE,
                 false,
-                w!(r"Global\yet-another-bg3-mod-loader"),
+                w!(r"Global\yet-another-bg3-native-mod-loader"),
             )
         };
 
@@ -138,7 +138,7 @@ fn unsupported_operation() {
     CALL.call_once(|| {
         // threaded so it won't block DllMain
         thread::spawn(|| {
-            warn_popup("Unsupported Operation", "loader.dll requires YABG3ML for proper operation. No plugins have been loaded. Please use it with the support application.");
+            warn_popup("Unsupported Operation", "loader.dll requires YABG3NML for proper operation. No plugins have been loaded. Please use it with the support application.");
         });
     });
 }

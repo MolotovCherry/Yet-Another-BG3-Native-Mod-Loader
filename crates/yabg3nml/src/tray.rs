@@ -62,7 +62,7 @@ impl AppTray {
                     &PredefinedMenuItem::about(
                         None,
                         Some(AboutMetadata {
-                            name: Some("Yet Another Bg3 Mod Loader".to_string()),
+                            name: Some("Yet Another BG3 Native Mod Loader".to_string()),
                             copyright: Some(format!("Copyright (c) {}", authors.join(", ")).to_string()),
                             version: Some(env!("CARGO_PKG_VERSION").to_string()),
                             authors: Some(authors),
@@ -80,7 +80,7 @@ impl AppTray {
 
             let tray_icon = Some(
                 TrayIconBuilder::new()
-                    .with_tooltip("Yet Another Bg3 Mod Loader")
+                    .with_tooltip("Yet Another BG3 Native Mod Loader")
                     .with_menu(Box::new(tray_menu))
                     .with_icon(icon)
                     .build()

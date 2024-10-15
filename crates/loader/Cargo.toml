@@ -24,6 +24,6 @@ winres.workspace = true
 
 [package.metadata.winres]
 ProductName = "Plugin Loader"
-FileDescription = "Dll loader for YABG3ML"
+FileDescription = "Dll loader for YABG3NML"
 OriginalFilename = "loader.dll"
 LegalCopyright = "Copyright (c) Cherry"

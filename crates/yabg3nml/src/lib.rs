@@ -51,7 +51,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         use clap::CommandFactory;
 
         #[cfg(not(debug_assertions))]
-        console::debug_console("Yet Another BG3 Mod Loader Debug Console")?;
+        console::debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
 
         let mut cmd = Args::command();
         cmd.print_help()?;
@@ -62,7 +62,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         return Ok(());
     } else if args.version {
         #[cfg(not(debug_assertions))]
-        console::debug_console("Yet Another BG3 Mod Loader Debug Console")?;
+        console::debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
 
         println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 

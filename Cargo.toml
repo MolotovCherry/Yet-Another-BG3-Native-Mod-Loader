@@ -1,10 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "crates/loader",
-    "crates/shared",
-    "crates/yet-another-bg3-mod-loader",
-]
+members = ["crates/loader", "crates/shared", "crates/yabg3nml"]
 
 [workspace.dependencies]
 tracing = "0.1.40"

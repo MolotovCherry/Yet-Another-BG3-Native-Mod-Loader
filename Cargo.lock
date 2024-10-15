@@ -3340,7 +3340,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9cc00251562a284751c9973bace760d86c0276c471b4be569fe6b068ee97a56"
 
 [[package]]
-name = "yet-another-bg3-mod-loader"
+name = "yabg3nml"
 version = "0.3.0"
 dependencies = [
  "clap",

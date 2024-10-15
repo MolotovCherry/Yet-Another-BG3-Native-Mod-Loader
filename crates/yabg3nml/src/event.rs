@@ -19,7 +19,7 @@ pub struct Event(OwnedHandle);
 
 impl Event {
     pub fn new() -> Result<Self> {
-        // We would like to be globally available so other apps can query the existence of yabg3ml,
+        // We would like to be globally available so other apps can query the existence of yabg3nml,
         // particularly from DllMain. In DllMain you can use OpenEventW to check for existence
         //
         // https://stackoverflow.com/a/20581490/9423933
@@ -47,7 +47,7 @@ impl Event {
                 Some(&sec_attr),
                 false,
                 false,
-                w!(r"Global\yet-another-bg3-mod-loader"),
+                w!(r"Global\yet-another-bg3-native-mod-loader"),
             )?
             .into()
         };
