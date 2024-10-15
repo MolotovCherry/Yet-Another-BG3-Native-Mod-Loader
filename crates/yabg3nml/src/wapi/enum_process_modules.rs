@@ -5,7 +5,7 @@ use std::{
 
 use eyre::{bail, Result};
 use shared::utils::{OwnedHandle, SuperLock as _};
-use tracing::{error, trace, trace_span, warn};
+use tracing::{error, trace, trace_span};
 use windows::Win32::{
     Foundation::{ERROR_PARTIAL_COPY, HMODULE, STILL_ACTIVE},
     System::{
@@ -92,7 +92,7 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
 
                 // retry again because it must've been a simple error
 
-                warn!(
+                trace!(
                     lpcbneeded,
                     size,
                     len = modules.len(),
