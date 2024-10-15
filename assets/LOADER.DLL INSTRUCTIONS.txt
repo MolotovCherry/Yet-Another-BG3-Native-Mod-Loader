@@ -6,15 +6,16 @@
  \/  \/|_| |_|\__,_|\__| |_|___/ |_|\___/ \__,_|\__,_|\___|_(_)\__,_|_|_|(_)
 ------------------------------------------------------------------------------
 
-Loader.dll is the dll that gets injected. It is responsible for doing the actual
+loader.dll is the dll that gets injected. It is responsible for doing the actual
 loading of dll plugins into the game process.
 
 This functionality is separated into a dll because this allows
 us to do complicated/custom logic inside the target application rather than
 doing a lot of work just to make one tiny remote process call. 🥺
 
-Loader.dll is not compatible with the native plugin system. It requires usage of
-the support application to properly function.
+loader.dll is not a plugin; rather, it is a support library for this application.
+As such, it is incompatible with the native plugin system. It requires the
+support application to properly function.
 
  _    _ _                     _                      _     _ _  ___
 | |  | | |                   | |                    | |   (_) ||__ \
@@ -27,7 +28,7 @@ the support application to properly function.
 ---------------------------------------------------------------------
 
 Keep loader.dll bundled together with bg3_injector.exe and bg3_watcher.exe
-No additional setup is required.
+No additional setup is required. You can use the 2 apps as you normally would.
 
  _____      _   _     _        __ _ _                        _            _           _ ___
 |_   _|    | | | |   (_)      / _(_) |                      | |          | |         | |__ \
@@ -41,5 +42,5 @@ No additional setup is required.
 
 The application does file hash checks to ensure loader.dll is the same loader.dll
 that shipped with the binary. It is not possible to mix and match loader.dll with
-different app versions, to accidentally use the wrong file, or to use a corrupted dll.
+different app versions, accidentally use the wrong file, or to use a corrupted dll.
 If the application starts without error, it is the correct file.
