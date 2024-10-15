@@ -86,8 +86,8 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             // - Missing permissions (try running as admin)
             // - Issues with disk / file(s) corrupt
             if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult() == e.code() {
-                if timer.elapsed() > time::Duration::from_secs(1) {
-                    bail!("EnumProcessModulesExRs: still failing after 1 second grace period; aborting injection");
+                if timer.elapsed() > time::Duration::from_secs(2) {
+                    bail!("EnumProcessModulesExRs: timed out waiting for call to succeed; aborting injection");
                 }
 
                 // retry again because it must've been a simple error
