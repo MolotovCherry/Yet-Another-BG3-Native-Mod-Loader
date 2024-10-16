@@ -43,6 +43,8 @@ inherits = "dev"
 opt-level = 0
 
 [profile.release]
+# include something at least
+debug = "line-tables-only"
 lto = true
 codegen-units = 1
 
