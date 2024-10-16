@@ -1,0 +1,6 @@
+These are debugging symbols. When the program crashes, it outputs a stack trace,
+but this stack trace does not contain much useful information. These debugging
+symbols will make the stack trace output detailed information that's needed.
+
+Place these pdb files in the same directory as the exe files. That's it!
+Now when the program crashes, it'll give us enough information.

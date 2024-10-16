@@ -72,18 +72,27 @@ jobs:
           path: |
             target/*/*.exe
             target/*/deps/artifact/loader-*/cdylib/*.dll
+            target/*/*.pdb
 
-      - name: Create staging folder
+      - name: Create staging folders
         if: github.event_name == 'release' || inputs.release
         run: |
           New-Item -ItemType Directory -Force -Path bin
+          New-Item -ItemType Directory -Force -Path debug
 
       - name: Zip files up
         if: github.event_name == 'release' || inputs.release
         run: |
+          # release assets
           Get-ChildItem -Path target/*/*.exe,target/*/deps/artifact/loader-*/cdylib/*.dll,assets/* | Copy-Item -Destination "bin"
           Compress-Archive -Path "bin" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-x64.zip"
           Get-ChildItem -Path "bin" -Recurse | Remove-Item -Force
+
+          # debug symbols
+          Get-ChildItem -Path target/*/*.pdb,assets/assets-dbg/* | Copy-Item -Destination "debug"
+          $files = Get-ChildItem -Path debug/*
+          Compress-Archive -CompressionLevel Optimal -Path $files.FullName -DestinationPath "yet-another-bg3-native-mod-loader-dbg-symbols-x64.zip"
+          Get-ChildItem -Path "debug" -Recurse | Remove-Item -Force
 
       - name: Attach assets to release
         if: github.event_name == 'release' || inputs.release
