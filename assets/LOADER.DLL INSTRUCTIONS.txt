@@ -42,5 +42,5 @@ No additional setup is required. You can use the 2 apps as you normally would.
 
 The application does file hash checks to ensure loader.dll is the same loader.dll
 that shipped with the binary. It is not possible to mix and match loader.dll with
-different app versions, accidentally use the wrong file, or to use a corrupted dll.
+different app versions, accidentally use the wrong file, or use a corrupted dll.
 If the application starts without error, it is the correct file.
