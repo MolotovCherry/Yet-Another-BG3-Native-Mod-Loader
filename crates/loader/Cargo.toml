@@ -5,6 +5,7 @@ edition = "2021"
 authors = ["Cherry"]
 homepage = "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader"
 license = "MIT"
+rust-version = "1.82"
 
 [lib]
 crate-type = ["cdylib"]

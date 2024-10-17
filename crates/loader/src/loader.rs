@@ -42,9 +42,9 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
         let path = entry.path();
         // not a file or dll
         if !path.is_file()
-            || !path
+            || path
                 .extension()
-                .is_some_and(|e| e.to_ascii_lowercase() == "dll")
+                .is_none_or(|e| e.to_ascii_lowercase() != "dll")
         {
             continue;
         }

@@ -22,7 +22,7 @@ pub fn is_admin() -> bool {
             GetTokenInformation(
                 token.as_raw_handle(),
                 TokenElevation,
-                Some(&mut elevation as *mut _ as *mut _),
+                Some(&raw mut elevation as *mut _),
                 size_of::<TOKEN_ELEVATION>() as _,
                 &mut 0,
             )?;

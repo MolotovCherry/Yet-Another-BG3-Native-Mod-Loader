@@ -45,7 +45,7 @@ declare_plugin! {
 static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(Mutex::default);
 static MODULE: OnceLock<HInstance> = OnceLock::new();
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "stdcall-unwind" fn DllMain(
     module: HINSTANCE,
     fdw_reason: u32,
@@ -80,7 +80,7 @@ extern "stdcall-unwind" fn DllMain(
     true
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
     if !is_yabg3nml() {
         unsupported_operation();

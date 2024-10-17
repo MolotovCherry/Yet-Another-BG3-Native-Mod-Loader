@@ -4,7 +4,6 @@ use std::{
     io::{self, ErrorKind},
     ops::ControlFlow,
     os::windows::prelude::{AsHandle, AsRawHandle as _},
-    ptr::addr_of_mut,
     sync::LazyLock,
 };
 
@@ -140,14 +139,14 @@ impl Server {
 
         unsafe {
             InitializeSecurityDescriptor(
-                PSECURITY_DESCRIPTOR(addr_of_mut!(sd).cast()),
+                PSECURITY_DESCRIPTOR(&raw mut sd as *mut _),
                 SECURITY_DESCRIPTOR_REVISION1,
             )?;
         }
 
         unsafe {
             SetSecurityDescriptorDacl(
-                PSECURITY_DESCRIPTOR(addr_of_mut!(sd).cast()),
+                PSECURITY_DESCRIPTOR(&raw mut sd as *mut _),
                 true,
                 None,
                 false,
@@ -156,7 +155,7 @@ impl Server {
 
         let mut sa = SECURITY_ATTRIBUTES {
             nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
-            lpSecurityDescriptor: addr_of_mut!(sd).cast(),
+            lpSecurityDescriptor: &raw mut sd as *mut _,
             bInheritHandle: false.into(),
         };
 
@@ -177,7 +176,7 @@ impl Server {
     /// sa must be valid
     async unsafe fn recv_one(
         &mut self,
-        sa: &mut SECURITY_ATTRIBUTES,
+        sa: *mut SECURITY_ATTRIBUTES,
         cb: &impl Fn(Receive),
         auth: &mut impl FnMut(Pid, Auth) -> ControlFlow<()>,
     ) -> Result<(), io::Error> {
@@ -187,7 +186,7 @@ impl Server {
                 .access_outbound(false)
                 .reject_remote_clients(true)
                 .pipe_mode(PipeMode::Byte)
-                .create_with_security_attributes_raw(PIPE, sa as *mut _ as *mut _)
+                .create_with_security_attributes_raw(PIPE, sa.cast())
         };
 
         let server = match server {

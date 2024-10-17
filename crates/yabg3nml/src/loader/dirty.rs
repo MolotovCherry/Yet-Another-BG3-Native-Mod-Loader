@@ -47,8 +47,8 @@ fn dir_id(path: &Path) -> Option<Id> {
         GetFileInformationByHandleEx(
             handle.as_raw_handle(),
             FileIdInfo,
-            &mut info as *mut _ as *mut _,
-            std::mem::size_of::<FILE_ID_INFO>() as u32,
+            &raw mut info as *mut _,
+            size_of::<FILE_ID_INFO>() as u32,
         )
         .ok()?;
     }
@@ -86,9 +86,9 @@ pub fn is_dirty(process: &OwnedHandle, loader: &Path) -> Result<bool> {
 
         // not a dll file
         if !path.is_file()
-            || !path
+            || path
                 .extension()
-                .is_some_and(|ext| ext.to_ascii_lowercase() == "dll")
+                .is_none_or(|ext| ext.to_ascii_lowercase() != "dll")
         {
             return Ok(false);
         }
