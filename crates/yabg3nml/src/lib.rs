@@ -113,7 +113,7 @@ pub fn run(run_type: RunType) -> Result<()> {
                 // only fires with injector
                 CallType::Timeout => {
                     fatal_popup(
-                        "Timeout",
+                        "Timed Out",
                         "Game process was not found.\n\nThis can happen for 1 of 3 reasons:\n\n1. The game isn't running, so this tool timed out waiting for it\n\n2. The game wasn't detected because your `install_root` config value isn't correct\n\n3. In rare cases, it could be that the program doesn't have permission to open the game process, so it never sees it. In such a case, you should run this as admin (only as a last resort; in normal cases this is not needed)",
                     );
                 }
