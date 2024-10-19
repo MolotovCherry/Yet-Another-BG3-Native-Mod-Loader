@@ -110,106 +110,108 @@ impl ProcessWatcher {
         let (thread_sender, thread_receiver) = channel();
         let (wait_sender, wait_receiver) = channel();
 
-        let wait_sender_clone = wait_sender.clone();
+        let thread = thread::spawn({
+            let wait_sender = wait_sender.clone();
 
-        let thread = thread::spawn(move || {
-            // we can avoid unsafe length setting shenanigans by prefilling it, instead of set_len
-            let mut pid_buf = vec![0u32; 1024];
-            let mut new_pid_buf = vec![0u32; 1024];
-            // important to prefill it, that way len() returns the full amount for any ffi calls
-            let mut path_buf = vec![0u16; MAX_PATH as usize];
+            move || {
+                // we can avoid unsafe length setting shenanigans by prefilling it, instead of set_len
+                let mut pid_buf = vec![0u32; 1024];
+                let mut new_pid_buf = vec![0u32; 1024];
+                // important to prefill it, that way len() returns the full amount for any ffi calls
+                let mut path_buf = vec![0u16; MAX_PATH as usize];
 
-            let mut now = None;
-            let mut end = None;
+                let mut now = None;
+                let mut end = None;
 
-            if let Timeout::Duration(d) = self.timeout {
-                let inst = Instant::now();
+                if let Timeout::Duration(d) = self.timeout {
+                    let inst = Instant::now();
 
-                now = Some(inst);
-                end = Some(d);
-            }
-
-            'run: loop {
-                if let Some(now) = now {
-                    trace!("initiating timeout check");
-
-                    if now.elapsed() >= end.unwrap() {
-                        trace!("detected a timeout");
-
-                        cb(CallType::Timeout);
-
-                        if self.oneshot {
-                            trace!("initiating oneshot channel event");
-                            _ = wait_sender_clone.send(());
-                        }
-
-                        break 'run;
-                    }
+                    now = Some(inst);
+                    end = Some(d);
                 }
 
-                let pids = EnumProcessesRs(&mut pid_buf);
+                'run: loop {
+                    if let Some(now) = now {
+                        trace!("initiating timeout check");
 
-                // process list of pids, compare to last cached copy, find new ones and process those
-                self.process_pids(pids, &mut new_pid_buf);
+                        if now.elapsed() >= end.unwrap() {
+                            trace!("detected a timeout");
 
-                'pid_loop: for pid in new_pid_buf.iter().copied() {
-                    let span_pid_loop = trace_span!("pid_loop", pid = pid);
-                    let _guard = span_pid_loop.enter();
-
-                    *CURRENT_PID.super_lock() = span_pid_loop.clone();
-
-                    let process = {
-                        let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };
-
-                        match res {
-                            Ok(v) => OwnedHandle::new(v),
-                            Err(e) => {
-                                // failed to open process; probably we don't have correct perms to open it
-                                // there is a risk here that we don't have permission to open the game process, so it's skipped
-                                // in such a case, this tool should be run as admin. we have no way of knowing if that happened
-
-                                trace!(err = %e, "failed to open process");
-
-                                continue;
-                            }
-                        }
-                    };
-
-                    let Ok(path) = QueryFullProcessImageNameRs(&process, &mut path_buf) else {
-                        continue;
-                    };
-
-                    let new_process_path = UniCase::new(path.to_string_lossy());
-
-                    trace!(process = %new_process_path, "found");
-
-                    for process_path in &self.processes {
-                        if process_path == &new_process_path {
-                            trace!(path = %process_path, "found process match");
-
-                            cb(CallType::Pid(pid));
+                            cb(CallType::Timeout);
 
                             if self.oneshot {
-                                trace!("we're on oneshot. sending event..");
-                                _ = wait_sender_clone.send(());
-                                break 'run;
+                                trace!("initiating oneshot channel event");
+                                _ = wait_sender.send(());
                             }
 
-                            // there can only be one match per pid, so..
-                            continue 'pid_loop;
+                            break;
                         }
+                    }
+
+                    let pids = EnumProcessesRs(&mut pid_buf);
+
+                    // process list of pids, compare to last cached copy, find new ones and process those
+                    self.process_pids(pids, &mut new_pid_buf);
+
+                    'pid_loop: for pid in new_pid_buf.iter().copied() {
+                        let span_pid_loop = trace_span!("pid_loop", pid = pid);
+                        let _guard = span_pid_loop.enter();
+
+                        *CURRENT_PID.super_lock() = span_pid_loop.clone();
+
+                        let process = {
+                            let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };
+
+                            match res {
+                                Ok(v) => OwnedHandle::new(v),
+                                Err(e) => {
+                                    // failed to open process; probably we don't have correct perms to open it
+                                    // there is a risk here that we don't have permission to open the game process, so it's skipped
+                                    // in such a case, this tool should be run as admin. we have no way of knowing if that happened
+
+                                    trace!(err = %e, "failed to open process");
+
+                                    continue;
+                                }
+                            }
+                        };
+
+                        let Ok(path) = QueryFullProcessImageNameRs(&process, &mut path_buf) else {
+                            continue;
+                        };
+
+                        let new_process_path = UniCase::new(path.to_string_lossy());
+
+                        trace!(process = %new_process_path, "found");
+
+                        for process_path in &self.processes {
+                            if process_path == &new_process_path {
+                                trace!(path = %process_path, "found process match");
+
+                                cb(CallType::Pid(pid));
+
+                                if self.oneshot {
+                                    trace!("we're on oneshot. sending event..");
+                                    _ = wait_sender.send(());
+                                    break 'run;
+                                }
+
+                                // there can only be one match per pid, so..
+                                continue 'pid_loop;
+                            }
+                        }
+                    }
+
+                    let signal = thread_receiver.recv_timeout(self.polling_rate);
+
+                    if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
+                        trace!(?signal, "signal thread_receiver exited");
+                        break;
                     }
                 }
 
-                let signal = thread_receiver.recv_timeout(self.polling_rate);
-
-                if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
-                    trace!(?signal, "signal thread_receiver exited");
-                    break;
-                }
+                Ok::<_, Error>(())
             }
-
-            Ok::<_, Error>(())
         });
 
         let waiter = ProcessWatcherWaiter {
