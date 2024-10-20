@@ -1,6 +1,7 @@
 use std::{
     collections::HashSet,
     sync::{
+        atomic::{AtomicBool, Ordering},
         mpsc::{channel, RecvTimeoutError, Sender},
         Arc, LazyLock, Mutex,
     },
@@ -37,6 +38,12 @@ pub enum CallType {
 pub enum Timeout {
     None,
     Duration(Duration),
+}
+
+impl Timeout {
+    fn is_timeout(&self) -> bool {
+        matches!(self, Self::Duration(_))
+    }
 }
 
 #[derive(Debug)]
@@ -90,22 +97,24 @@ impl ProcessWatcher {
 
     pub fn run(mut self, cb: impl Fn(CallType) + Send + Sync + 'static) -> ProcessWatcherResults {
         let (sender, receiver) = channel();
-        let cb = Arc::new(cb);
+        let timed_out = Arc::new(AtomicBool::new(false));
 
         if let Timeout::Duration(d) = self.timeout {
             let now = Instant::now();
             let end = d;
 
+            let timed_out = timed_out.clone();
             let sender = sender.clone();
-            let cb = cb.clone();
-            thread_helpers::spawn_named("ProcessWatcher Timeout Checker", move || loop {
+
+            thread_helpers::spawn_named("ProcessWatcherTimeoutChecker", move || loop {
                 thread::sleep(Duration::from_secs(1));
 
-                // handle possible timeout
+                // handle timeout
                 if now.elapsed() >= end {
                     trace!("detected a timeout");
-                    cb(CallType::Timeout);
+                    timed_out.store(true, Ordering::Release);
                     _ = sender.send(());
+                    break;
                 }
             });
         };
@@ -173,6 +182,12 @@ impl ProcessWatcher {
                 let signal = receiver.recv_timeout(self.polling_rate);
                 if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
                     trace!(?signal, "signal exited");
+
+                    // if we have a timeout running and it timed out, wait before quitting
+                    if self.timeout.is_timeout() && timed_out.load(Ordering::Acquire) {
+                        cb(CallType::Timeout);
+                    }
+
                     break;
                 }
             }
