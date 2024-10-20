@@ -13,6 +13,7 @@ mod process_watcher;
 mod server;
 mod setup;
 mod single_instance;
+mod thread_helpers;
 mod tmp_loader;
 mod tray;
 mod wapi;
@@ -33,7 +34,7 @@ use setup::init;
 use single_instance::SingleInstance;
 use tray::AppTray;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug)]
 pub enum RunType {
     Watcher,
     Injector,
@@ -86,7 +87,7 @@ pub fn run(run_type: RunType) -> Result<()> {
     #[cfg(feature = "test-injection")]
     let processes = &[args.inject];
 
-    let (polling_rate, timeout, oneshot) = if run_type == RunType::Watcher {
+    let (polling_rate, timeout, oneshot) = if matches!(run_type, RunType::Watcher) {
         // watcher tool
         (Duration::from_secs(2), Timeout::None, false)
     } else {
@@ -98,7 +99,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         )
     };
 
-    let (waiter, stop_token) =
+    let res =
         ProcessWatcher::new(processes, polling_rate, timeout, oneshot).run(
         move |call| match call {
                 CallType::Pid(pid) => {
@@ -120,12 +121,14 @@ pub fn run(run_type: RunType) -> Result<()> {
             }
         );
 
-    // tray
-    if run_type == RunType::Watcher {
-        AppTray::start(stop_token);
+    let tray = AppTray::start(res.token);
+    if matches!(run_type, RunType::Watcher) {
+        // will exit when Quit clicked
+        _ = tray.join();
     }
 
-    waiter.wait();
+    // will exit when signal sent
+    _ = res.watcher_handle.join();
 
     Ok(())
 }

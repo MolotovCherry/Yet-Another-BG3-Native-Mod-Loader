@@ -11,7 +11,7 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=bg3_injector"
+                    "--profile=dev-dbg"
                 ],
                 "filter": {
                     "name": "bg3_injector",
@@ -28,7 +28,7 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=bg3_watcher"
+                    "--profile=dev-dbg"
                 ],
                 "filter": {
                     "name": "bg3_watcher",

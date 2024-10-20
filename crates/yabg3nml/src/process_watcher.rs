@@ -1,15 +1,13 @@
 use std::{
     collections::HashSet,
-    mem::ManuallyDrop,
     sync::{
-        mpsc::{channel, Receiver, RecvTimeoutError, Sender},
-        LazyLock, Mutex,
+        mpsc::{channel, RecvTimeoutError, Sender},
+        Arc, LazyLock, Mutex,
     },
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
 
-use eyre::{Error, Result};
 use shared::utils::{OwnedHandle, SuperLock};
 use tracing::{trace, trace_span, Span};
 use unicase::UniCase;
@@ -18,8 +16,11 @@ use windows::Win32::{
     System::Threading::{OpenProcess, PROCESS_QUERY_INFORMATION},
 };
 
-use crate::wapi::{
-    enum_processes::EnumProcessesRs, query_full_process_image_name::QueryFullProcessImageNameRs,
+use crate::{
+    thread_helpers,
+    wapi::{
+        enum_processes::EnumProcessesRs, query_full_process_image_name::QueryFullProcessImageNameRs,
+    },
 };
 
 pub type Pid = u32;
@@ -39,38 +40,22 @@ pub enum Timeout {
 }
 
 #[derive(Debug)]
-pub struct ProcessWatcherWaiter {
-    thread: Mutex<Option<JoinHandle<Result<()>>>>,
-    wait_receiver: Receiver<()>,
-}
-
-impl ProcessWatcherWaiter {
-    pub fn wait(&self) {
-        trace!("process watcher waiting");
-        _ = self.wait_receiver.recv();
-
-        trace!("process watcher thread joining");
-        _ = self.thread.lock().unwrap().take().unwrap().join();
-
-        trace!("process watcher finished wait");
-    }
-}
-
-#[derive(Debug)]
 pub struct ProcessWatcherStopToken {
-    thread_sender: ManuallyDrop<Sender<()>>,
-    wait_sender: ManuallyDrop<Sender<()>>,
+    signal: Sender<()>,
 }
 
 impl ProcessWatcherStopToken {
     pub fn stop(&self) {
         trace!("process watcher stop token stopping");
-
         // this may fail if the thread exited early, but that doesn't matter at this point
-        _ = self.thread_sender.send(());
-
-        self.wait_sender.send(()).unwrap();
+        _ = self.signal.send(());
     }
+}
+
+#[derive(Debug)]
+pub struct ProcessWatcherResults {
+    pub token: ProcessWatcherStopToken,
+    pub watcher_handle: JoinHandle<()>,
 }
 
 #[derive(Debug)]
@@ -103,128 +88,102 @@ impl ProcessWatcher {
         }
     }
 
-    pub fn run(
-        mut self,
-        cb: impl Fn(CallType) + Send + 'static,
-    ) -> (ProcessWatcherWaiter, ProcessWatcherStopToken) {
-        let (thread_sender, thread_receiver) = channel();
-        let (wait_sender, wait_receiver) = channel();
+    pub fn run(mut self, cb: impl Fn(CallType) + Send + Sync + 'static) -> ProcessWatcherResults {
+        let (sender, receiver) = channel();
+        let cb = Arc::new(cb);
 
-        let thread = thread::spawn({
-            let wait_sender = wait_sender.clone();
+        if let Timeout::Duration(d) = self.timeout {
+            let now = Instant::now();
+            let end = d;
 
-            move || {
-                // we can avoid unsafe length setting shenanigans by prefilling it, instead of set_len
-                let mut pid_buf = vec![0u32; 1024];
-                let mut new_pid_buf = vec![0u32; 1024];
-                // important to prefill it, that way len() returns the full amount for any ffi calls
-                let mut path_buf = vec![0u16; MAX_PATH as usize];
+            let sender = sender.clone();
+            let cb = cb.clone();
+            thread_helpers::spawn_named("ProcessWatcher Timeout Checker", move || loop {
+                thread::sleep(Duration::from_secs(1));
 
-                let mut now = None;
-                let mut end = None;
-
-                if let Timeout::Duration(d) = self.timeout {
-                    let inst = Instant::now();
-
-                    now = Some(inst);
-                    end = Some(d);
+                // handle possible timeout
+                if now.elapsed() >= end {
+                    trace!("detected a timeout");
+                    cb(CallType::Timeout);
+                    _ = sender.send(());
                 }
+            });
+        };
 
-                'run: loop {
-                    if let Some(now) = now {
-                        trace!("initiating timeout check");
+        let handle = thread_helpers::spawn_named("ProcessWatcher", move || {
+            // we can avoid unsafe length setting shenanigans by prefilling it, instead of set_len
+            let mut pid_buf = vec![0u32; 1024];
+            let mut new_pid_buf = vec![0u32; 1024];
+            // important to prefill it, that way len() returns the full amount for any ffi calls
+            let mut path_buf = vec![0u16; MAX_PATH as usize];
 
-                        if now.elapsed() >= end.unwrap() {
-                            trace!("detected a timeout");
+            'run: loop {
+                let pids = EnumProcessesRs(&mut pid_buf);
 
-                            cb(CallType::Timeout);
+                // process list of pids, compare to last cached copy, find new ones and process those
+                self.process_pids(pids, &mut new_pid_buf);
+
+                'pid_loop: for pid in new_pid_buf.iter().copied() {
+                    let span_pid_loop = trace_span!("pid_loop", pid = pid);
+                    let _guard = span_pid_loop.enter();
+
+                    *CURRENT_PID.super_lock() = span_pid_loop.clone();
+
+                    let process = {
+                        let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };
+
+                        match res {
+                            Ok(v) => OwnedHandle::new(v),
+                            Err(e) => {
+                                // failed to open process; probably we don't have correct perms to open it
+                                // there is a risk here that we don't have permission to open the game process, so it's skipped
+                                // in such a case, this tool should be run as admin. we have no way of knowing if that happened
+
+                                trace!(err = %e, "failed to open process");
+
+                                continue;
+                            }
+                        }
+                    };
+
+                    let Ok(path) = QueryFullProcessImageNameRs(&process, &mut path_buf) else {
+                        continue;
+                    };
+
+                    let new_process_path = UniCase::new(path.to_string_lossy());
+
+                    trace!(process = %new_process_path, "found");
+
+                    for process_path in &self.processes {
+                        if process_path == &new_process_path {
+                            trace!(path = %process_path, "found process match");
+
+                            cb(CallType::Pid(pid));
 
                             if self.oneshot {
-                                trace!("initiating oneshot channel event");
-                                _ = wait_sender.send(());
+                                break 'run;
                             }
 
-                            break;
+                            // there can only be one match per pid, so..
+                            continue 'pid_loop;
                         }
-                    }
-
-                    let pids = EnumProcessesRs(&mut pid_buf);
-
-                    // process list of pids, compare to last cached copy, find new ones and process those
-                    self.process_pids(pids, &mut new_pid_buf);
-
-                    'pid_loop: for pid in new_pid_buf.iter().copied() {
-                        let span_pid_loop = trace_span!("pid_loop", pid = pid);
-                        let _guard = span_pid_loop.enter();
-
-                        *CURRENT_PID.super_lock() = span_pid_loop.clone();
-
-                        let process = {
-                            let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };
-
-                            match res {
-                                Ok(v) => OwnedHandle::new(v),
-                                Err(e) => {
-                                    // failed to open process; probably we don't have correct perms to open it
-                                    // there is a risk here that we don't have permission to open the game process, so it's skipped
-                                    // in such a case, this tool should be run as admin. we have no way of knowing if that happened
-
-                                    trace!(err = %e, "failed to open process");
-
-                                    continue;
-                                }
-                            }
-                        };
-
-                        let Ok(path) = QueryFullProcessImageNameRs(&process, &mut path_buf) else {
-                            continue;
-                        };
-
-                        let new_process_path = UniCase::new(path.to_string_lossy());
-
-                        trace!(process = %new_process_path, "found");
-
-                        for process_path in &self.processes {
-                            if process_path == &new_process_path {
-                                trace!(path = %process_path, "found process match");
-
-                                cb(CallType::Pid(pid));
-
-                                if self.oneshot {
-                                    trace!("we're on oneshot. sending event..");
-                                    _ = wait_sender.send(());
-                                    break 'run;
-                                }
-
-                                // there can only be one match per pid, so..
-                                continue 'pid_loop;
-                            }
-                        }
-                    }
-
-                    let signal = thread_receiver.recv_timeout(self.polling_rate);
-
-                    if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
-                        trace!(?signal, "signal thread_receiver exited");
-                        break;
                     }
                 }
 
-                Ok::<_, Error>(())
+                let signal = receiver.recv_timeout(self.polling_rate);
+                if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
+                    trace!(?signal, "signal exited");
+                    break;
+                }
             }
         });
 
-        let waiter = ProcessWatcherWaiter {
-            thread: Mutex::new(Some(thread)),
-            wait_receiver,
-        };
+        let token = ProcessWatcherStopToken { signal: sender };
 
-        let token = ProcessWatcherStopToken {
-            thread_sender: ManuallyDrop::new(thread_sender),
-            wait_sender: ManuallyDrop::new(wait_sender),
-        };
-
-        (waiter, token)
+        ProcessWatcherResults {
+            token,
+            watcher_handle: handle,
+        }
     }
 
     /// processes pids and detects which processes are new

@@ -1,51 +1,51 @@
-use std::thread;
+use std::thread::JoinHandle;
 
 use tray_icon::{
     menu::{AboutMetadata, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem},
     Icon, TrayIcon, TrayIconBuilder,
 };
 use winit::{
-    application::ApplicationHandler, event_loop::EventLoop,
+    application::ApplicationHandler,
+    event::{StartCause, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop},
     platform::windows::EventLoopBuilderExtWindows,
+    window::WindowId,
 };
 
-use crate::process_watcher::ProcessWatcherStopToken;
+use crate::{process_watcher::ProcessWatcherStopToken, thread_helpers};
 
 pub struct AppTray {
-    watcher: ProcessWatcherStopToken,
+    token: ProcessWatcherStopToken,
     quit_id: MenuId,
     tray_icon: Option<TrayIcon>,
 }
 
 impl ApplicationHandler for AppTray {
-    fn new_events(
-        &mut self,
-        _event_loop: &winit::event_loop::ActiveEventLoop,
-        _cause: winit::event::StartCause,
-    ) {
+    fn new_events(&mut self, event_loop: &ActiveEventLoop, _cause: StartCause) {
         if let Ok(event) = MenuEvent::receiver().try_recv() {
             if event.id == self.quit_id {
                 self.tray_icon.take();
-                self.watcher.stop();
+                self.token.stop();
+                event_loop.exit();
             }
         }
     }
 
-    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {}
+    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
 
     fn window_event(
         &mut self,
-        _event_loop: &winit::event_loop::ActiveEventLoop,
-        _window_id: winit::window::WindowId,
-        _event: winit::event::WindowEvent,
+        _event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        _event: WindowEvent,
     ) {
         unimplemented!()
     }
 }
 
 impl AppTray {
-    pub fn start(watcher: ProcessWatcherStopToken) {
-        thread::spawn(move || {
+    pub fn start(token: ProcessWatcherStopToken) -> JoinHandle<()> {
+        thread_helpers::spawn_named("AppTray", || {
             let icon = Icon::from_resource(1, None).unwrap();
 
             let tray_menu = Menu::new();
@@ -90,12 +90,12 @@ impl AppTray {
             let event_loop = EventLoop::builder().with_any_thread(true).build().unwrap();
 
             let mut tray = Self {
-                watcher,
+                token,
                 quit_id: quit_i.id().clone(),
                 tray_icon,
             };
 
             event_loop.run_app(&mut tray).unwrap();
-        });
+        })
     }
 }
