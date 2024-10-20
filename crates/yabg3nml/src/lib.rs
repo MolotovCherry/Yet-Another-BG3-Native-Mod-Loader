@@ -13,7 +13,6 @@ mod process_watcher;
 mod server;
 mod setup;
 mod single_instance;
-mod thread_helpers;
 mod tmp_loader;
 mod tray;
 mod wapi;
@@ -98,29 +97,46 @@ pub fn run(run_type: RunType) -> Result<()> {
         )
     };
 
-    let ProcessWatcherResults { token, watcher_handle, timed_out } =
-        ProcessWatcher::new(processes, polling_rate, timeout, oneshot).run(
+    let ProcessWatcherResults {
+        watcher_token: token,
+        watcher_handle,
+        timed_out,
+        timeout_token,
+    } = ProcessWatcher::new(processes, polling_rate, timeout, oneshot).run(
         move |call| match call {
-                CallType::Pid(pid) => {
-                    trace!(pid, "Received callback for pid, now loading");
-                    let res = run_loader(init.config, pid, &init.loader);
-                    if let Err(e) = res {
-                        error!(err = %e, "run_loader failed");
-                        fatal_popup("run loader failed", format!("run_loader unexpectedly failed. You should report this.\n\nError: {e}"));
-                    }
-                }
-
-                // only fires with injector
-                CallType::Timeout => {
+            CallType::Pid(pid) => {
+                trace!(pid, "Received callback for pid, now loading");
+                let res = run_loader(init.config, pid, &init.loader);
+                if let Err(e) = res {
+                    error!(err = %e, "run_loader failed");
                     fatal_popup(
-                        "Timed Out",
-                        "Game process was not found.\n\nThis can happen for 1 of 3 reasons:\n\n1. The game isn't running, so this tool timed out waiting for it\n\n2. The game wasn't detected because your `install_root` config value isn't correct\n\n3. In rare cases, it could be that the program doesn't have permission to open the game process, so it never sees it. In such a case, you should run this as admin (only as a last resort; in normal cases this is not needed)",
+                        "run loader failed",
+                        format!(
+                            "run_loader unexpectedly failed. You should report this.\n\nError: {e}"
+                        ),
                     );
                 }
             }
-        );
 
-    let tray = AppTray::start(token, timed_out);
+            // only fires with injector
+            CallType::Timeout => {
+                fatal_popup(
+                    "Timed Out",
+                    r"Game process was not found.
+
+This can happen for 1 of 3 reasons:
+
+1. The game isn't running, so this tool timed out waiting for it
+
+2. The game wasn't detected because your `install_root` config value isn't correct
+
+3. In rare cases, it could be that the program doesn't have permission to open the game process, so it never sees it. In such a case, you should run this as admin (only as a last resort; in normal cases this is not needed)"
+                );
+            }
+        },
+    );
+
+    let tray = AppTray::start(token, timed_out, timeout_token);
     if matches!(run_type, RunType::Watcher) {
         // will exit when Quit clicked
         _ = tray.join();

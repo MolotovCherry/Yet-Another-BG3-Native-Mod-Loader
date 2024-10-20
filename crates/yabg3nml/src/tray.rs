@@ -4,7 +4,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
-    thread::JoinHandle,
+    thread::{self, JoinHandle},
 };
 
 use tray_icon::{
@@ -19,10 +19,11 @@ use winit::{
     window::WindowId,
 };
 
-use crate::{process_watcher::ProcessWatcherStopToken, thread_helpers};
+use crate::process_watcher::StopToken;
 
 pub struct AppTray {
-    token: ProcessWatcherStopToken,
+    watcher_token: StopToken,
+    timeout_token: Option<StopToken>,
     quit_id: MenuId,
     tray_icon: Option<TrayIcon>,
     timed_out: Arc<AtomicBool>,
@@ -33,10 +34,15 @@ impl ApplicationHandler for AppTray {
         if let Ok(event) = MenuEvent::receiver().try_recv() {
             if event.id == self.quit_id {
                 self.tray_icon.take();
-                self.token.stop();
+
+                if let Some(token) = self.timeout_token.as_ref() {
+                    token.stop();
+                }
+
+                self.watcher_token.stop();
                 event_loop.exit();
 
-                if self.timed_out.load(Ordering::Acquire) {
+                if self.timed_out.load(Ordering::Relaxed) {
                     // this may not ever exit, so we have to force it here
                     process::exit(0);
                 }
@@ -57,8 +63,12 @@ impl ApplicationHandler for AppTray {
 }
 
 impl AppTray {
-    pub fn start(token: ProcessWatcherStopToken, timed_out: Arc<AtomicBool>) -> JoinHandle<()> {
-        thread_helpers::spawn_named("AppTray", || {
+    pub fn start(
+        watcher_token: StopToken,
+        timed_out: Arc<AtomicBool>,
+        timeout_token: Option<StopToken>,
+    ) -> JoinHandle<()> {
+        thread::spawn(|| {
             let icon = Icon::from_resource(1, None).unwrap();
 
             let tray_menu = Menu::new();
@@ -75,14 +85,14 @@ impl AppTray {
                     &PredefinedMenuItem::about(
                         None,
                         Some(AboutMetadata {
-                            name: Some("Yet Another BG3 Native Mod Loader".to_string()),
-                            copyright: Some(format!("Copyright (c) {}", authors.join(", ")).to_string()),
-                            version: Some(env!("CARGO_PKG_VERSION").to_string()),
+                            name: Some("Yet Another BG3 Native Mod Loader".to_owned()),
+                            copyright: Some(format!("Copyright (c) {}", authors.join(", ")).to_owned()),
+                            version: Some(env!("CARGO_PKG_VERSION").to_owned()),
                             authors: Some(authors),
-                            license: Some(env!("CARGO_PKG_LICENSE").to_string()),
-                            website_label: Some("https://www.nexusmods.com/baldursgate3/mods/3052".to_string()),
-                            website: Some(env!("CARGO_PKG_HOMEPAGE").to_string()),
-                            comments: Some("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.".to_string()),
+                            license: Some(env!("CARGO_PKG_LICENSE").to_owned()),
+                            website_label: Some("https://www.nexusmods.com/baldursgate3/mods/3052".to_owned()),
+                            website: Some(env!("CARGO_PKG_HOMEPAGE").to_owned()),
+                            comments: Some(r#"THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."#.to_owned()),
                             ..Default::default()
                         }),
                     ),
@@ -103,7 +113,8 @@ impl AppTray {
             let event_loop = EventLoop::builder().with_any_thread(true).build().unwrap();
 
             let mut tray = Self {
-                token,
+                watcher_token,
+                timeout_token,
                 quit_id: quit_i.id().clone(),
                 tray_icon,
                 timed_out,

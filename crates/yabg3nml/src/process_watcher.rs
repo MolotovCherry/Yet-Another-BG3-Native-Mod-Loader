@@ -17,11 +17,8 @@ use windows::Win32::{
     System::Threading::{OpenProcess, PROCESS_QUERY_INFORMATION},
 };
 
-use crate::{
-    thread_helpers,
-    wapi::{
-        enum_processes::EnumProcessesRs, query_full_process_image_name::QueryFullProcessImageNameRs,
-    },
+use crate::wapi::{
+    enum_processes::EnumProcessesRs, query_full_process_image_name::QueryFullProcessImageNameRs,
 };
 
 pub type Pid = u32;
@@ -47,13 +44,13 @@ impl Timeout {
 }
 
 #[derive(Debug)]
-pub struct ProcessWatcherStopToken {
+pub struct StopToken {
     signal: Sender<()>,
 }
 
-impl ProcessWatcherStopToken {
+impl StopToken {
     pub fn stop(&self) {
-        trace!("process watcher stop token stopping");
+        trace!("stop token stopping");
         // this may fail if the thread exited early, but that doesn't matter at this point
         _ = self.signal.send(());
     }
@@ -61,7 +58,8 @@ impl ProcessWatcherStopToken {
 
 #[derive(Debug)]
 pub struct ProcessWatcherResults {
-    pub token: ProcessWatcherStopToken,
+    pub watcher_token: StopToken,
+    pub timeout_token: Option<StopToken>,
     pub watcher_handle: JoinHandle<()>,
     pub timed_out: Arc<AtomicBool>,
 }
@@ -97,30 +95,40 @@ impl ProcessWatcher {
     }
 
     pub fn run(mut self, cb: impl Fn(CallType) + Send + Sync + 'static) -> ProcessWatcherResults {
-        let (sender, receiver) = channel();
+        let (sender, recv) = channel();
         let timed_out = Arc::new(AtomicBool::new(false));
 
-        if let Timeout::Duration(d) = self.timeout {
+        let timeout_token = if let Timeout::Duration(d) = self.timeout {
             let now = Instant::now();
             let end = d;
+
+            let (tt_sender, tt_recv) = channel();
 
             let timed_out = timed_out.clone();
             let sender = sender.clone();
 
-            thread_helpers::spawn_named("ProcessWatcherTimeoutChecker", move || loop {
-                thread::sleep(Duration::from_secs(1));
+            thread::spawn(move || loop {
+                let signal = tt_recv.recv_timeout(Duration::from_secs(1));
+                if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
+                    break;
+                }
 
                 // handle timeout
                 if now.elapsed() >= end {
                     trace!("detected a timeout");
-                    timed_out.store(true, Ordering::Release);
+
+                    timed_out.store(true, Ordering::Relaxed);
                     _ = sender.send(());
                     break;
                 }
             });
+
+            Some(StopToken { signal: tt_sender })
+        } else {
+            None
         };
 
-        let handle = thread_helpers::spawn_named("ProcessWatcher", {
+        let handle = thread::spawn({
             let timed_out = timed_out.clone();
 
             move || {
@@ -183,7 +191,7 @@ impl ProcessWatcher {
                         }
                     }
 
-                    let signal = receiver.recv_timeout(self.polling_rate);
+                    let signal = recv.recv_timeout(self.polling_rate);
                     if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
                         trace!(?signal, "signal exited");
 
@@ -198,10 +206,11 @@ impl ProcessWatcher {
             }
         });
 
-        let token = ProcessWatcherStopToken { signal: sender };
+        let watcher_token = StopToken { signal: sender };
 
         ProcessWatcherResults {
-            token,
+            watcher_token,
+            timeout_token,
             watcher_handle: handle,
             timed_out,
         }
