@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc::{channel, RecvTimeoutError, Sender},
+        mpsc::{channel, RecvTimeoutError},
         Arc, LazyLock, Mutex,
     },
     thread::{self, JoinHandle},
@@ -17,8 +17,11 @@ use windows::Win32::{
     System::Threading::{OpenProcess, PROCESS_QUERY_INFORMATION},
 };
 
-use crate::wapi::{
-    enum_processes::EnumProcessesRs, query_full_process_image_name::QueryFullProcessImageNameRs,
+use crate::{
+    stop_token::StopToken,
+    wapi::{
+        enum_processes::EnumProcessesRs, query_full_process_image_name::QueryFullProcessImageNameRs,
+    },
 };
 
 pub type Pid = u32;
@@ -40,19 +43,6 @@ pub enum Timeout {
 impl Timeout {
     fn is_timeout(&self) -> bool {
         matches!(self, Self::Duration(_))
-    }
-}
-
-#[derive(Debug)]
-pub struct StopToken {
-    signal: Sender<()>,
-}
-
-impl StopToken {
-    pub fn stop(&self) {
-        trace!("stop token stopping");
-        // this may fail if the thread exited early, but that doesn't matter at this point
-        _ = self.signal.send(());
     }
 }
 
@@ -123,7 +113,7 @@ impl ProcessWatcher {
                 }
             });
 
-            Some(StopToken { signal: tt_sender })
+            Some(StopToken::new(tt_sender))
         } else {
             None
         };
@@ -206,7 +196,7 @@ impl ProcessWatcher {
             }
         });
 
-        let watcher_token = StopToken { signal: sender };
+        let watcher_token = StopToken::new(sender);
 
         ProcessWatcherResults {
             watcher_token,

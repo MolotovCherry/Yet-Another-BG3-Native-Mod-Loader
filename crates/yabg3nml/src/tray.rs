@@ -8,62 +8,16 @@ use std::{
 };
 
 use tray_icon::{
-    menu::{AboutMetadata, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem},
-    Icon, TrayIcon, TrayIconBuilder,
-};
-use winit::{
-    application::ApplicationHandler,
-    event::{StartCause, WindowEvent},
-    event_loop::{ActiveEventLoop, EventLoop},
-    platform::windows::EventLoopBuilderExtWindows,
-    window::WindowId,
+    menu::{AboutMetadata, Menu, MenuEvent, MenuItem, PredefinedMenuItem},
+    Icon, TrayIconBuilder,
 };
 
-use crate::process_watcher::StopToken;
+use crate::{event_loop::EventLoop, stop_token::StopToken};
 
-pub struct AppTray {
-    watcher_token: StopToken,
-    timeout_token: Option<StopToken>,
-    quit_id: MenuId,
-    tray_icon: Option<TrayIcon>,
-    timed_out: Arc<AtomicBool>,
-}
-
-impl ApplicationHandler for AppTray {
-    fn new_events(&mut self, event_loop: &ActiveEventLoop, _cause: StartCause) {
-        if let Ok(event) = MenuEvent::receiver().try_recv() {
-            if event.id == self.quit_id {
-                self.tray_icon.take();
-
-                if let Some(token) = self.timeout_token.as_ref() {
-                    token.stop();
-                }
-
-                self.watcher_token.stop();
-                event_loop.exit();
-
-                if self.timed_out.load(Ordering::Relaxed) {
-                    // this may not ever exit, so we have to force it here
-                    process::exit(0);
-                }
-            }
-        }
-    }
-
-    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
-
-    fn window_event(
-        &mut self,
-        _event_loop: &ActiveEventLoop,
-        _window_id: WindowId,
-        _event: WindowEvent,
-    ) {
-        unimplemented!()
-    }
-}
+pub struct AppTray;
 
 impl AppTray {
-    pub fn start(
+    pub fn run(
         watcher_token: StopToken,
         timed_out: Arc<AtomicBool>,
         timeout_token: Option<StopToken>,
@@ -101,7 +55,7 @@ impl AppTray {
                 ])
                 .unwrap();
 
-            let tray_icon = Some(
+            let mut tray_icon = Some(
                 TrayIconBuilder::new()
                     .with_tooltip("Yet Another BG3 Native Mod Loader")
                     .with_menu(Box::new(tray_menu))
@@ -110,17 +64,25 @@ impl AppTray {
                     .unwrap(),
             );
 
-            let event_loop = EventLoop::builder().with_any_thread(true).build().unwrap();
+            EventLoop::new().run(move |event_loop| {
+                if let Ok(event) = MenuEvent::receiver().try_recv() {
+                    if event.id == quit_i.id() {
+                        if let Some(token) = timeout_token.as_ref() {
+                            token.stop();
+                        }
 
-            let mut tray = Self {
-                watcher_token,
-                timeout_token,
-                quit_id: quit_i.id().clone(),
-                tray_icon,
-                timed_out,
-            };
+                        watcher_token.stop();
+                        event_loop.exit();
 
-            event_loop.run_app(&mut tray).unwrap();
+                        tray_icon.take();
+
+                        if timed_out.load(Ordering::Relaxed) {
+                            // this may not ever exit, so we have to force it here
+                            process::exit(0);
+                        }
+                    }
+                }
+            });
         })
     }
 }

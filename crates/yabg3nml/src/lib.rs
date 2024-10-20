@@ -3,6 +3,7 @@
 mod cli;
 mod console;
 mod event;
+mod event_loop;
 mod is_admin;
 mod loader;
 mod logging;
@@ -13,6 +14,7 @@ mod process_watcher;
 mod server;
 mod setup;
 mod single_instance;
+mod stop_token;
 mod tmp_loader;
 mod tray;
 mod wapi;
@@ -136,7 +138,7 @@ This can happen for 1 of 3 reasons:
         },
     );
 
-    let tray = AppTray::start(token, timed_out, timeout_token);
+    let tray = AppTray::run(token, timed_out, timeout_token);
     if matches!(run_type, RunType::Watcher) {
         // will exit when Quit clicked
         _ = tray.join();
