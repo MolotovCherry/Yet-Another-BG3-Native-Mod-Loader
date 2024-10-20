@@ -28,8 +28,7 @@ use tracing::{error, trace};
 use cli::Args;
 use event::Event;
 use loader::run_loader;
-use process_watcher::CallType;
-use process_watcher::{ProcessWatcher, Timeout};
+use process_watcher::{CallType, ProcessWatcher, ProcessWatcherResults, Timeout};
 use setup::init;
 use single_instance::SingleInstance;
 use tray::AppTray;
@@ -99,7 +98,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         )
     };
 
-    let res =
+    let ProcessWatcherResults { token, watcher_handle } =
         ProcessWatcher::new(processes, polling_rate, timeout, oneshot).run(
         move |call| match call {
                 CallType::Pid(pid) => {
@@ -121,14 +120,14 @@ pub fn run(run_type: RunType) -> Result<()> {
             }
         );
 
-    let tray = AppTray::start(res.token);
+    let tray = AppTray::start(token);
     if matches!(run_type, RunType::Watcher) {
         // will exit when Quit clicked
         _ = tray.join();
     }
 
     // will exit when signal sent
-    _ = res.watcher_handle.join();
+    _ = watcher_handle.join();
 
     Ok(())
 }
