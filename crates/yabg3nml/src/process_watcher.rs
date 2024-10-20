@@ -63,6 +63,7 @@ impl ProcessWatcherStopToken {
 pub struct ProcessWatcherResults {
     pub token: ProcessWatcherStopToken,
     pub watcher_handle: JoinHandle<()>,
+    pub timed_out: Arc<AtomicBool>,
 }
 
 #[derive(Debug)]
@@ -119,76 +120,80 @@ impl ProcessWatcher {
             });
         };
 
-        let handle = thread_helpers::spawn_named("ProcessWatcher", move || {
-            // we can avoid unsafe length setting shenanigans by prefilling it, instead of set_len
-            let mut pid_buf = vec![0u32; 1024];
-            let mut new_pid_buf = vec![0u32; 1024];
-            // important to prefill it, that way len() returns the full amount for any ffi calls
-            let mut path_buf = vec![0u16; MAX_PATH as usize];
+        let handle = thread_helpers::spawn_named("ProcessWatcher", {
+            let timed_out = timed_out.clone();
 
-            'run: loop {
-                let pids = EnumProcessesRs(&mut pid_buf);
+            move || {
+                // we can avoid unsafe length setting shenanigans by prefilling it, instead of set_len
+                let mut pid_buf = vec![0u32; 1024];
+                let mut new_pid_buf = vec![0u32; 1024];
+                // important to prefill it, that way len() returns the full amount for any ffi calls
+                let mut path_buf = vec![0u16; MAX_PATH as usize];
 
-                // process list of pids, compare to last cached copy, find new ones and process those
-                self.process_pids(pids, &mut new_pid_buf);
+                'run: loop {
+                    let pids = EnumProcessesRs(&mut pid_buf);
 
-                'pid_loop: for pid in new_pid_buf.iter().copied() {
-                    let span_pid_loop = trace_span!("pid_loop", pid = pid);
-                    let _guard = span_pid_loop.enter();
+                    // process list of pids, compare to last cached copy, find new ones and process those
+                    self.process_pids(pids, &mut new_pid_buf);
 
-                    *CURRENT_PID.super_lock() = span_pid_loop.clone();
+                    'pid_loop: for pid in new_pid_buf.iter().copied() {
+                        let span_pid_loop = trace_span!("pid_loop", pid = pid);
+                        let _guard = span_pid_loop.enter();
 
-                    let process = {
-                        let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };
+                        *CURRENT_PID.super_lock() = span_pid_loop.clone();
 
-                        match res {
-                            Ok(v) => OwnedHandle::new(v),
-                            Err(e) => {
-                                // failed to open process; probably we don't have correct perms to open it
-                                // there is a risk here that we don't have permission to open the game process, so it's skipped
-                                // in such a case, this tool should be run as admin. we have no way of knowing if that happened
+                        let process = {
+                            let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };
 
-                                trace!(err = %e, "failed to open process");
+                            match res {
+                                Ok(v) => OwnedHandle::new(v),
+                                Err(e) => {
+                                    // failed to open process; probably we don't have correct perms to open it
+                                    // there is a risk here that we don't have permission to open the game process, so it's skipped
+                                    // in such a case, this tool should be run as admin. we have no way of knowing if that happened
 
-                                continue;
+                                    trace!(err = %e, "failed to open process");
+
+                                    continue;
+                                }
+                            }
+                        };
+
+                        let Ok(path) = QueryFullProcessImageNameRs(&process, &mut path_buf) else {
+                            continue;
+                        };
+
+                        let new_process_path = UniCase::new(path.to_string_lossy());
+
+                        trace!(process = %new_process_path, "found");
+
+                        for process_path in &self.processes {
+                            if process_path == &new_process_path {
+                                trace!(path = %process_path, "found process match");
+
+                                cb(CallType::Pid(pid));
+
+                                if self.oneshot {
+                                    break 'run;
+                                }
+
+                                // there can only be one match per pid, so..
+                                continue 'pid_loop;
                             }
                         }
-                    };
+                    }
 
-                    let Ok(path) = QueryFullProcessImageNameRs(&process, &mut path_buf) else {
-                        continue;
-                    };
+                    let signal = receiver.recv_timeout(self.polling_rate);
+                    if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
+                        trace!(?signal, "signal exited");
 
-                    let new_process_path = UniCase::new(path.to_string_lossy());
-
-                    trace!(process = %new_process_path, "found");
-
-                    for process_path in &self.processes {
-                        if process_path == &new_process_path {
-                            trace!(path = %process_path, "found process match");
-
-                            cb(CallType::Pid(pid));
-
-                            if self.oneshot {
-                                break 'run;
-                            }
-
-                            // there can only be one match per pid, so..
-                            continue 'pid_loop;
+                        // if we have a timeout running and it timed out, wait before quitting
+                        if self.timeout.is_timeout() && timed_out.load(Ordering::Acquire) {
+                            cb(CallType::Timeout);
                         }
+
+                        break;
                     }
-                }
-
-                let signal = receiver.recv_timeout(self.polling_rate);
-                if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
-                    trace!(?signal, "signal exited");
-
-                    // if we have a timeout running and it timed out, wait before quitting
-                    if self.timeout.is_timeout() && timed_out.load(Ordering::Acquire) {
-                        cb(CallType::Timeout);
-                    }
-
-                    break;
                 }
             }
         });
@@ -198,6 +203,7 @@ impl ProcessWatcher {
         ProcessWatcherResults {
             token,
             watcher_handle: handle,
+            timed_out,
         }
     }
 

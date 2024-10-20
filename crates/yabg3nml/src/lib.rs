@@ -98,7 +98,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         )
     };
 
-    let ProcessWatcherResults { token, watcher_handle } =
+    let ProcessWatcherResults { token, watcher_handle, timed_out } =
         ProcessWatcher::new(processes, polling_rate, timeout, oneshot).run(
         move |call| match call {
                 CallType::Pid(pid) => {
@@ -120,7 +120,7 @@ pub fn run(run_type: RunType) -> Result<()> {
             }
         );
 
-    let tray = AppTray::start(token);
+    let tray = AppTray::start(token, timed_out);
     if matches!(run_type, RunType::Watcher) {
         // will exit when Quit clicked
         _ = tray.join();

@@ -1,4 +1,11 @@
-use std::thread::JoinHandle;
+use std::{
+    process,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread::JoinHandle,
+};
 
 use tray_icon::{
     menu::{AboutMetadata, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem},
@@ -18,6 +25,7 @@ pub struct AppTray {
     token: ProcessWatcherStopToken,
     quit_id: MenuId,
     tray_icon: Option<TrayIcon>,
+    timed_out: Arc<AtomicBool>,
 }
 
 impl ApplicationHandler for AppTray {
@@ -27,6 +35,11 @@ impl ApplicationHandler for AppTray {
                 self.tray_icon.take();
                 self.token.stop();
                 event_loop.exit();
+
+                if self.timed_out.load(Ordering::Acquire) {
+                    // this may not ever exit, so we have to force it here
+                    process::exit(0);
+                }
             }
         }
     }
@@ -44,7 +57,7 @@ impl ApplicationHandler for AppTray {
 }
 
 impl AppTray {
-    pub fn start(token: ProcessWatcherStopToken) -> JoinHandle<()> {
+    pub fn start(token: ProcessWatcherStopToken, timed_out: Arc<AtomicBool>) -> JoinHandle<()> {
         thread_helpers::spawn_named("AppTray", || {
             let icon = Icon::from_resource(1, None).unwrap();
 
@@ -93,6 +106,7 @@ impl AppTray {
                 token,
                 quit_id: quit_i.id().clone(),
                 tray_icon,
+                timed_out,
             };
 
             event_loop.run_app(&mut tray).unwrap();
