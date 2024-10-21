@@ -1,25 +1,23 @@
-use std::{
-    process,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-    thread::{self, JoinHandle},
-};
+use std::thread::{self, JoinHandle};
 
 use tray_icon::{
     menu::{AboutMetadata, Menu, MenuEvent, MenuItem, PredefinedMenuItem},
     Icon, TrayIconBuilder,
 };
+use windows::Win32::{
+    Foundation::{LPARAM, WPARAM},
+    UI::WindowsAndMessaging::{GetClassNameW, PostMessageW, WM_CLOSE},
+};
 
-use crate::{event_loop::EventLoop, stop_token::StopToken, RunType};
+use crate::{
+    event_loop::EventLoop, stop_token::StopToken, wapi::enum_windows::EnumWindowsRs, RunType,
+};
 
 pub struct AppTray;
 
 impl AppTray {
     pub fn run(
         watcher_token: StopToken,
-        timed_out: Arc<AtomicBool>,
         timeout_token: Option<StopToken>,
         kind: RunType,
     ) -> JoinHandle<()> {
@@ -84,10 +82,22 @@ impl AppTray {
 
                         tray_icon.take();
 
-                        if timed_out.load(Ordering::Relaxed) {
-                            // this may not ever exit, so we have to force it here
-                            process::exit(0);
-                        }
+                        // this will close dialog popup window in injector mode so it doesn't hang process watcher
+                        // when we try to quit. Would work for anything else hanging a thread too
+                        EnumWindowsRs(|hwnd| {
+                            let mut buf = [0u16; 256];
+                            let len = unsafe { GetClassNameW(hwnd, &mut buf) };
+
+                            let name = String::from_utf16_lossy(&buf[..len as usize]);
+
+                            // looking for any open dialog box
+                            if name == "#32770" {
+                                // close the window
+                                _ = unsafe { PostMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)) };
+                            }
+
+                            Ok(())
+                        });
                     }
                 }
             });

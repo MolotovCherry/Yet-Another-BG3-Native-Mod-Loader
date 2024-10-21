@@ -20,7 +20,7 @@ mod wapi;
 use std::time::Duration;
 
 use eyre::Result;
-use shared::popup::fatal_popup;
+use shared::popup::{display_popup, fatal_popup, MessageBoxIcon};
 use tracing::{error, trace};
 
 use cli::Args;
@@ -74,7 +74,6 @@ pub fn run(run_type: RunType) -> Result<()> {
     let ProcessWatcherResults {
         watcher_token: token,
         watcher_handle,
-        timed_out,
         timeout_token,
     } = ProcessWatcher::new(processes, polling_rate, timeout, oneshot).run(
         move |call| match call {
@@ -94,7 +93,7 @@ pub fn run(run_type: RunType) -> Result<()> {
 
             // only fires with injector
             CallType::Timeout => {
-                fatal_popup(
+                display_popup(
                     "Timed Out",
                     r"Game process was not found.
 
@@ -104,13 +103,14 @@ This can happen for 1 of 3 reasons:
 
 2. The game wasn't detected because your `install_root` config value isn't correct
 
-3. In rare cases, it could be that the program doesn't have permission to open the game process, so it never sees it. In such a case, you should run this as admin (only as a last resort; in normal cases this is not needed)"
+3. In rare cases, it could be that the program doesn't have permission to open the game process, so it never sees it. In such a case, you should run this as admin (only as a last resort; in normal cases this is not needed)",
+                    MessageBoxIcon::Error,
                 );
             }
         },
     );
 
-    let tray = AppTray::run(token, timed_out, timeout_token, run_type);
+    let tray = AppTray::run(token, timeout_token, run_type);
     if matches!(run_type, RunType::Watcher) {
         // will exit when Quit clicked
         _ = tray.join();
