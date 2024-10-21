@@ -84,6 +84,8 @@ impl AppTray {
 
                         // this will close dialog popup window in injector mode so it doesn't hang process watcher
                         // when we try to quit. Would work for anything else hanging a thread too
+                        // TODO: better impl of this, maybe have the messageboxes spawn from a top level window,
+                        //       then PostMessageW WM_CLOSE to that hwnd instead
                         let mut string_buf = String::new();
                         let mut buf = [0u16; 256];
                         EnumWindowsRs(|hwnd| {
