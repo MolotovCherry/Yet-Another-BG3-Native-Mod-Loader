@@ -61,6 +61,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ (github.event_name == 'release' || inputs.release_mode || inputs.release) && 'prod' || 'dev' }}
+          cache-all-crates: "true"
 
       - name: Build Release
         if: github.event_name == 'release' || inputs.release_mode || inputs.release
