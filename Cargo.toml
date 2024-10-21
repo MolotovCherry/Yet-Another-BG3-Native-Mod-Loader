@@ -11,7 +11,6 @@ shared = { path = "crates/shared" }
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
 unicase = "2.8.0"
 winres = "0.1.12"
-sha256 = "1.5.0"
 
 [workspace.dependencies.windows]
 version = "0.58.0"

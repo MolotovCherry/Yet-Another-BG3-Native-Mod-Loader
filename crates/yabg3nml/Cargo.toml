@@ -18,7 +18,7 @@ shared.workspace = true
 windows.workspace = true
 native-plugin-lib.workspace = true
 unicase.workspace = true
-sha256.workspace = true
+sha256 = "1.5.0"
 human-panic = "2.0.2"
 tray-icon = "0.19.1"
 tracing-appender = "0.2.3"
@@ -33,7 +33,6 @@ default-features = false
 
 [build-dependencies]
 winres.workspace = true
-sha256.workspace = true
 
 [package.metadata.winres]
 FileDescription = "Yet Another BG3 Native Mod Loader"
