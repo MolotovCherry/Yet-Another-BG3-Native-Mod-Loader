@@ -2251,7 +2251,6 @@ dependencies = [
  "argh",
  "eyre",
  "human-panic",
- "loader",
  "native-plugin-lib",
  "pelite",
  "rand",
