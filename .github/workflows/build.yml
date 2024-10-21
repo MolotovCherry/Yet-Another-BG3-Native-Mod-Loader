@@ -97,7 +97,7 @@ jobs:
         if: github.event_name == 'release' || inputs.release
         run: |
           # release assets
-          Get-ChildItem -Path target/*/*.exe,target/*/deps/artifact/loader-*/cdylib/*.dll,assets/* | Copy-Item -Destination "bin"
+          Get-ChildItem -Path target/*/*.exe,target/*/*.dll,assets/* | Copy-Item -Destination "bin"
           Compress-Archive -Path "bin" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-x64.zip"
           Get-ChildItem -Path "bin" -Recurse | Remove-Item -Force
 
