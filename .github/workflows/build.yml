@@ -85,7 +85,7 @@ jobs:
           name: build
           path: |
             target/*/*.exe
-            target/*/deps/artifact/loader-*/cdylib/*.dll
+            target/*/*.dll
             target/*/*.pdb
 
       - name: Create staging folders
