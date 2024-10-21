@@ -1,9 +1,11 @@
+set unstable
 set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
+set script-interpreter := ["pwsh.exe"]
 
 target := `cargo target-dir`
 
+[script]
 _build profile="debug" flags="" flags2="":
-    #!pwsh
     cargo build -p loader {{flags}}
     $env:LOADER_HASH = (Get-FileHash "{{target}}\{{profile}}\loader.dll" | Select-Object -ExpandProperty Hash).ToLower()
     cargo build -p yabg3nml {{flags2}}
