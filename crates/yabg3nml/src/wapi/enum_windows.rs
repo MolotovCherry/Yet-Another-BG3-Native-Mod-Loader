@@ -15,6 +15,7 @@ pub fn EnumWindowsRs(cb: impl FnMut(HWND) -> Result<()> + Send + Sync) {
     let _guard = span.enter();
 
     let mut cb: UserCallback = Box::new(cb);
+    // TODO: Use strict provenance apis when stable
     _ = unsafe { EnumWindows(Some(enum_cb), LPARAM(&raw mut cb as isize)) };
 }
 
@@ -22,6 +23,7 @@ extern "system" fn enum_cb(param0: HWND, param1: LPARAM) -> BOOL {
     let span = trace_span!("enum_cb");
     let _guard = span.enter();
 
+    // TODO: Use strict provenance apis when stable
     let cb = unsafe { &mut *(param1.0 as *mut UserCallback) };
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| cb(param0)));
