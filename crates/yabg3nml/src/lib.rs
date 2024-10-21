@@ -110,7 +110,7 @@ This can happen for 1 of 3 reasons:
         },
     );
 
-    let tray = AppTray::run(token, timed_out, timeout_token);
+    let tray = AppTray::run(token, timed_out, timeout_token, run_type);
     if matches!(run_type, RunType::Watcher) {
         // will exit when Quit clicked
         _ = tray.join();

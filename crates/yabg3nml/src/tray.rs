@@ -12,7 +12,7 @@ use tray_icon::{
     Icon, TrayIconBuilder,
 };
 
-use crate::{event_loop::EventLoop, stop_token::StopToken};
+use crate::{event_loop::EventLoop, stop_token::StopToken, RunType};
 
 pub struct AppTray;
 
@@ -21,8 +21,9 @@ impl AppTray {
         watcher_token: StopToken,
         timed_out: Arc<AtomicBool>,
         timeout_token: Option<StopToken>,
+        kind: RunType,
     ) -> JoinHandle<()> {
-        thread::spawn(|| {
+        thread::spawn(move || {
             let icon = Icon::from_resource(1, None).unwrap();
 
             let tray_menu = Menu::new();
@@ -34,12 +35,19 @@ impl AppTray {
                 .map(ToOwned::to_owned)
                 .collect::<Vec<_>>();
 
+            let kind = match kind {
+                RunType::Watcher => "Watcher".to_owned(),
+                RunType::Injector => "Injector".to_owned(),
+            };
+
+            let title = format!("Yet Another BG3 Native Mod Loader - {kind}");
+
             tray_menu
                 .append_items(&[
                     &PredefinedMenuItem::about(
                         None,
                         Some(AboutMetadata {
-                            name: Some("Yet Another BG3 Native Mod Loader".to_owned()),
+                            name: Some(title.clone()),
                             copyright: Some(format!("Copyright (c) {}", authors.join(", ")).to_owned()),
                             version: Some(env!("CARGO_PKG_VERSION").to_owned()),
                             authors: Some(authors),
@@ -57,7 +65,7 @@ impl AppTray {
 
             let mut tray_icon = Some(
                 TrayIconBuilder::new()
-                    .with_tooltip("Yet Another BG3 Native Mod Loader")
+                    .with_tooltip(title)
                     .with_menu(Box::new(tray_menu))
                     .with_icon(icon)
                     .build()
