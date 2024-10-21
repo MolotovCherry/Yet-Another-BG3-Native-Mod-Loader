@@ -84,17 +84,24 @@ impl AppTray {
 
                         // this will close dialog popup window in injector mode so it doesn't hang process watcher
                         // when we try to quit. Would work for anything else hanging a thread too
+                        let mut string_buf = String::new();
+                        let mut buf = [0u16; 256];
                         EnumWindowsRs(|hwnd| {
-                            let mut buf = [0u16; 256];
                             let len = unsafe { GetClassNameW(hwnd, &mut buf) };
+                            let buf = &buf[..len as usize];
 
-                            let name = String::from_utf16_lossy(&buf[..len as usize]);
+                            // copied from String::from_utf16_lossy, but edited to use an existing string buffer
+                            let iter = char::decode_utf16(buf.iter().cloned())
+                                .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER));
+                            string_buf.extend(iter);
 
                             // looking for any open dialog box
-                            if name == "#32770" {
+                            if string_buf == "#32770" {
                                 // close the window
                                 _ = unsafe { PostMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)) };
                             }
+
+                            string_buf.clear();
 
                             Ok(())
                         });
