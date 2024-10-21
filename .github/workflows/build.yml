@@ -97,7 +97,7 @@ jobs:
           Get-ChildItem -Path "bin" -Recurse | Remove-Item -Force
 
           # debug symbols
-          Get-ChildItem -Path target/*/*.pdb,assets/assets-dbg/* | Copy-Item -Destination "debug"
+          Get-ChildItem -Path target/*/*.pdb,assets-dbg/* | Copy-Item -Destination "debug"
           $files = Get-ChildItem -Path debug/*
           Compress-Archive -CompressionLevel Optimal -Path $files.FullName -DestinationPath "yet-another-bg3-native-mod-loader-dbg-symbols-x64.zip"
           Get-ChildItem -Path "debug" -Recurse | Remove-Item -Force
