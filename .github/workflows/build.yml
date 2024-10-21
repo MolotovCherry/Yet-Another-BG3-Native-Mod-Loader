@@ -68,6 +68,8 @@ jobs:
 
       - name: Build Debug
         if: github.event_name != 'release' && !(inputs.release_mode || inputs.release)
+        env:
+            CARGO_INCREMENTAL: 1
         run: just build-ci
 
       - name: Upload Artifacts
