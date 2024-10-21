@@ -1,4 +1,4 @@
-set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
+set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
 
 target := `cargo target-dir`
 
