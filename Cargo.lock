@@ -1603,6 +1603,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "sptr"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b9b39299b249ad65f3b7e96443bad61c02ca5cd3589f46cb6d610a0fd6c0d6a"
+
+[[package]]
 name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2256,6 +2262,7 @@ dependencies = [
  "rand",
  "sha256",
  "shared",
+ "sptr",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
