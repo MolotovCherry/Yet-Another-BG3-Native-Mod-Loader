@@ -51,3 +51,9 @@ opt-level = 0
 debug = "line-tables-only"
 lto = true
 codegen-units = 1
+
+# required so artifact dependencies in build.rs build in full release mode
+[profile.release.build-override]
+debug = "line-tables-only"
+opt-level = 3
+codegen-units = 1

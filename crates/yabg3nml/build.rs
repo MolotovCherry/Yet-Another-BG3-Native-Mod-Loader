@@ -36,7 +36,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn calc_hash() -> Result<(), Box<dyn Error>> {
     // unfortunately RA needs this workaround to build locally
-    let is_ra = env::var("RA_RUSTC_WRAPPER").is_ok();
 
     let env = env::var_os("OUT_DIR").unwrap();
 
@@ -48,17 +47,16 @@ fn calc_hash() -> Result<(), Box<dyn Error>> {
         .parent()
         .unwrap();
 
-    let loader_dll = if is_ra {
-        root.join("deps").join("loader.dll")
-    } else {
-        root.join("loader.dll")
-    };
+    let loader_dll = root.join("deps").join("loader.dll");
 
     let data = fs::read(&loader_dll)?;
 
     let hash = sha256::digest(&data);
 
     println!("cargo::rustc-env=LOADER_HASH={hash}");
+
+    // we want this in the main folder tho
+    fs::copy(&loader_dll, root.join("loader.dll")).unwrap();
 
     Ok(())
 }
