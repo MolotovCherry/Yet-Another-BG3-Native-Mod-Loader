@@ -9,8 +9,8 @@ build-dev:
     cargo build -p yabg3nml --features test-injection
 
 build-ci:
-    cargo build -p loader --profile dev-dbg
-    cargo build -p yabg3nml --profile dev-dbg
+    cargo build -p loader --profile dev-ci
+    cargo build -p yabg3nml --profile dev-ci
 
 build-release:
     cargo build -p loader --release

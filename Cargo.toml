@@ -42,6 +42,10 @@ opt-level = 1
 inherits = "dev"
 opt-level = 0
 
+[profile.dev-ci]
+inherits = "dev"
+opt-level = 0
+
 [profile.release]
 # include something at least
 debug = "line-tables-only"

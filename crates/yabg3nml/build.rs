@@ -1,6 +1,6 @@
 use std::error::Error;
-use std::path::Path;
-use std::{env, fs};
+use std::{env, fs, time::UNIX_EPOCH};
+use std::{path::Path, time::SystemTime};
 
 fn main() -> Result<(), Box<dyn Error>> {
     if !cfg!(target_os = "windows") {
@@ -20,19 +20,39 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     calc_hash()?;
 
+    env::set_var(
+        "REBUILD",
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+            .to_string(),
+    );
+
+    println!("cargo:rerun-if-env-changed=REBUILD");
+
     Ok(())
 }
 
 fn calc_hash() -> Result<(), Box<dyn Error>> {
+    // unfortunately RA needs this workaround to build locally
+    let is_ra = env::var("RA_RUSTC_WRAPPER").is_ok();
+
     let env = env::var_os("OUT_DIR").unwrap();
-    let loader_dll = Path::new(&env)
+
+    let root = Path::new(&env)
         .parent()
         .unwrap()
         .parent()
         .unwrap()
         .parent()
-        .unwrap()
-        .join("loader.dll");
+        .unwrap();
+
+    let loader_dll = if is_ra {
+        root.join("deps").join("loader.dll")
+    } else {
+        root.join("loader.dll")
+    };
 
     let data = fs::read(&loader_dll)?;
 

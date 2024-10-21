@@ -34,6 +34,7 @@ default-features = false
 [build-dependencies]
 winres.workspace = true
 sha256.workspace = true
+loader = { path = "../loader" }
 
 [package.metadata.winres]
 FileDescription = "Yet Another BG3 Native Mod Loader"
