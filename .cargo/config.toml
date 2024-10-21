@@ -1,7 +1,2 @@
 [build]
 rustflags = ["-Ctarget-feature=+crt-static"]
-
-[unstable]
-# https://github.com/rust-lang/cargo/issues/9096
-# https://doc.rust-lang.org/beta/cargo/reference/unstable.html#artifact-dependencies
-bindeps = true

@@ -52,6 +52,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install just
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: just
+
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
@@ -59,11 +64,11 @@ jobs:
 
       - name: Build Release
         if: github.event_name == 'release' || inputs.release_mode || inputs.release
-        run: cargo build --release
+        run: just build-release
 
       - name: Build Debug
         if: github.event_name != 'release' && !(inputs.release_mode || inputs.release)
-        run: cargo build
+        run: just build
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

@@ -1,6 +1,7 @@
 pub mod commands;
 
 use std::{
+    convert::Infallible,
     io::{self, ErrorKind},
     ops::ControlFlow,
     os::windows::prelude::{AsHandle, AsRawHandle as _},
@@ -129,7 +130,7 @@ impl Server {
         &mut self,
         cb: impl Fn(Receive),
         mut auth: impl FnMut(Pid, Auth) -> ControlFlow<()>,
-    ) -> io::Result<!> {
+    ) -> io::Result<Infallible> {
         let span = trace_span!("pipe");
         let _guard = span.enter();
 

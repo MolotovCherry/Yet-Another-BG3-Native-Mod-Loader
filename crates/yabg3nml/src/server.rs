@@ -1,4 +1,5 @@
 use std::{
+    convert::Infallible,
     io,
     ops::ControlFlow,
     sync::atomic::{AtomicU32, AtomicU64, Ordering},
@@ -13,7 +14,7 @@ use tracing::{debug, error, info, trace, trace_span, warn};
 pub static AUTH: AtomicU64 = AtomicU64::new(0);
 pub static PID: AtomicU32 = AtomicU32::new(0);
 
-pub fn server() -> io::Result<!> {
+pub fn server() -> io::Result<Infallible> {
     let mut server = Server::new();
 
     let cb = |cmd| {
@@ -77,5 +78,5 @@ pub fn server() -> io::Result<!> {
         }
     };
 
-    server.recv_all(cb, auth)?;
+    server.recv_all(cb, auth)
 }

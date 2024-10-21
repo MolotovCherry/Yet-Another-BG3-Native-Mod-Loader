@@ -59,23 +59,7 @@ pub fn init_loader() -> Result<Loader> {
 
     let hash = sha256::digest(&data);
 
-    // did we compile in CI? we need default behavior if so
-    let ci = option_env!("CI").is_some();
-    // whether to force hash checking regardless of CI build
-    let checked = option_env!("CHECK_HASH").is_some();
-    let check_hash = ci || checked;
-
-    trace!(
-        "This is a {} {} build",
-        if ci { "CI" } else { "non-CI" },
-        if check_hash {
-            "checked hash"
-        } else {
-            "unchecked hash"
-        }
-    );
-
-    if check_hash && hash != LOADER_HASH {
+    if hash != LOADER_HASH {
         error!(expected_hash = %LOADER_HASH, calculated_hash = %hash, "loader dll failed hash check");
 
         fatal_popup(

@@ -9,7 +9,7 @@ serde = { version = "1.0.210", features = ["derive"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
 shared = { path = "crates/shared" }
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
-unicase = "2.7.0"
+unicase = "2.8.0"
 winres = "0.1.12"
 sha256 = "1.5.0"
 
@@ -46,21 +46,4 @@ opt-level = 0
 # include something at least
 debug = "line-tables-only"
 lto = true
-codegen-units = 1
-
-[profile.release-dbg]
-inherits = "release"
-debug = true
-strip = false
-debug-assertions = true
-
-# required so artifact dependencies in build.rs matches dev profile
-[profile.dev.build-override]
-opt-level = 1
-codegen-units = 256
-debug = false
-
-# required so artifact dependencies in build.rs build in full release mode
-[profile.release.build-override]
-opt-level = 3
 codegen-units = 1

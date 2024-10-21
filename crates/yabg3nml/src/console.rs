@@ -1,5 +1,3 @@
-use std::io::Write as _;
-
 use eyre::Result;
 use windows::{
     core::PCWSTR,
@@ -9,7 +7,7 @@ use windows::{
     },
 };
 
-#[allow(unused)]
+#[allow(dead_code)]
 pub fn debug_console<A: AsRef<str>>(title: A) -> Result<()> {
     unsafe {
         AllocConsole()?;
@@ -35,17 +33,6 @@ pub fn debug_console<A: AsRef<str>>(title: A) -> Result<()> {
     unsafe {
         SetConsoleTitleW(PCWSTR(title.as_ptr()))?;
     }
-
-    Ok(())
-}
-
-#[allow(unused)]
-pub fn enter_to_exit() -> Result<()> {
-    print!("\nPress ENTER to exit..");
-    std::io::stdout().flush()?;
-
-    // empty std input
-    std::io::stdin().read_line(&mut String::new())?;
 
     Ok(())
 }

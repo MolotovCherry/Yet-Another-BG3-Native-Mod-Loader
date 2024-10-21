@@ -24,12 +24,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn calc_hash() -> Result<(), Box<dyn Error>> {
-    // https://github.com/rust-lang/cargo/issues/9096
-    // https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies-environment-variables
-    //
-    // note, the dll here is target/*/deps/artifact/loader-*/cdylib/loader.dll, NOT target/loader.dll
-    let env = env::var_os("CARGO_CDYLIB_FILE_LOADER").unwrap();
-    let data = fs::read(&env)?;
+    let env = env::var_os("OUT_DIR").unwrap();
+    let loader_dll = Path::new(&env)
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("loader.dll");
+
+    let data = fs::read(&loader_dll)?;
 
     let hash = sha256::digest(&data);
 

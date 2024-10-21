@@ -21,19 +21,19 @@ unicase.workspace = true
 sha256.workspace = true
 human-panic = "2.0.2"
 tray-icon = "0.19.1"
-winit = "0.30.5"
 tracing-appender = "0.2.3"
-clap = { version = "4.5.20", features = ["derive"] }
 pelite = "0.10.0"
 widestring = "1.1.0"
 rand = "0.8.5"
 
+[dependencies.argh]
+git = "https://github.com/google/argh"
+rev = "f02f6b44444b340a553ff2db298744721ebc77a7"
+default-features = false
+
 [build-dependencies]
 winres.workspace = true
 sha256.workspace = true
-# https://github.com/rust-lang/cargo/issues/9096
-# https://doc.rust-lang.org/beta/cargo/reference/unstable.html#artifact-dependencies
-loader = { path = "../loader", artifact = "cdylib" }
 
 [package.metadata.winres]
 FileDescription = "Yet Another BG3 Native Mod Loader"

@@ -1,5 +1,3 @@
-#![feature(never_type)]
-
 mod cli;
 mod console;
 mod event;
@@ -21,7 +19,6 @@ mod wapi;
 
 use std::time::Duration;
 
-use clap::Parser;
 use eyre::Result;
 use shared::popup::fatal_popup;
 use tracing::{error, trace};
@@ -46,32 +43,7 @@ pub fn run(run_type: RunType) -> Result<()> {
     let _singleton = SingleInstance::new();
     let _event = Event::new()?;
 
-    let args = Args::parse();
-
-    if args.help {
-        use clap::CommandFactory;
-
-        #[cfg(not(debug_assertions))]
-        console::debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
-
-        let mut cmd = Args::command();
-        cmd.print_help()?;
-
-        #[cfg(not(debug_assertions))]
-        console::enter_to_exit()?;
-
-        return Ok(());
-    } else if args.version {
-        #[cfg(not(debug_assertions))]
-        console::debug_console("Yet Another BG3 Native Mod Loader Debug Console")?;
-
-        println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-
-        #[cfg(not(debug_assertions))]
-        console::enter_to_exit()?;
-
-        return Ok(());
-    }
+    let args: Args = argh::from_env();
 
     let mut init = init(&args)?;
     let _loader_lock = init.loader.file.take();

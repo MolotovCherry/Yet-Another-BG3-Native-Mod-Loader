@@ -7,7 +7,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'injector'",
+            "name": "Debug injector",
             "cargo": {
                 "args": [
                     "build",
@@ -24,7 +24,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'watcher'",
+            "name": "Debug watcher",
             "cargo": {
                 "args": [
                     "build",
@@ -32,6 +32,42 @@
                 ],
                 "filter": {
                     "name": "bg3_watcher",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug dev watcher",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--profile=dev-dbg",
+                    "--features test-injection"
+                ],
+                "filter": {
+                    "name": "bg3_watcher",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug dev injector",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--profile=dev-dbg",
+                    "--features test-injection"
+                ],
+                "filter": {
+                    "name": "bg3_injector",
                     "kind": "bin"
                 }
             },
