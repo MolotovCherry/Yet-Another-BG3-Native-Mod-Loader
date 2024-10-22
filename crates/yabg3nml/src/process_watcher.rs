@@ -182,7 +182,7 @@ impl ProcessWatcher {
                     trace!(?signal, "signal exited");
 
                     // if we have a timeout running and it timed out, wait before quitting
-                    if self.timeout.is_timeout() && timed_out.load(Ordering::Acquire) {
+                    if self.timeout.is_timeout() && timed_out.load(Ordering::Relaxed) {
                         cb(CallType::Timeout);
                     }
 

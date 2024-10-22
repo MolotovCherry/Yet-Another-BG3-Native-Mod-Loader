@@ -59,7 +59,7 @@ pub fn server() -> io::Result<Infallible> {
     };
 
     let auth = |pid, code| {
-        let ppid = PID.load(Ordering::Acquire);
+        let ppid = PID.load(Ordering::Relaxed);
 
         trace!(pid, ppid, "verifying pid");
 
@@ -67,7 +67,7 @@ pub fn server() -> io::Result<Infallible> {
             return ControlFlow::Break(());
         }
 
-        let passcode = AUTH.load(Ordering::Acquire);
+        let passcode = AUTH.load(Ordering::Relaxed);
 
         trace!(code, passcode, "verifying auth code");
 

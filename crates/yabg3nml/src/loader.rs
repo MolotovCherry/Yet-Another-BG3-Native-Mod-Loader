@@ -43,7 +43,7 @@ pub fn run_loader(config: &Config, pid: Pid, loader: &Loader) -> Result<()> {
     let span = trace_span!("loader");
     let _guard = span.enter();
 
-    PID.store(pid, Ordering::Release);
+    PID.store(pid, Ordering::Relaxed);
 
     let process: OwnedHandle = {
         let process = unsafe {
@@ -222,7 +222,7 @@ pub fn run_loader(config: &Config, pid: Pid, loader: &Loader) -> Result<()> {
     );
 
     let auth_code = rand::random::<u64>();
-    AUTH.store(auth_code, Ordering::Release);
+    AUTH.store(auth_code, Ordering::Relaxed);
 
     trace!(auth_code, "generated auth");
 
