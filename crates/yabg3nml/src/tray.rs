@@ -10,7 +10,9 @@ use windows::Win32::{
 };
 
 use crate::{
-    event_loop::EventLoop, stop_token::StopToken, wapi::enum_windows::EnumWindowsRs, RunType,
+    stop_token::StopToken,
+    wapi::{enum_windows::EnumWindowsRs, event_loop::EventLoop},
+    RunType,
 };
 
 pub struct AppTray;
@@ -70,7 +72,7 @@ impl AppTray {
                     .unwrap(),
             );
 
-            EventLoop::new().run(move |event_loop| {
+            EventLoop::new().run(move |event_loop, _| {
                 if let Ok(event) = MenuEvent::receiver().try_recv() {
                     if event.id == quit_i.id() {
                         if let Some(token) = timeout_token.as_ref() {
@@ -84,26 +86,25 @@ impl AppTray {
 
                         // this will close dialog popup window in injector mode so it doesn't hang process watcher
                         // when we try to quit. Would work for anything else hanging a thread too
-                        // TODO: better impl of this, maybe have the messageboxes spawn from a top level window,
-                        //       then PostMessageW WM_CLOSE to that hwnd instead
-                        let mut string_buf = String::new();
-                        let mut buf = [0u16; 256];
+
+                        // "#32770" - this lets us avoid string conversions
+                        let class = [35u16, 51, 50, 55, 55, 48];
+
+                        let mut buf = [0u16; 7];
                         EnumWindowsRs(|hwnd| {
                             let len = unsafe { GetClassNameW(hwnd, &mut buf) };
+                            if len == 0 {
+                                // fn call failed, but it doesn't matter
+                                return Ok(());
+                            }
+
                             let buf = &buf[..len as usize];
 
-                            // copied from String::from_utf16_lossy, but edited to use an existing string buffer
-                            let iter = char::decode_utf16(buf.iter().cloned())
-                                .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER));
-                            string_buf.extend(iter);
-
                             // looking for any open dialog box
-                            if string_buf == "#32770" {
+                            if buf == class {
                                 // close the window
                                 _ = unsafe { PostMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)) };
                             }
-
-                            string_buf.clear();
 
                             Ok(())
                         });

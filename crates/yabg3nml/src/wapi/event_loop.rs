@@ -2,7 +2,6 @@ use windows::Win32::UI::WindowsAndMessaging::{
     DispatchMessageW, GetMessageW, PostQuitMessage, TranslateMessage, MSG,
 };
 
-/// Worlds simplest win32 event loop
 pub struct EventLoop;
 
 impl EventLoop {
@@ -10,7 +9,7 @@ impl EventLoop {
         Self
     }
 
-    pub fn run(&self, mut cb: impl FnMut(&Self)) {
+    pub fn run(&self, mut cb: impl FnMut(&Self, &MSG)) {
         let mut msg = MSG::default();
 
         fn get_msg(msg: &mut MSG) -> bool {
@@ -24,7 +23,7 @@ impl EventLoop {
                 DispatchMessageW(&msg);
             }
 
-            cb(self);
+            cb(self, &msg);
         }
     }
 

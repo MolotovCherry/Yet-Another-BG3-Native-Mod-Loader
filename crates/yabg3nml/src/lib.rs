@@ -1,7 +1,6 @@
 mod cli;
 mod console;
 mod event;
-mod event_loop;
 mod is_admin;
 mod loader;
 mod logging;
