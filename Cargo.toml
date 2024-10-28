@@ -5,7 +5,7 @@ members = ["crates/loader", "crates/shared", "crates/yabg3nml"]
 [workspace.dependencies]
 tracing = "0.1.40"
 eyre = "0.6.12"
-serde = { version = "1.0.210", features = ["derive"] }
+serde = { version = "1.0.214", features = ["derive"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
 shared = { path = "crates/shared" }
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
