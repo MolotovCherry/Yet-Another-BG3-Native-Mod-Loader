@@ -9,7 +9,7 @@ _build profile="debug" flags="" flags2="":
     echo "Building loader..."
     cargo build -p loader {{flags}}
     $env:LOADER_HASH = (Get-FileHash "{{target}}\{{profile}}\loader.dll" | Select-Object -ExpandProperty Hash).ToLower()
-    echo "Setting hash - ${env:LOADER_HASH}"
+    echo "Loader hash is ${env:LOADER_HASH}"
     echo "Building yabg3nml..."
     cargo build -p yabg3nml {{flags2}}
 
