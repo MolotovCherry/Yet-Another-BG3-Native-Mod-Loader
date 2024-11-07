@@ -253,9 +253,16 @@ pub fn run_loader(config: &Config, pid: Pid, loader: &Loader) -> Result<()> {
     };
 
     if let Err(e) = res {
-        error!(?e, "Failed to create remote thread");
+        error!(
+            ?e,
+            base = %format!("0x{base:x}"),
+            rva = %format!("0x{:x}", loader.rva),
+            addr = %format!("0x{init_addr:x}"),
+            "Failed to create remote thread for init fn"
+        );
+
         warn_popup(
-            "Process injection failure",
+            "Process injection failure for init fn",
             format!("Failed to create process remote thread. Patching has been aborted on this process.\n\nThis could be due to multiple reasons, but in any case, winapi returned an error. This can happen if the process unexpectedly disappeared on us (such as a game crash). Please restart the game and try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"),
         );
 
