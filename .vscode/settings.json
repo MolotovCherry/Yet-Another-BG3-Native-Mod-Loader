@@ -1,0 +1,6 @@
+{
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.cargo.extraEnv": {
+        "LOADER_HASH": "EMPTY"
+    }
+}

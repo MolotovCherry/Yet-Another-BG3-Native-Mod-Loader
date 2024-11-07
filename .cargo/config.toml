@@ -1,5 +1,2 @@
 [build]
 rustflags = ["-Ctarget-feature=+crt-static"]
-
-[env]
-LOADER_HASH = "EMPTY"
