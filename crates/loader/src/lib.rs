@@ -80,8 +80,22 @@ extern "stdcall-unwind" fn DllMain(
     true
 }
 
+/// # Safety
+///
+/// the param is a `*mut c_void`. The transmute is safe if T is known.
+/// It is never null (since I provided a param to it), and it's not a DST.
+/// It points to foreign mem provenance-wise.
+///
+/// We do a compile time DST check to make sure it's pointer sized
+///
+/// This is unsafe since the type is manually verified
 #[unsafe(no_mangle)]
-extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
+unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
+    // compile time check it's not fat
+    const {
+        assert!(size_of::<&ThreadData>() == size_of::<usize>());
+    }
+
     if !is_yabg3nml() {
         unsupported_operation();
         return 0;
@@ -94,7 +108,6 @@ extern "system-unwind" fn Init(lpthreadparameter: *mut c_void) -> u32 {
 
     let result = panic::catch_unwind(|| {
         // extract and process thread data
-        let data = unsafe { &*lpthreadparameter.cast::<ThreadData>() };
         _ = CLIENT.try_send(Request::Auth(data.auth));
 
         setup_logging(&data.log).context("failed to setup logging")?;
