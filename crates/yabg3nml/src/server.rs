@@ -67,9 +67,14 @@ pub fn server() -> io::Result<Infallible> {
             return ControlFlow::Break(());
         }
 
+        // load current auth code
         let passcode = AUTH.load(Ordering::Relaxed);
 
         trace!(code, passcode, "verifying auth code");
+
+        // change auth code to always keep it randomized
+        let auth_code = rand::random::<u64>();
+        AUTH.store(auth_code, Ordering::Relaxed);
 
         if passcode == code {
             ControlFlow::Continue(())
