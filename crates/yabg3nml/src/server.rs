@@ -1,7 +1,6 @@
 use std::{
     convert::Infallible,
     io,
-    ops::ControlFlow,
     sync::atomic::{AtomicU32, AtomicU64, Ordering},
 };
 
@@ -61,22 +60,12 @@ pub fn server() -> io::Result<Infallible> {
     let auth = |pid, code| {
         let ppid = PID.load(Ordering::Relaxed);
 
-        trace!(pid, ppid, "verifying pid");
-
-        if ppid != pid {
-            return ControlFlow::Break(());
-        }
-
         // load current auth code; also change auth code to always keep it randomized
         let passcode = AUTH.swap(rand::random::<u64>(), Ordering::Relaxed);
 
-        trace!(code, passcode, "verifying auth code");
+        trace!(pid, ppid, code, passcode, "verifying pid and auth code");
 
-        if passcode == code {
-            ControlFlow::Continue(())
-        } else {
-            ControlFlow::Break(())
-        }
+        ppid == pid && passcode == code
     };
 
     server.recv_all(cb, auth)

@@ -3,7 +3,6 @@ pub mod commands;
 use std::{
     convert::Infallible,
     io::{self, ErrorKind},
-    ops::ControlFlow,
     os::windows::prelude::{AsHandle, AsRawHandle as _},
     sync::LazyLock,
 };
@@ -129,7 +128,7 @@ impl Server {
     pub fn recv_all(
         &mut self,
         cb: impl Fn(Receive),
-        mut auth: impl FnMut(Pid, Auth) -> ControlFlow<()>,
+        mut auth: impl FnMut(Pid, Auth) -> bool,
     ) -> io::Result<Infallible> {
         let span = trace_span!("pipe");
         let _guard = span.enter();
@@ -163,10 +162,11 @@ impl Server {
         let fut = async {
             loop {
                 unsafe {
-                    self.recv_one(&mut sa, &cb, &mut auth).await?;
-                    self.buf.clear();
-                    self.msg_len = None;
+                    self.connect(&mut sa, &cb, &mut auth).await?;
                 }
+
+                self.buf.clear();
+                self.msg_len = None;
             }
         };
 
@@ -175,11 +175,11 @@ impl Server {
 
     /// # Safety:
     /// sa must be valid
-    async unsafe fn recv_one(
+    async unsafe fn connect(
         &mut self,
         sa: *mut SECURITY_ATTRIBUTES,
         cb: &impl Fn(Receive),
-        auth: &mut impl FnMut(Pid, Auth) -> ControlFlow<()>,
+        auth: &mut impl FnMut(Pid, Auth) -> bool,
     ) -> Result<(), io::Error> {
         let server = unsafe {
             ServerOptions::new()
@@ -204,7 +204,7 @@ impl Server {
             return Ok(());
         }
 
-        let mut authed = false;
+        let mut first = true;
         loop {
             if server.readable().await.is_err() {
                 break;
@@ -241,7 +241,7 @@ impl Server {
 
                             let data = &self.buf[size_of::<usize>()..len + size_of::<usize>()];
 
-                            if !authed {
+                            if first {
                                 let span = trace_span!("auth");
                                 let _guard = span.enter();
 
@@ -266,15 +266,12 @@ impl Server {
                                         return Ok(());
                                     }
 
-                                    match auth(pid, auth_code) {
-                                        ControlFlow::Continue(_) => (),
-                                        ControlFlow::Break(_) => {
-                                            _ = server.disconnect();
-                                            return Ok(());
-                                        }
+                                    if !auth(pid, auth_code) {
+                                        _ = server.disconnect();
+                                        return Ok(());
                                     }
 
-                                    authed = true;
+                                    first = false;
                                 } else {
                                     _ = server.disconnect();
                                     return Ok(());
