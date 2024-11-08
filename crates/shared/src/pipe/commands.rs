@@ -14,6 +14,24 @@ pub enum Receive {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum Command {
+    Request(Request),
+    Receive(Receive),
+}
+
+impl From<Request> for Command {
+    fn from(value: Request) -> Self {
+        Self::Request(value)
+    }
+}
+
+impl From<Receive> for Command {
+    fn from(value: Receive) -> Self {
+        Self::Receive(value)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LogMsg {
     pub level: Level,
     pub target: Option<String>,

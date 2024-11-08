@@ -1,17 +1,22 @@
 pub mod commands;
 
 use std::{
+    cell::RefCell,
     convert::Infallible,
     io::{self, ErrorKind},
+    ops::ControlFlow,
     os::windows::prelude::{AsHandle, AsRawHandle as _},
+    rc::Rc,
     sync::LazyLock,
 };
 
-use commands::Receive;
+use commands::{Command, Receive};
 use eyre::Result;
 use serde::Serialize;
 use tokio::{
-    net::windows::named_pipe::{ClientOptions, NamedPipeClient, PipeMode, ServerOptions},
+    net::windows::named_pipe::{
+        ClientOptions, NamedPipeClient, NamedPipeServer, PipeMode, ServerOptions,
+    },
     runtime::{Builder, Runtime},
 };
 use tracing::{error, trace, trace_span};
@@ -159,14 +164,67 @@ impl Server {
             bInheritHandle: false.into(),
         };
 
+        let first = Rc::new(RefCell::new(true));
+        let mut process_cmd = {
+            let first = first.clone();
+            move |server: &NamedPipeServer, cmd| {
+                let mut first = first.borrow_mut();
+                if *first {
+                    let span = trace_span!("auth");
+                    let _guard = span.enter();
+
+                    #[rustfmt::skip]
+                    #[allow(irrefutable_let_patterns)]
+                    let Command::Request(Request::Auth(auth_code)) = cmd else {
+                        error!(?cmd, "auth not provided, disconnecting client");
+                        _ = server.disconnect();
+                        return ControlFlow::Break(());
+                    };
+
+                    trace!(auth_code, "received auth");
+
+                    let handle = HANDLE(server.as_handle().as_raw_handle());
+                    let mut pid = 0;
+                    let res = unsafe { GetNamedPipeClientProcessId(handle, &mut pid) };
+                    if let Err(e) = res {
+                        error!(%e, "failed to get client pid");
+                        _ = server.disconnect();
+                        return ControlFlow::Break(());
+                    }
+
+                    if !auth(pid, auth_code) {
+                        error!("failed auth, disconnecting");
+                        _ = server.disconnect();
+                        return ControlFlow::Break(());
+                    }
+
+                    *first = false;
+                } else {
+                    let Command::Receive(cmd) = cmd else {
+                        error!(?cmd, "did not receive Command::Receive");
+                        return ControlFlow::Break(());
+                    };
+
+                    let span = trace_span!("cb");
+                    let _guard = span.enter();
+
+                    cb(cmd);
+                }
+
+                ControlFlow::Continue(())
+            }
+        };
+
         let fut = async {
             loop {
                 unsafe {
-                    self.connect(&mut sa, &cb, &mut auth).await?;
+                    self.connect(&mut sa, &mut process_cmd).await?;
                 }
 
+                // reset state in case it early exited
                 self.buf.clear();
                 self.msg_len = None;
+                *first.borrow_mut() = true;
             }
         };
 
@@ -178,8 +236,7 @@ impl Server {
     async unsafe fn connect(
         &mut self,
         sa: *mut SECURITY_ATTRIBUTES,
-        cb: &impl Fn(Receive),
-        auth: &mut impl FnMut(Pid, Auth) -> bool,
+        process_cmd: &mut impl FnMut(&NamedPipeServer, Command) -> ControlFlow<()>,
     ) -> Result<(), io::Error> {
         let server = unsafe {
             ServerOptions::new()
@@ -204,7 +261,6 @@ impl Server {
             return Ok(());
         }
 
-        let mut first = true;
         loop {
             if server.readable().await.is_err() {
                 break;
@@ -241,46 +297,13 @@ impl Server {
 
                             let data = &self.buf[size_of::<usize>()..len + size_of::<usize>()];
 
-                            if first {
-                                let span = trace_span!("auth");
-                                let _guard = span.enter();
+                            let Ok(cmd) = serde_json::from_slice::<Command>(data) else {
+                                trace!(?data, "received invalid cmd");
+                                return Ok(());
+                            };
 
-                                if let Ok(command) = serde_json::from_slice::<Request>(data) {
-                                    #[rustfmt::skip]
-                                    #[allow(irrefutable_let_patterns)]
-                                    let Request::Auth(auth_code) = command else {
-                                        trace!("auth not provided, disconnecting client");
-                                        _ = server.disconnect();
-                                        return Ok(());
-                                    };
-
-                                    trace!(auth_code, "received auth");
-
-                                    let handle = HANDLE(server.as_handle().as_raw_handle());
-                                    let mut pid = 0;
-                                    let res =
-                                        unsafe { GetNamedPipeClientProcessId(handle, &mut pid) };
-                                    if let Err(e) = res {
-                                        error!(%e, "failed to get client pid");
-                                        _ = server.disconnect();
-                                        return Ok(());
-                                    }
-
-                                    if !auth(pid, auth_code) {
-                                        _ = server.disconnect();
-                                        return Ok(());
-                                    }
-
-                                    first = false;
-                                } else {
-                                    _ = server.disconnect();
-                                    return Ok(());
-                                }
-                            } else if let Ok(command) = serde_json::from_slice::<Receive>(data) {
-                                let span = trace_span!("cb");
-                                let _guard = span.enter();
-
-                                cb(command);
+                            if process_cmd(&server, cmd).is_break() {
+                                return Ok(());
                             }
 
                             self.buf.drain(..len + size_of::<usize>());

@@ -88,8 +88,7 @@ impl Write for PipeWriter<'_> {
         };
 
         let c = Receive::Log(data);
-
-        CLIENT.try_send(c)?;
+        CLIENT.try_send(c.into())?;
 
         Ok(())
     }

@@ -108,7 +108,7 @@ unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
 
     let result = panic::catch_unwind(|| {
         // extract and process thread data
-        _ = CLIENT.try_send(Request::Auth(data.auth));
+        _ = CLIENT.try_send(Request::Auth(data.auth).into());
 
         setup_logging(&data.log).context("failed to setup logging")?;
 
