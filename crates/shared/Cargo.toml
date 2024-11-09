@@ -7,10 +7,10 @@ rust-version = "1.82"
 [dependencies]
 eyre.workspace = true
 tracing.workspace = true
-serde.workspace = true
 windows.workspace = true
-serde_json = "1.0.129"
+serde = { version = "1.0.214", features = ["derive"] }
+serde_json = "1.0.132"
 directories = "5.0.1"
 backtrace = "0.3.74"
 toml = "0.8.19"
-tokio = { version = "1.40.0", features = ["net", "rt"] }
+tokio = { version = "1.41.1", features = ["net", "rt"] }
