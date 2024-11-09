@@ -5,7 +5,7 @@ use std::{
     convert::Infallible,
     io::{self, ErrorKind},
     ops::ControlFlow,
-    os::windows::prelude::{AsHandle, AsRawHandle as _},
+    os::windows::prelude::AsRawHandle as _,
     rc::Rc,
     sync::LazyLock,
 };
@@ -177,24 +177,21 @@ impl Server {
                     #[allow(irrefutable_let_patterns)]
                     let Command::Request(Request::Auth(auth_code)) = cmd else {
                         error!(?cmd, "auth not provided, disconnecting client");
-                        _ = server.disconnect();
                         return ControlFlow::Break(());
                     };
 
                     trace!(auth_code, "received auth");
 
-                    let handle = HANDLE(server.as_handle().as_raw_handle());
+                    let handle = HANDLE(server.as_raw_handle());
                     let mut pid = 0;
                     let res = unsafe { GetNamedPipeClientProcessId(handle, &mut pid) };
                     if let Err(e) = res {
                         error!(%e, "failed to get client pid");
-                        _ = server.disconnect();
                         return ControlFlow::Break(());
                     }
 
                     if !auth(pid, auth_code) {
                         error!("failed auth, disconnecting");
-                        _ = server.disconnect();
                         return ControlFlow::Break(());
                     }
 
@@ -303,6 +300,7 @@ impl Server {
                             };
 
                             if process_cmd(&server, cmd).is_break() {
+                                _ = server.disconnect();
                                 return Ok(());
                             }
 
