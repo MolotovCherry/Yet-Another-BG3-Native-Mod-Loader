@@ -1,7 +1,7 @@
 use argh::FromArgs;
 
 /// A simple, non-invasive BG3 native mod loader
-#[derive(FromArgs)]
+#[derive(Default, FromArgs)]
 pub struct Args {
     /// show console window
     #[argh(switch)]

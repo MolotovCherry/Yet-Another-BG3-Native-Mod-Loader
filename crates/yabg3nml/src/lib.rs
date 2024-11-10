@@ -30,6 +30,11 @@ use setup::init;
 use single_instance::SingleInstance;
 use tray::AppTray;
 
+use process_watcher::Pid;
+
+#[allow(unused)]
+pub use paths::get_game_binary_paths;
+
 #[derive(Copy, Clone, Debug)]
 pub enum RunType {
     Watcher,
@@ -117,6 +122,30 @@ This can happen for 1 of 3 reasons:
 
     // will exit when signal sent
     _ = watcher_handle.join();
+
+    Ok(())
+}
+
+pub fn autostart(pid: Pid) -> Result<()> {
+    // This prohibits multiple app instances
+    let _singleton = SingleInstance::new();
+    let _event = Event::new()?;
+
+    // DO NOT use argh, since it doesn't understand bg3 cli args
+    let args = Args::default();
+
+    let mut init = init(&args)?;
+    let _loader_lock = init.loader.file.take();
+    let _worker_guard = init.worker.take();
+
+    let res = run_loader(init.config, pid, &init.loader);
+    if let Err(e) = res {
+        error!(err = %e, "run_loader failed");
+        fatal_popup(
+            "run loader failed",
+            format!("run_loader unexpectedly failed. You should report this.\n\nError: {e}"),
+        );
+    }
 
     Ok(())
 }
