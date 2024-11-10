@@ -6,20 +6,43 @@
  \___/_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/
 ----------------------------------------------------------
 
- Place bg3_watcher.exe and bg3_injector.exe wherever you want, maybe create shortcuts to them even
+ Place bg3_watcher.exe, bg3_injector.exe, bg3_autostart, and loader.dll wherever you want,
+ maybe create shortcuts to them. Keep all these files together, including loader.dll.
 
    - bg3_watcher is a tool which stays running in the background. It watches for the launch of bg3 or
      bg3_dx11, and injects the plugins into the game. You can load your game through normal means, and
      it'll all be transparently patched in the background. This tool creates a tray icon. You can go
      to your taskbar to find the icon, right click on it, and press quit, when you are done using it.
+     The benefit of this tool is that it doesn't require installation. The
+     downside is it requires manual running.
 
    - bg3_injector.exe is a simpler, one-time use tool, which finds any instance of the game that's already
      running (vulkan or dx11), and injects the plugins into it at runtime. The purpose of this
      tool is to be an alternative to bg3_watcher; for those people who don't want a tool always
-     running in the background.
+     running in the background. The benefit of this tool is that it doesn't require installation. The
+     downside is it requires manual running.
 
      Please use it BEFORE loading a save. Plugins expect that they are run on the game process startup,
      so please run it as soon as possible.
+
+   - bg3_autostart.exe automatically patches the game without any user intervention required (unlike,
+     watcher and injector tools above). Just like Native Mod Loader, it is seamless. This does, however,
+     require some extra registry edits. The benefit of this tool is that it doesn't require manual starting.
+     The downside is it requires installation.
+
+     To install this tool, run install.bat, and to uninstall run uninstall.bat.
+
+     Once you install, you must not move the exe. If you wish to move it, uninstall, move the tool, then reinstall it.
+     Please also note that the registry entries point at the current bg3_autostart.exe location. If this file is in your
+     windows user folder and another windows user tries to launch the game, they may not have access to the exe in your
+     windows user folder (since it's another windows user's files). If multiple windows users play this game, you should
+     instead place this exe at a location accessible by all windows users to avoid this problem.
+
+     Also, if you delete the tools, make sure to uninstall first!
+
+     The two registry entries added/removed are. You may also remove these manually if you wish.
+       HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3.exe
+       HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3_dx11.exe
 
   ____  _
  / ___|| |_ ___ _ __  ___
@@ -51,7 +74,13 @@ Injector:
    - This tool is similar to the watcher, but it is a one-time use tool. It is useful if you don't
      want the watcher tool always running in the background.
    1. Start your game.
-   2. Start the injector tool.
+   2. Start the injector tool.*
+
+   * If you start too late, some plugins may not properly load. You could try starting the injector tool
+     first, then the game after to fix this. As long as you start the game within 10 seconds, it'll work.
+
+Autostart:
+   1. Run your game as normal. It will automatically be patched.
 
 If you wish to disable a mod, add an entry without extension to the `disabled` key
    - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry looks like:

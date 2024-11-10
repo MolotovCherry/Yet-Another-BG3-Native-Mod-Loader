@@ -27,6 +27,7 @@ widestring = "1.1.0"
 rand = "0.8.5"
 # todo: remove sptr when strict provenance apis are stable
 sptr = "0.3.2"
+winreg = "0.52.0"
 
 [dependencies.argh]
 git = "https://github.com/google/argh"
