@@ -13,22 +13,27 @@
      bg3_dx11, and injects the plugins into the game. You can load your game through normal means, and
      it'll all be transparently patched in the background. This tool creates a tray icon. You can go
      to your taskbar to find the icon, right click on it, and press quit, when you are done using it.
-     The benefit of this tool is that it doesn't require installation. The
-     downside is it requires manual running.
+
+     The benefit of this tool is that it doesn't require installation, and if you don't want plugins
+     running, just don't start the tool. The downside is it requires manual running.
 
    - bg3_injector.exe is a simpler, one-time use tool, which finds any instance of the game that's already
      running (vulkan or dx11), and injects the plugins into it at runtime. The purpose of this
      tool is to be an alternative to bg3_watcher; for those people who don't want a tool always
-     running in the background. The benefit of this tool is that it doesn't require installation. The
-     downside is it requires manual running.
+     running in the background.
+
+     The benefit of this tool is that it doesn't require installation, and if you don't want plugins
+     running, just don't start the tool. The downside is it requires manual running.
 
      Please use it BEFORE loading a save. Plugins expect that they are run on the game process startup,
      so please run it as soon as possible.
 
-   - bg3_autostart.exe automatically patches the game without any user intervention required (unlike,
-     watcher and injector tools above). Just like Native Mod Loader, it is seamless. This does, however,
-     require some extra registry edits. The benefit of this tool is that it doesn't require manual starting.
-     The downside is it requires installation.
+   - bg3_autostart.exe automatically patches the game when it runs. It does not need to ever be manually run;
+     it starts when the game starts, and stops when the game stops. Just like Native Mod Loader, it is seamless.
+     This does however require extra registry edits.
+
+     The benefit of this tool is that it doesn't require manual starting. The downside is it requires installation,
+     and it is more work to disable it if you don't want plugins running (since that requires you to uninstall it).
 
      To install this tool, run install.bat, and to uninstall run uninstall.bat.
 
@@ -85,8 +90,8 @@ Autostart:
 If you wish to disable a mod, add an entry without extension to the `disabled` key
    - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry looks like:
      disabled = ["FooBar", "FooBaz"]
-   - If you wish to disable all plugins easily, just quit the watcher tool if it's running, and
-     start the game normally as you always do.
+   - If you wish to disable all plugins, don't run the injector, quit the watcher tool if it's running,
+     and if autostart was installed, uninstall it; then start the game normally as you always do.
 
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
 
