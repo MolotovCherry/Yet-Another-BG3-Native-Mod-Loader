@@ -7,7 +7,7 @@ use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
 const HELP: &str = r"autostart-installer
 
-Installs the bg3_autostart. Automatically patches bg3 when the game is launched, without needing to manually
+Installs bg3_autostart. Automatically patches bg3 when the game is launched, without needing to manually
 run any tool. Installs registry entries at:
 HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3.exe
 HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3_dx11.exe
