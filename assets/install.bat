@@ -1,3 +1,3 @@
 @echo off
 
-%~dp0\autostart-installer.exe --install
+"%~dp0\autostart-installer.exe" --install
