@@ -20,7 +20,8 @@ Flags:
 
 fn main() -> ExitCode {
     let Some(flag) = env::args().nth(1) else {
-        fatal_popup("No flags", "No install/uninstall/help flags were specified");
+        display_popup("Usage", HELP, MessageBoxIcon::Info);
+        return ExitCode::SUCCESS;
     };
 
     let is_install = flag == "--install";
@@ -70,7 +71,7 @@ fn install() -> io::Result<()> {
     if !cur_exe.exists() {
         fatal_popup(
             "Missing",
-            "bg3_autostart.exe needs to be in the same folder as autostart_installer.exe",
+            "bg3_autostart.exe needs to be in the same folder as autostart-installer.exe",
         );
     }
 
