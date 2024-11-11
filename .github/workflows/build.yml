@@ -100,15 +100,15 @@ jobs:
         run: |
           # watcher
           Get-ChildItem -Path target/*/*watcher.exe,target/*/loader.dll,assets/*,assets-watcher/* | Copy-Item -Destination "_staging-watcher/bin"
-          Compress-Archive -Path "_staging-watcher" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-watcher-x64.zip"
+          Compress-Archive -Path "_staging-watcher/bin" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-watcher-x64.zip"
 
           # injector
           Get-ChildItem -Path target/*/*injector.exe,target/*/loader.dll,assets/*,assets-injector/* | Copy-Item -Destination "_staging-injector/bin"
-          Compress-Archive -Path "_staging-injector" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-injector-x64.zip"
+          Compress-Archive -Path "_staging-injector/bin" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-injector-x64.zip"
 
           # autostart
           Get-ChildItem -Path target/*/*autostart*.exe,target/*/loader.dll,assets/*,assets-autostart/* | Copy-Item -Destination "_staging-autostart/bin"
-          Compress-Archive -Path "_staging-autostart" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-autostart-x64.zip"
+          Compress-Archive -Path "_staging-autostart/bin" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-autostart-x64.zip"
 
           # debug symbols
           Get-ChildItem -Path target/*/*.pdb,assets-dbg/* | Copy-Item -Destination "_staging-debug"
