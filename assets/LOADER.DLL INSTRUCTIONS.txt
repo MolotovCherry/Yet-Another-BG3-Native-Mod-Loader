@@ -27,8 +27,8 @@ support application to properly function.
                                         |_|
 ---------------------------------------------------------------------
 
-Keep loader.dll bundled together with bg3_injector.exe and bg3_watcher.exe
-No additional setup is required. You can use the 2 apps as you normally would.
+Keep loader.dll bundled together (in same folder) with the exe file(s).
+No setup is required. 🫡
 
  _____      _   _     _        __ _ _                        _            _           _ ___
 |_   _|    | | | |   (_)      / _(_) |                      | |          | |         | |__ \
