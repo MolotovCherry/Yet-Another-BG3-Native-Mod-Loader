@@ -90,22 +90,34 @@ jobs:
       - name: Create staging folders
         if: github.event_name == 'release' || inputs.release
         run: |
-          New-Item -ItemType Directory -Force -Path bin
-          New-Item -ItemType Directory -Force -Path debug
+          New-Item -ItemType Directory -Force -Path _staging-watcher/bin
+          New-Item -ItemType Directory -Force -Path _staging-injector/bin
+          New-Item -ItemType Directory -Force -Path _staging-autostarter/bin
+          New-Item -ItemType Directory -Force -Path _staging-debug
 
       - name: Zip files up
         if: github.event_name == 'release' || inputs.release
         run: |
-          # release assets
-          Get-ChildItem -Path target/*/*.exe,target/*/*.dll,assets/* | Copy-Item -Destination "bin"
-          Compress-Archive -Path "bin" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-x64.zip"
-          Get-ChildItem -Path "bin" -Recurse | Remove-Item -Force
+          # watcher
+          Get-ChildItem -Path target/*/*watcher.exe,target/*/loader.dll,assets/*,assets-watcher/* | Copy-Item -Destination "_staging-watcher/bin"
+          Compress-Archive -Path "_staging-watcher" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-watcher-x64.zip"
+          Get-ChildItem -Path "_staging-watcher" -Recurse | Remove-Item -Force
+
+          # injector
+          Get-ChildItem -Path target/*/*injector.exe,target/*/loader.dll,assets/*,assets-injector/* | Copy-Item -Destination "_staging-injector/bin"
+          Compress-Archive -Path "_staging-injector" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-injector-x64.zip"
+          Get-ChildItem -Path "_staging-injector" -Recurse | Remove-Item -Force
+
+          # autostart
+          Get-ChildItem -Path target/*/*autostart*.exe,target/*/loader.dll,assets/*,assets-autostart/* | Copy-Item -Destination "_staging-autostart/bin"
+          Compress-Archive -Path "_staging-autostart" -CompressionLevel Optimal -DestinationPath "yet-another-bg3-native-mod-loader-autostart-x64.zip"
+          Get-ChildItem -Path "_staging-autostart" -Recurse | Remove-Item -Force
 
           # debug symbols
-          Get-ChildItem -Path target/*/*.pdb,assets-dbg/* | Copy-Item -Destination "debug"
-          $files = Get-ChildItem -Path debug/*
+          Get-ChildItem -Path target/*/*.pdb,assets-dbg/* | Copy-Item -Destination "_staging-debug"
+          $files = Get-ChildItem -Path _staging-debug/*
           Compress-Archive -CompressionLevel Optimal -Path $files.FullName -DestinationPath "yet-another-bg3-native-mod-loader-dbg-symbols-x64.zip"
-          Get-ChildItem -Path "debug" -Recurse | Remove-Item -Force
+          Get-ChildItem -Path "_staging-debug" -Recurse | Remove-Item -Force
 
       - name: Attach assets to release
         if: github.event_name == 'release' || inputs.release

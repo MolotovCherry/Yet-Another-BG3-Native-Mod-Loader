@@ -1,0 +1,68 @@
+ _____          _                   _   _
+|_   _|        | |                 | | (_)
+  | | _ __  ___| |_ _ __ _   _  ___| |_ _  ___  _ __  ___
+  | || '_ \/ __| __| '__| | | |/ __| __| |/ _ \| '_ \/ __|
+ _| || | | \__ \ |_| |  | |_| | (__| |_| | (_) | | | \__ \
+ \___/_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/
+----------------------------------------------------------
+
+Place bg3_autostart.exe and loader.dll wherever you want. Keep all these files together, including loader.dll.
+
+    bg3_autostart.exe automatically patches the game. It does not need to be manually run;
+    it starts when the game starts, and stops when the game stops. Just like Native Mod Loader, it is seamless.
+    This does however require extra registry edits to accomplish.
+
+    The benefit of this tool is that it doesn't require manual starting. The downside is it requires installation,
+    and it is more work to disable it if you don't want plugins running (since that requires you to uninstall it).
+
+    To install this tool, run install.bat, and to uninstall run uninstall.bat.
+
+    Once you install, you must not move the exe. If you wish to move it, uninstall, move the tool, then reinstall it.
+
+    Please also note that the registry entries point at the current bg3_autostart.exe location. If this file is in your
+    windows user folder and another windows user tries to launch the game, they may not have access to the exe in your
+    windows user folder (since it's another windows user's files). If multiple windows users play this game, you should
+    instead place this exe at a location accessible by all windows users to avoid this problem.
+
+    Also, if you delete the tools, make sure to uninstall it!
+
+    The two registry entries added/removed are. You may also remove these manually if you wish.
+        HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3.exe
+        HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3_dx11.exe
+
+  ____  _
+ / ___|| |_ ___ _ __  ___
+ \___ \| __/ _ \ '_ \/ __|
+  ___) | ||  __/ |_) \__ \
+ |____/ \__\___| .__/|___/
+               |_|
+--------------------------
+
+The first time you run a tool, it will:
+   - Generate a config.toml for you
+   - Check the `config.toml` file inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+   - If the game was installed to a non-standard path, you must adjust this path to correct it.
+     It needs to point to the game's root installation directory.
+     E.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3`
+   - If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, they will detect the install root
+     automatically, and install_root in config.toml won't require configuring.
+   - Place any dll plugins you have inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+   - Remember, all NativeModLoader plugins are compatible!
+
+Using:
+   1. Run your game as normal. It will automatically be patched.
+
+If you wish to disable a mod, add an entry without extension to the `disabled` key
+   - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry looks like:
+     disabled = ["FooBar", "FooBaz"]
+   - If you wish to disable all plugins, uninstall autostart tool, uninstall it,
+     and then start the game normally as you always do.
+
+Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
+
+Disclaimer:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
