@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{
-    env, io,
+    env,
     os::windows::process::CommandExt as _,
     path::Path,
     process::{self, Command, ExitCode},
@@ -17,61 +17,10 @@ use windows::Win32::System::{
     Diagnostics::Debug::DebugActiveProcessStop,
     Threading::{DEBUG_ONLY_THIS_PROCESS, DEBUG_PROCESS},
 };
-use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
+
 use yabg3nml::get_game_binary_paths;
 
-const HELP: &str = r"bg3_autostart
-
-Automatically patches bg3 when the game is launched, without needing to manually
-run any tool. Installs registry entries at:
-HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3.exe
-HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3_dx11.exe
-
-Flags:
-    --install   install the autostarter
-    --uninstall uninstall the autostarter
-    --help      this message
-";
-
 fn main() -> ExitCode {
-    let Some(flag) = env::args().nth(1) else {
-        fatal_popup(
-            "No flags",
-            "No install/uninstall/help flags were specified. Also, keep in mind that this autostart program is not a launcher. Please check instructions for how to use it.",
-        );
-    };
-
-    let is_install = flag == "--install";
-    let is_uninstall = flag == "--uninstall";
-    let is_help = flag == "--help";
-
-    if is_install {
-        if let Err(e) = install() {
-            fatal_popup("install failed", format!("{e}"));
-        };
-
-        display_popup("Success", "bg3_autostart was successfully installed.\n\nEvery time you launch bg3, your game will be auto patched. If you want to stop this from happening, please uninstall the tool using the provided uninstall.bat. Also, do not move bg3_autostart.exe after you install. If you wish to move it, please first uninstall, move the tool, then reinstall.\n\nPlease also note that the registry entries point at the current bg3_autostart.exe location. If this file is in your windows user folder and another windows user tries to launch the game, they may not have access to the exe in your windows user folder (since it's another windows user's files). If multiple windows users play this game, you should instead place this exe at a location accessible by all windows users to avoid this problem. Also, if you delete the tools, make sure to uninstall first!", MessageBoxIcon::Info);
-        ExitCode::SUCCESS
-    } else if is_uninstall {
-        if let Err(e) = uninstall() {
-            fatal_popup("uninstall failed", format!("{e}"));
-        };
-
-        display_popup(
-            "Success",
-            "bg3_autostart was successfully uninstalled.",
-            MessageBoxIcon::Info,
-        );
-        ExitCode::SUCCESS
-    } else if is_help {
-        display_popup("Usage", HELP, MessageBoxIcon::Info);
-        ExitCode::SUCCESS
-    } else {
-        autostart()
-    }
-}
-
-fn autostart() -> ExitCode {
     // [this_exe_path, bg3_exe_path, ..args]
     let args = env::args().skip(2);
 
@@ -180,29 +129,4 @@ fn autostart() -> ExitCode {
         .wait()
         .map(|s| ExitCode::from(s.code().unwrap_or(1).clamp(u8::MIN as _, u8::MAX as _) as u8))
         .unwrap_or(ExitCode::FAILURE)
-}
-
-const HKLM: RegKey = RegKey::predef(HKEY_LOCAL_MACHINE);
-#[rustfmt::skip]
-const R_BG3: &str = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3.exe";
-#[rustfmt::skip]
-const R_BG3_DX11: &str = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3_dx11.exe";
-
-fn install() -> io::Result<()> {
-    let (bg3_key, _) = HKLM.create_subkey(R_BG3)?;
-    let (bg3_dx11_key, _) = HKLM.create_subkey(R_BG3_DX11)?;
-
-    let cur_exe = env::current_exe()?;
-
-    bg3_key.set_value("debugger", &&*cur_exe.to_string_lossy())?;
-    bg3_dx11_key.set_value("debugger", &&*cur_exe.to_string_lossy())?;
-
-    Ok(())
-}
-
-fn uninstall() -> io::Result<()> {
-    HKLM.delete_subkey_all(R_BG3)?;
-    HKLM.delete_subkey_all(R_BG3_DX11)?;
-
-    Ok(())
 }

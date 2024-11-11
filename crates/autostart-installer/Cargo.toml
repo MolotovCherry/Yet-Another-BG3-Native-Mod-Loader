@@ -1,0 +1,11 @@
+[package]
+name = "autostart-installer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+shared.workspace = true
+winreg = "0.52.0"
+
+[build-dependencies]
+winres.workspace = true

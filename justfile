@@ -12,6 +12,7 @@ _build profile="debug" flags="" flags2="":
     echo "Loader hash is ${env:LOADER_HASH}"
     echo "Building yabg3nml..."
     cargo build -p yabg3nml {{flags2}}
+    cargo build -p autostart-installer {{flags2}}
 
 build: _build
 
