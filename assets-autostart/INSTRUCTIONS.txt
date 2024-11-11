@@ -26,7 +26,9 @@ Place bg3_autostart.exe and loader.dll wherever you want. Keep all these files t
 
     Also, if you delete the tools, make sure to uninstall it!
 
-    The two registry entries added/removed are. You may also remove these manually if you wish.
+    The two registry entries added/removed are (below). To uninstall, delete the `debugger` value
+    from both keys, or delete the keys entirely. (If you delete the entire key, you may lose
+    some windows settings for that particular exe. It is still FINE if you delete the key however)
         HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3.exe
         HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3_dx11.exe
 
