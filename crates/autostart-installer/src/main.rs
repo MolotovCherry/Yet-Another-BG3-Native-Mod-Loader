@@ -69,7 +69,7 @@ fn install() -> io::Result<()> {
     if !cur_exe.exists() {
         fatal_popup(
             "Missing",
-            "bg3_autostart.exe needs to be in the same folder as autostart-installer.exe",
+            "Couldn't find bg3_autostart.exe. Please make sure it's in the same folder as autostart-installer.exe",
         );
     }
 
