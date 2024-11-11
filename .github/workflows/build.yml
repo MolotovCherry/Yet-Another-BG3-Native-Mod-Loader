@@ -92,7 +92,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path _staging-watcher/bin
           New-Item -ItemType Directory -Force -Path _staging-injector/bin
-          New-Item -ItemType Directory -Force -Path _staging-autostarter/bin
+          New-Item -ItemType Directory -Force -Path _staging-autostart/bin
           New-Item -ItemType Directory -Force -Path _staging-debug
 
       - name: Zip files up
