@@ -35,7 +35,7 @@ fn main() -> ExitCode {
         ExitCode::SUCCESS
     } else if is_uninstall {
         if let Err(e) = uninstall() {
-            fatal_popup("uninstall failed", format!("{e}"));
+            fatal_popup("uninstall failed", format!("If the error is \"cannot find the file specified\", you can ignore it; it simply means there was nothing to uninstall\n\n{e}"));
         };
 
         display_popup(
