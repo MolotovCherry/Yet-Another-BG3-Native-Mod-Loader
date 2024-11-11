@@ -55,8 +55,8 @@ Using:
 If you wish to disable a mod, add an entry without extension to the `disabled` key
    - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry looks like:
      disabled = ["FooBar", "FooBaz"]
-   - If you wish to disable all plugins, uninstall autostart tool, uninstall it,
-     and then start the game normally as you always do.
+   - If you wish to disable all plugins, uninstall autostart tool, and then start the game
+     normally as you always do.
 
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
 
