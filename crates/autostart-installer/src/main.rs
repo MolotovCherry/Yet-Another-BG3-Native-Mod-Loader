@@ -1,10 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{env, io, process::ExitCode};
+use std::{
+    env,
+    io::{self, ErrorKind},
+    process::ExitCode,
+};
 
 use shared::popup::{display_popup, fatal_popup, MessageBoxIcon};
 use winreg::{
-    enums::{HKEY_LOCAL_MACHINE, KEY_ALL_ACCESS},
+    enums::{HKEY_LOCAL_MACHINE, KEY_SET_VALUE},
     RegKey,
 };
 
@@ -81,49 +85,47 @@ fn install() -> io::Result<()> {
 }
 
 fn uninstall() {
-    let mut errors_bg3 = String::new();
-    let mut errors_bg3_dx11 = String::new();
+    let (mut error_bg3, mut error_bg3_dx11) = (Ok(()), Ok(()));
 
-    let delete_from_key = |key, errors: &mut String| {
-        let key = HKLM.open_subkey_with_flags(key, KEY_ALL_ACCESS);
-        match key {
-            Ok(k) => match k.get_value::<String, _>("debugger") {
-                Ok(_) => {
-                    if let Err(e) = k.delete_value("debugger") {
-                        errors.push_str(&e.to_string());
+    let try_delete_value = |key, error: &mut io::Result<()>| {
+        match HKLM.open_subkey_with_flags(key, KEY_SET_VALUE) {
+            Ok(k) => {
+                if let Err(e) = k.delete_value("debugger") {
+                    if e.kind() != ErrorKind::NotFound {
+                        *error = Err(e);
                     }
                 }
+            }
 
-                Err(e) => errors.push_str(&e.to_string()),
-            },
-
-            Err(e) => errors.push_str(&e.to_string()),
+            Err(e) => {
+                // it's ok if it doesn't exist
+                if e.kind() != ErrorKind::NotFound {
+                    *error = Err(e);
+                }
+            }
         }
     };
 
-    delete_from_key(R_BG3, &mut errors_bg3);
-    delete_from_key(R_BG3_DX11, &mut errors_bg3_dx11);
+    try_delete_value(R_BG3, &mut error_bg3);
+    try_delete_value(R_BG3_DX11, &mut error_bg3_dx11);
 
-    let bg3_ok = errors_bg3.is_empty();
-    let bg3_dx11_ok = errors_bg3_dx11.is_empty();
+    if error_bg3.is_err() || error_bg3_dx11.is_err() {
+        let bg3_ok = error_bg3.is_ok();
+        let bg3_dx11_ok = error_bg3_dx11.is_ok();
 
-    if !bg3_ok || !bg3_dx11_ok {
         let mut errors = String::new();
-
-        if !errors_bg3.is_empty() {
-            errors.push_str(&format!("\nErrors (bg3 key)\n{errors_bg3}\n"));
+        if let Err(e) = error_bg3 {
+            errors.push_str(&format!("\nErrors (bg3 key)\n{e}\n"));
         }
 
-        if !errors_bg3_dx11.is_empty() {
-            errors.push_str(&format!("\nErrors (bg3_dx11 key)\n{errors_bg3_dx11}\n"));
+        if let Err(e) = error_bg3_dx11 {
+            errors.push_str(&format!("\nErrors (bg3_dx11 key)\n{e}\n"));
         }
 
         fatal_popup(
             "uninstall failed",
             format!(
-                r#"If the error is "cannot find the file specified", you can ignore it; it simply means there was nothing to uninstall.
-
-If you'd like to try manually uninstalling, delete the `debugger` value from both:
+                r#"If you'd like to try manually uninstalling, delete the `debugger` value from both:
 (uninstalled: {bg3_ok}) HKLM\{R_BG3}
 (uninstalled: {bg3_dx11_ok}) HKLM\{R_BG3_DX11}
 
