@@ -6,16 +6,19 @@
  \___/_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/
 ----------------------------------------------------------
 
-Place bg3_watcher.exe and loader.dll wherever you want, maybe create a shortcut to it.
-Keep all these files together, including loader.dll.
+Place bg3_watcher.exe and loader.dll wherever you want, maybe create a shortcut
+to it. Keep all these files together, including loader.dll.
 
-    bg3_watcher is a tool which stays running in the background. It watches for the launch of bg3 or
-    bg3_dx11, and injects the plugins into the game. You can load your game through normal means, and
-    it'll all be transparently patched in the background. This tool creates a tray icon. You can go
-    to your taskbar to find the icon, right click on it, and press quit, when you are done using it.
+    bg3_watcher is a tool which stays running in the background. It watches for
+    the launch of bg3 or bg3_dx11, and injects the plugins into the game. You
+    can load your game through normal means, and it'll all be transparently
+    patched in the background. This tool creates a tray icon. You can go to your
+    taskbar to find the icon, right click on it, and press quit, when you are
+    done using it.
 
-    The benefit of this tool is that it doesn't require installation, and if you don't want plugins
-    running, just don't start the tool. The downside is it requires manual running.
+    The benefit of this tool is that it doesn't require installation, and if you
+    don't want plugins running, just don't start the tool. The downside is it
+    requires manual running.
 
   ____  _
  / ___|| |_ ___ _ __  ___
@@ -27,24 +30,28 @@ Keep all these files together, including loader.dll.
 
 The first time you run a tool, it will:
    - Generate a config.toml for you
-   - Check the `config.toml` file inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
-   - If the game was installed to a non-standard path, you must adjust this path to correct it.
-     It needs to point to the game's root installation directory.
+   - Check the `config.toml` file inside
+     `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+   - If the game was installed to a non-standard path, you must adjust this path
+     to correct it. It needs to point to the game's root installation directory.
      E.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3`
-   - If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, they will detect the install root
-     automatically, and install_root in config.toml won't require configuring.
-   - Place any dll plugins you have inside `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+   - If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, they
+     will detect the install root automatically, and install_root in config.toml
+     won't require configuring.
+   - Place any dll plugins you have inside
+     `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
    - Remember, all NativeModLoader plugins are compatible!
 
 Using:
-   - This will silently run in the background and watch for game launches. Once the game launches,
-     it will auto-patch the game instance. When you're done using the tool, go to the systray, right
-     click on the icon, and click Quit
+   - This will silently run in the background and watch for game launches. Once
+     the game launches, it will auto-patch the game instance. When you're done
+     using the tool, go to the systray, right click on the icon, and click Quit
    1. Run the watcher tool
    2. When the game launches, it will auto-patch the game instance
 
 If you wish to disable a mod, add an entry without extension to the `disabled` key
-   - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry looks like:
+   - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry
+     looks like:
      disabled = ["FooBar", "FooBaz"]
    - If you wish to disable all plugins, quit the watcher tool if it's running,
      then start the game normally as you always do.
@@ -52,8 +59,9 @@ If you wish to disable a mod, add an entry without extension to the `disabled` k
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
 
 Disclaimer:
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
