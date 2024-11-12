@@ -39,7 +39,7 @@ use crate::{
 use dirty::is_dirty;
 use write::write_in;
 
-pub fn run_loader(config: &Config, pid: Pid, loader: &Loader) -> Result<()> {
+pub fn run_loader(config: &Config, pid: Pid, loader: &Loader, wait_for_init: bool) -> Result<()> {
     let span = trace_span!("loader");
     let _guard = span.enter();
 
@@ -252,21 +252,29 @@ pub fn run_loader(config: &Config, pid: Pid, loader: &Loader) -> Result<()> {
         )
     };
 
-    if let Err(e) = res {
-        error!(
-            ?e,
-            base = %format!("0x{base:x}"),
-            rva = %format!("0x{:x}", loader.rva),
-            addr = %format!("0x{init_addr:x}"),
-            "Failed to create remote thread for init fn"
-        );
+    let handle = match res {
+        Ok(h) => h,
+        Err(e) => {
+            error!(
+                ?e,
+                base = %format!("0x{base:x}"),
+                rva = %format!("0x{:x}", loader.rva),
+                addr = %format!("0x{init_addr:x}"),
+                "Failed to create remote thread for init fn"
+            );
 
-        warn_popup(
-            "Process injection failure for init fn",
-            format!("Failed to create process remote thread. Patching has been aborted on this process.\n\nThis could be due to multiple reasons, but in any case, winapi returned an error. This can happen if the process unexpectedly disappeared on us (such as a game crash). Please restart the game and try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"),
-        );
+            warn_popup(
+                "Process injection failure for init fn",
+                format!("Failed to create process remote thread. Patching has been aborted on this process.\n\nThis could be due to multiple reasons, but in any case, winapi returned an error. This can happen if the process unexpectedly disappeared on us (such as a game crash). Please restart the game and try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"),
+            );
 
-        return Ok(());
+            return Ok(());
+        }
+    };
+
+    if wait_for_init {
+        // ignore errors like timeout, etc, they don't matter, just wait
+        _ = unsafe { WaitForSingleObject(handle, INFINITE) };
     }
 
     Ok(())

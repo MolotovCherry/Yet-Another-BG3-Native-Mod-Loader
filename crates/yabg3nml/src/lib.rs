@@ -63,14 +63,15 @@ pub fn run(run_type: RunType) -> Result<()> {
     #[cfg(feature = "test-injection")]
     let processes = &[args.inject];
 
-    let (polling_rate, timeout, oneshot) = if matches!(run_type, RunType::Watcher) {
+    let (polling_rate, timeout, oneshot, wait_for_init) = if matches!(run_type, RunType::Watcher) {
         // watcher tool
-        (Duration::from_secs(2), Timeout::None, false)
+        (Duration::from_secs(2), Timeout::None, false, false)
     } else {
         // injector tool
         (
             Duration::from_secs(1),
             Timeout::Duration(Duration::from_secs(10)),
+            true,
             true,
         )
     };
@@ -83,7 +84,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         move |call| match call {
             CallType::Pid(pid) => {
                 trace!(pid, "Received callback for pid, now loading");
-                let res = run_loader(init.config, pid, &init.loader);
+                let res = run_loader(init.config, pid, &init.loader, wait_for_init);
                 if let Err(e) = res {
                     error!(err = %e, "run_loader failed");
                     fatal_popup(
@@ -138,7 +139,7 @@ pub fn autostart(pid: Pid) -> Result<()> {
     let _loader_lock = init.loader.file.take();
     let _worker_guard = init.worker.take();
 
-    let res = run_loader(init.config, pid, &init.loader);
+    let res = run_loader(init.config, pid, &init.loader, true);
     if let Err(e) = res {
         error!(err = %e, "run_loader failed");
         fatal_popup(
