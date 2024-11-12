@@ -14,7 +14,7 @@ The main features of this mod loader are:
   - Because it does not modify/replace/add files in the game directory, there is 0 maintenance required
   - 0 maintenance means, when you update the game, there is nothing to fix, the mod loader always works
   - You can keep all your game files pristine and untouched
-- It is completely compatible with any NativeModLoader﻿ plugins
+- It is completely compatible with any NativeModLoader plugins
   - This means you can develop your plugin using my [Rust BG3 Plugin Template](https://github.com/MolotovCherry/Native-Plugin-Template-Rust) or [NativeModLoader](https://www.nexusmods.com/baldursgate3/mods/944)'s [BG3 Plugin Template](https://github.com/gottyduke/PluginTemplate)
 - Compatible with steam and GoG
 - Stores your plugins in the larian local data folder alongside the mod folder
