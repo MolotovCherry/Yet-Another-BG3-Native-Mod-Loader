@@ -24,6 +24,8 @@ pub struct Core {
     /// Except for those in this list, all plugins are enabled by default
     /// e.g. FooBar.dll should have an entry for "FooBar"
     pub disabled: Vec<String>,
+    /// Whether to show cli window
+    pub cli: bool,
 }
 
 impl Default for Core {
@@ -32,6 +34,7 @@ impl Default for Core {
             // the default location for most people
             install_root: r"C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3".into(),
             disabled: Vec::new(),
+            cli: false,
         }
     }
 }

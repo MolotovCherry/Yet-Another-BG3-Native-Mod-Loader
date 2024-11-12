@@ -22,6 +22,7 @@ use eyre::Result;
 use shared::popup::{display_popup, fatal_popup, MessageBoxIcon};
 use tracing::{error, trace};
 
+#[cfg(feature = "test-injection")]
 use cli::Args;
 use event::Event;
 use loader::run_loader;
@@ -47,9 +48,10 @@ pub fn run(run_type: RunType) -> Result<()> {
     let _singleton = SingleInstance::new();
     let _event = Event::new()?;
 
+    #[cfg(feature = "test-injection")]
     let args: Args = argh::from_env();
 
-    let mut init = init(&args)?;
+    let mut init = init()?;
     let _loader_lock = init.loader.file.take();
     let _worker_guard = init.worker.take();
 
@@ -132,10 +134,7 @@ pub fn autostart(pid: Pid) -> Result<()> {
     let _singleton = SingleInstance::new();
     let _event = Event::new()?;
 
-    // DO NOT use argh, since it doesn't understand bg3 cli args
-    let args = Args::default();
-
-    let mut init = init(&args)?;
+    let mut init = init()?;
     let _loader_lock = init.loader.file.take();
     let _worker_guard = init.worker.take();
 

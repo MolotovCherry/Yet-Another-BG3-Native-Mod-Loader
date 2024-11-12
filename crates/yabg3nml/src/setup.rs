@@ -11,7 +11,6 @@ use tracing_appender::non_blocking::WorkerGuard;
 use windows::Win32::Security::SE_DEBUG_NAME;
 
 use crate::{
-    cli::Args,
     is_admin::is_admin,
     logging::setup_logs,
     panic::set_hook,
@@ -27,7 +26,7 @@ pub struct InitData {
     pub loader: Loader,
 }
 
-pub fn init(args: &Args) -> Result<InitData> {
+pub fn init() -> Result<InitData> {
     let span = trace_span!("setup");
     let _guard = span.enter();
 
@@ -66,7 +65,7 @@ pub fn init(args: &Args) -> Result<InitData> {
     };
 
     // start logger
-    let worker_guard = setup_logs(config, &plugins_dir, args).context("Failed to set up logs")?;
+    let worker_guard = setup_logs(config, &plugins_dir).context("Failed to set up logs")?;
 
     if first_time {
         display_popup(
