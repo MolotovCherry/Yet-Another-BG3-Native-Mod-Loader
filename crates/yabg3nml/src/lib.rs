@@ -17,11 +17,7 @@ mod tray;
 mod wapi;
 
 use std::{
-    env,
-    os::windows::process::CommandExt as _,
-    path::Path,
-    process::{Command, ExitCode},
-    time::Duration,
+    env, os::windows::process::CommandExt as _, path::Path, process::Command, time::Duration,
 };
 
 use eyre::Result;
@@ -137,7 +133,7 @@ This can happen for 1 of 3 reasons:
     Ok(())
 }
 
-pub fn autostart() -> Result<ExitCode> {
+pub fn autostart() -> Result<()> {
     // This prohibits multiple app instances
     let _singleton = SingleInstance::new();
     let _event = Event::new()?;
@@ -183,7 +179,7 @@ pub fn autostart() -> Result<ExitCode> {
         _ => unreachable!(),
     };
 
-    let mut child = match Command::new(bg3_path)
+    let child = match Command::new(bg3_path)
         .args(args)
         // bypass IFEO on this launch
         .creation_flags(DEBUG_PROCESS.0 | DEBUG_ONLY_THIS_PROCESS.0)
@@ -217,10 +213,5 @@ pub fn autostart() -> Result<ExitCode> {
         );
     }
 
-    let code = child
-        .wait()
-        .map(|s| ExitCode::from(s.code().unwrap_or(1).clamp(u8::MIN as _, u8::MAX as _) as u8))
-        .unwrap_or(ExitCode::FAILURE);
-
-    Ok(code)
+    Ok(())
 }
