@@ -5,6 +5,6 @@ use yabg3nml::RunType;
 
 fn main() {
     if let Err(e) = yabg3nml::run(RunType::Injector) {
-        fatal_popup("injector failure", format!("{e}"));
+        fatal_popup("injector failure", e.to_string());
     }
 }

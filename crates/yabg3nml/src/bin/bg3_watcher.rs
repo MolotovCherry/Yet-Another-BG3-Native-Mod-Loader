@@ -5,6 +5,6 @@ use yabg3nml::RunType;
 
 fn main() {
     if let Err(e) = yabg3nml::run(RunType::Watcher) {
-        fatal_popup("watcher failure", format!("{e}"));
+        fatal_popup("watcher failure", e.to_string());
     }
 }
