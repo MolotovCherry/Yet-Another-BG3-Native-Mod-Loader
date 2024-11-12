@@ -6,7 +6,7 @@ This is a dll plugin mod loader for Baldur's Gate 3
 It comes in 3 types:
 - A background process which watches for bg3 to start, then transparently injects the plugins into it.
 - A one time use separate injector tool which simply injects plugins into an already running game instance. (For those who do not want an always running app)
-- A version which behaves exactly like Native Mod Loader. It automatically runs and patches bg3 when the game is started normally, then shuts down when the game shuts down. However, it requires (some fairly minimal) registry edits in order to accomplish this.
+- A version which behaves exactly like Native Mod Loader. It automatically runs and patches bg3 when the game is started normally. However, it requires (some fairly minimal) registry edits in order to accomplish this.
 
 The main features of this mod loader are:
 - No manual installation necessary\*!
@@ -20,7 +20,7 @@ The main features of this mod loader are:
 - Stores your plugins in the larian local data folder alongside the mod folder
 - Does not install anything. Deleting the tool is the same as "uninstalling"\*
 
-\* The injector and watcher do not require (un)installation. However, the autostart version requires (un)installation in the registry.
+\* The injector and watcher do not require (un)installation. However, the autostart version requires (un)installation.
 
 # Usage
 For list of instructions, FAQ, and other info, please see the main [nexus mods page](https://www.nexusmods.com/baldursgate3/mods/3052)
