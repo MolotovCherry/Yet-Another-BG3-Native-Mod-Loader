@@ -15,9 +15,9 @@ use windows::{
     Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW},
 };
 
-use crate::{utils::FreeSelfLibrary, HInstance, Plugin, LOADED_PLUGINS};
+use crate::{Plugin, LOADED_PLUGINS};
 
-pub fn load_plugins(hinstance: HInstance) -> Result<()> {
+pub fn load_plugins() -> Result<()> {
     let plugins_dir = get_bg3_plugins_dir()?;
     let config = get_config()?;
 
@@ -32,6 +32,8 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
 
         return Ok(());
     };
+
+    let mut threads = Vec::new();
 
     for entry in read_dir {
         let Ok(entry) = entry else {
@@ -102,14 +104,23 @@ pub fn load_plugins(hinstance: HInstance) -> Result<()> {
         // do not join the handle, or it will panic
         // this is because we use ExitThread which yanks the thread out from
         // underneath rust. it does not expect this
-        let name = name.to_owned();
-        thread::spawn(move || load_plugin(hinstance, name, path));
+        let handle = thread::spawn({
+            let name = name.to_owned();
+            move || load_plugin(name, path)
+        });
+
+        threads.push(handle);
+    }
+
+    // wait for all threads to be done
+    for thread in threads {
+        _ = thread.join();
     }
 
     Ok(())
 }
 
-fn load_plugin(hinstance: HInstance, name: String, path: PathBuf) {
+fn load_plugin(name: String, path: PathBuf) {
     // wrap this in try{} block and return result
     // by doing this we can return the self library guard and
     // prevent a shutdown until the end of this scope
@@ -139,7 +150,6 @@ fn load_plugin(hinstance: HInstance, name: String, path: PathBuf) {
             plugins.push(Plugin(main_module));
         }
 
-        let mut guard = None;
         // SAFETY: Standard function, and again proper args
         let init = unsafe { GetProcAddress(main_module, s!("Init")) };
         if let Some(init) = init {
@@ -148,12 +158,6 @@ fn load_plugin(hinstance: HInstance, name: String, path: PathBuf) {
 
             // SAFETY: We declared the signature to be `unsafe extern "C" fn()`. Implementer must abide by this
             let init = unsafe { mem::transmute::<FarProc, Init>(init) };
-
-            // What if init runs for a long time then we try to free library in DLL_PROCESS_DETACH while it's running?
-            // Here we increase self refcount to keep our dll from unloading until its time
-            //
-            // https://devblogs.microsoft.com/oldnewthing/20131105-00/?p=2733
-            guard = Some(FreeSelfLibrary::new(hinstance.0)?);
 
             trace!(%name, "running Init");
 
@@ -165,7 +169,7 @@ fn load_plugin(hinstance: HInstance, name: String, path: PathBuf) {
             trace!(%name, "finished Init");
         }
 
-        Ok::<_, Report>(guard)
+        Ok::<_, Report>(())
     };
 
     if let Err(e) = result {
@@ -173,6 +177,4 @@ fn load_plugin(hinstance: HInstance, name: String, path: PathBuf) {
     }
 
     trace!(%name, "exit load plugin");
-
-    // free library and exit thread here. you cannot rely on any extra code after this
 }

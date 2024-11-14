@@ -34,7 +34,7 @@ use windows::{
 use client::{TrySend as _, CLIENT};
 use loader::load_plugins;
 use logging::setup_logging;
-use utils::{HInstance, Plugin};
+use utils::{FreeSelfLibrary, HInstance, Plugin};
 
 declare_plugin! {
     "Loader",
@@ -96,6 +96,14 @@ unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
         assert!(size_of::<&ThreadData>() == size_of::<usize>());
     }
 
+    let module = *MODULE.get().unwrap();
+    // incref self library to ensure it cannot be unloaded (and plugins unloaded) until all the plugins Init is done
+    let _guard = FreeSelfLibrary::new(module.0);
+    if let Err(e) = _guard {
+        error!("can't create freeselflibrary: {e}");
+        return 0;
+    }
+
     if !is_yabg3nml() {
         unsupported_operation();
         return 0;
@@ -104,15 +112,13 @@ unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
     // Set up a custom panic hook so we can log all panics
     panic_hook::set_hook();
 
-    let module = *MODULE.get().unwrap();
-
     let result = panic::catch_unwind(|| {
         // extract and process thread data
         _ = CLIENT.try_send(Request::Auth(data.auth).into());
 
         setup_logging(&data.log).context("failed to setup logging")?;
 
-        load_plugins(module)?;
+        load_plugins()?;
 
         Ok::<_, Error>(())
     });
