@@ -4,6 +4,7 @@ use eyre::Result;
 use shared::popup::{display_popup, fatal_popup, MessageBoxIcon};
 use tracing::{error, trace};
 
+#[allow(unused_imports)]
 use crate::{
     event::Event,
     loader::run_loader,
@@ -27,7 +28,7 @@ pub fn run(run_type: RunType) -> Result<()> {
     let _event = Event::new()?;
 
     #[cfg(feature = "test-injection")]
-    let args: Args = argh::from_env();
+    let args: crate::cli::Args = argh::from_env();
 
     let mut init = init()?;
     let _loader_lock = init.loader.file.take();
