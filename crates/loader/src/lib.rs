@@ -34,7 +34,7 @@ use windows::{
 use client::{TrySend as _, CLIENT};
 use loader::load_plugins;
 use logging::setup_logging;
-use utils::{FreeSelfLibrary, HInstance, Plugin};
+use utils::Plugin;
 
 declare_plugin! {
     "Loader",
@@ -43,11 +43,10 @@ declare_plugin! {
 }
 
 static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(Mutex::default);
-static MODULE: OnceLock<HInstance> = OnceLock::new();
 
 #[unsafe(no_mangle)]
 extern "stdcall-unwind" fn DllMain(
-    module: HINSTANCE,
+    _module: HINSTANCE,
     fdw_reason: u32,
     _lpv_reserved: *const c_void,
 ) -> bool {
@@ -59,7 +58,6 @@ extern "stdcall-unwind" fn DllMain(
             // > Consider calling DisableThreadLibraryCalls when receiving DLL_PROCESS_ATTACH, unless your DLL is
             // > linked with static C run-time library (CRT).
             // _ = unsafe { DisableThreadLibraryCalls(module) };
-            _ = MODULE.set(HInstance(module));
 
             if !is_yabg3nml() {
                 unsupported_operation();
@@ -96,14 +94,6 @@ unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
         assert!(size_of::<&ThreadData>() == size_of::<usize>());
     }
 
-    let module = *MODULE.get().unwrap();
-    // incref self library to ensure it cannot be unloaded (and plugins unloaded) until all the plugins Init is done
-    let _guard = FreeSelfLibrary::new(module.0);
-    if let Err(e) = _guard {
-        error!("can't create freeselflibrary: {e}");
-        return 0;
-    }
-
     if !is_yabg3nml() {
         unsupported_operation();
         return 0;
@@ -118,6 +108,7 @@ unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
 
         setup_logging(&data.log).context("failed to setup logging")?;
 
+        // blocking call which waits for all plugins to finish DllMain/Init
         load_plugins()?;
 
         Ok::<_, Error>(())
