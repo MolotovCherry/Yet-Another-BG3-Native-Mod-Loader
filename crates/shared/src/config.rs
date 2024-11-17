@@ -4,6 +4,7 @@ use std::{fs, sync::LazyLock};
 use eyre::{Report, Result};
 use serde::{Deserialize, Serialize};
 use tracing::error;
+use unicase::UniCase;
 
 use crate::paths::get_bg3_plugins_dir;
 
@@ -50,6 +51,23 @@ pub enum Disabled {
 impl Default for Disabled {
     fn default() -> Self {
         Self::Global(false)
+    }
+}
+
+impl Disabled {
+    pub fn is_global_disabled(&self) -> bool {
+        matches!(self, Self::Global(true))
+    }
+
+    pub fn is_disabled(&self, name: &str) -> bool {
+        match self {
+            Disabled::Plugins(plugins) => {
+                let name = UniCase::new(name);
+                plugins.iter().any(|p| UniCase::new(p) == name)
+            }
+
+            Disabled::Global(d) => *d,
+        }
     }
 }
 

@@ -3,13 +3,12 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
 use shared::{
-    config::{get_config, Disabled},
+    config::get_config,
     paths::get_bg3_plugins_dir,
     popup::warn_popup,
     utils::{tri, SuperLock as _},
 };
 use tracing::{error, info, trace, warn};
-use unicase::UniCase;
 use windows::{
     core::{s, PCWSTR},
     Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW},
@@ -21,7 +20,7 @@ pub fn load_plugins() -> Result<()> {
     let plugins_dir = get_bg3_plugins_dir()?;
     let config = get_config()?;
 
-    if matches!(config.core.disabled, Disabled::Global(true)) {
+    if config.core.disabled.is_global_disabled() {
         info!("Plugins are globally disabled. If you want to re-enable them, set [core]disabled in config.toml to false or []");
         return Ok(());
     }
@@ -92,13 +91,7 @@ pub fn load_plugins() -> Result<()> {
             }
         };
 
-        let is_disabled = match &config.core.disabled {
-            Disabled::Plugins(plugins) => plugins
-                .iter()
-                .any(|s| UniCase::new(s) == UniCase::new(name)),
-
-            Disabled::Global(d) => *d,
-        };
+        let is_disabled = config.core.disabled.is_disabled(name);
 
         if is_disabled {
             info!("Skipping disabled plugin {name_formatted}");

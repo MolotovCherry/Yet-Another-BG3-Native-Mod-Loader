@@ -8,7 +8,7 @@ use std::{mem, os::windows::prelude::OsStrExt as _};
 use eyre::{Context, Result};
 use native_plugin_lib::Version;
 use shared::{
-    config::{Config, Disabled},
+    config::Config,
     popup::warn_popup,
     thread_data::{LogData, ThreadData},
     utils::OwnedHandle,
@@ -46,7 +46,7 @@ pub fn run_loader(
     dirty_check: bool,
     wait_for_init: bool,
 ) -> Result<()> {
-    if matches!(config.core.disabled, Disabled::Global(true)) {
+    if config.core.disabled.is_global_disabled() {
         info!("Plugins are globally disabled. If you want to re-enable them, set [core]disabled in config.toml to false or []");
         return Ok(());
     }

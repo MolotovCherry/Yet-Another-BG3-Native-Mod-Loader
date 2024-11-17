@@ -16,7 +16,6 @@ tracing-subscriber.workspace = true
 eyre.workspace = true
 windows.workspace = true
 shared.workspace = true
-unicase.workspace = true
 native-plugin-lib.workspace = true
 
 [build-dependencies]
