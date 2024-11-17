@@ -56,8 +56,8 @@ pub fn get_game_binary_paths(config: &Config) -> Bg3Exes {
                 .map(ToOwned::to_owned)
                 .unwrap_or_else(|| bg3_dx11.to_string_lossy().to_string());
 
-            trace!("Looking for bg3 at: {bg3}");
-            trace!("Looking for bg3_dx11 at: {bg3_dx11}");
+            trace!(path = bg3, "Looking for bg3 at");
+            trace!(path = bg3_dx11, "Looking for bg3_dx11 at");
 
             return Bg3Exes { bg3, bg3_dx11 };
         }
