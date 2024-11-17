@@ -17,7 +17,7 @@ pub fn get_larian_local_dir() -> Result<PathBuf> {
 
     local.push("Larian Studios");
 
-    trace!("Looking for larian local dir at: {}", local.display());
+    trace!(path = %local.display(), "Looking for larian local dir");
 
     if local.exists() {
         _ = CACHE.set(local.clone());
@@ -38,7 +38,7 @@ pub fn get_bg3_local_dir() -> Result<PathBuf> {
 
     local.push("Baldur's Gate 3");
 
-    trace!("Looking for bg3 local dir at: {}", local.display());
+    trace!(path = %local.display(), "Looking for bg3 local dir");
 
     if local.exists() {
         _ = CACHE.set(local.clone());
@@ -58,7 +58,7 @@ pub fn get_bg3_plugins_dir() -> Result<PathBuf> {
     let mut plugins_dir = get_bg3_local_dir()?;
     plugins_dir.push("Plugins");
 
-    trace!("Looking for bg3 plugins dir at: {}", plugins_dir.display());
+    trace!(path = %plugins_dir.display(), "Looking for bg3 plugins dir");
 
     if !plugins_dir.exists() {
         info!("Plugin directory not found; creating it..");
