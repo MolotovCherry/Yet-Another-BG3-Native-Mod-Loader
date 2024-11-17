@@ -1,7 +1,11 @@
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use shared::{config::Config, popup::fatal_popup};
 use tracing::{error, trace};
+use unicase::UniCase;
 
 #[allow(dead_code)]
 pub struct Bg3Exes {
@@ -62,4 +66,43 @@ pub fn get_game_binary_paths(config: &Config) -> Bg3Exes {
         "Path error",
         "Failed to resolve `install_root` path. Does the path (or its target) exist and point to a directory? And does this program have permissions to read that path?",
     );
+}
+
+#[allow(dead_code)]
+pub enum Bg3Exe {
+    Vulkan,
+    Dx11,
+    None,
+}
+
+impl From<&Path> for Bg3Exe {
+    fn from(value: &Path) -> Self {
+        let Some(value) = value.file_name() else {
+            return Self::None;
+        };
+
+        let value = UniCase::new(value.to_string_lossy());
+        let vulkan = UniCase::new("bg3.exe");
+        let dx11 = UniCase::new("bg3_dx11.exe");
+
+        match value {
+            v if v == vulkan => Self::Vulkan,
+            v if v == dx11 => Self::Dx11,
+            _ => Self::None,
+        }
+    }
+}
+
+#[allow(dead_code)]
+pub fn get_game_binary_for(exe: impl Into<Bg3Exe>, config: &Config) -> Option<PathBuf> {
+    let exe: Bg3Exe = exe.into();
+
+    let binaries = get_game_binary_paths(config);
+    let exe = match exe {
+        Bg3Exe::Vulkan => binaries.bg3,
+        Bg3Exe::Dx11 => binaries.bg3_dx11,
+        Bg3Exe::None => return None,
+    };
+
+    Some(exe.into())
 }

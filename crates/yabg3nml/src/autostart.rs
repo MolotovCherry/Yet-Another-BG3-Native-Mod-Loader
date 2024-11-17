@@ -12,7 +12,7 @@ use windows::Win32::System::{
 };
 
 use crate::{
-    event::Event, loader::run_loader, paths::get_game_binary_paths, setup::init,
+    event::Event, loader::run_loader, paths::get_game_binary_for, setup::init,
     single_instance::SingleInstance,
 };
 
@@ -41,35 +41,25 @@ pub fn autostart() -> Result<()> {
         bg3_exe
     };
 
-    let Some(bg3_exe) = Path::new(&bg3_exe).file_name() else {
+    let Some(bg3_path) = get_game_binary_for(Path::new(&bg3_exe), init.config) else {
+        // it's not a bg3 executable; or at least, it's not named correctly
         fatal_popup(
             "No direct launch",
-            "This autostart program is not a launcher. Please check instructions for how to use it. (file_name() missing)",
-        );
-    };
-
-    let exes = get_game_binary_paths(init.config);
-
-    let bg3_path = match &*bg3_exe.to_string_lossy() {
-        "bg3.exe" => exes.bg3,
-        "bg3_dx11.exe" => exes.bg3_dx11,
-        // it's not a bg3 executable; or at least, it's not named correctly
-        exe => fatal_popup(
-            "No direct launch",
-            format!("This autostart program is not a launcher. Please check instructions for how to use it. (The target - {exe} - has an incorrect filename)"),
+            format!("This autostart program is not a launcher. Please check instructions for how to use it. (The target - {bg3_exe} - has an incorrect filename)"),
         )
     };
 
     trace!(game = ?bg3_exe, ?args, "launching");
     trace!(env = ?env::vars());
 
-    let child = match Command::new(bg3_path)
+    let cmd = Command::new(bg3_path)
         .args(args)
         // bypass IFEO on this launch
         .creation_flags(DEBUG_PROCESS.0 | DEBUG_ONLY_THIS_PROCESS.0)
         .envs(env::vars())
-        .spawn()
-    {
+        .spawn();
+
+    let child = match cmd {
         Ok(v) => v,
         Err(e) => {
             fatal_popup(
