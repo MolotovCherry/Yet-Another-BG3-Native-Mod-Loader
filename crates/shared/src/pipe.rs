@@ -75,7 +75,7 @@ impl Client {
         let data_len = buf.len() - size_of::<usize>();
         // <len><message>
         // ^---^ <-- copy len to here
-        buf[..size_of::<usize>()].copy_from_slice(&data_len.to_le_bytes());
+        buf[..size_of::<usize>()].copy_from_slice(&data_len.to_be_bytes());
 
         let fut = async {
             let size = buf.len();
@@ -278,7 +278,7 @@ impl Server {
                         // <len><message>
                         // ^---^
                         if self.msg_len.is_none() && self.buf.len() >= size_of::<usize>() {
-                            self.msg_len = Some(usize::from_le_bytes(
+                            self.msg_len = Some(usize::from_be_bytes(
                                 self.buf[..size_of::<usize>()].try_into().unwrap(),
                             ));
 
