@@ -12,7 +12,10 @@ use windows::Win32::System::{
 };
 
 use crate::{
-    event::Event, loader::run_loader, paths::get_game_binary_for, setup::init,
+    event::Event,
+    loader::run_loader,
+    paths::{get_game_binary_for, Bg3Exe},
+    setup::init,
     single_instance::SingleInstance,
 };
 
@@ -41,7 +44,8 @@ pub fn autostart() -> Result<()> {
         bg3_exe
     };
 
-    let Some(bg3_path) = get_game_binary_for(Path::new(&bg3_exe), init.config) else {
+    let exe: Bg3Exe = Path::new(&bg3_exe).into();
+    let Some(bg3_path) = get_game_binary_for(exe, init.config) else {
         // it's not a bg3 executable; or at least, it's not named correctly
         fatal_popup(
             "No direct launch",
@@ -49,7 +53,7 @@ pub fn autostart() -> Result<()> {
         )
     };
 
-    trace!(game = ?bg3_exe, ?args, "launching");
+    trace!(mode = %exe, ?args, "launching bg3");
     trace!(env = ?env::vars());
 
     let cmd = Command::new(bg3_path)

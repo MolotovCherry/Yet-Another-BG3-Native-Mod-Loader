@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     fs,
     path::{Path, PathBuf},
 };
@@ -69,10 +70,23 @@ pub fn get_game_binary_paths(config: &Config) -> Bg3Exes {
 }
 
 #[allow(dead_code)]
+#[derive(Copy, Clone)]
 pub enum Bg3Exe {
     Vulkan,
     Dx11,
     None,
+}
+
+impl Display for Bg3Exe {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let exe = match self {
+            Bg3Exe::Vulkan => "vulkan",
+            Bg3Exe::Dx11 => "dx11",
+            Bg3Exe::None => "none",
+        };
+
+        write!(f, "{exe}")
+    }
 }
 
 impl From<&Path> for Bg3Exe {
