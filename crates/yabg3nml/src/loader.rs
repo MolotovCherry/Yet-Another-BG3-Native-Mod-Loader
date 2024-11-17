@@ -14,8 +14,11 @@ use shared::{
     utils::OwnedHandle,
 };
 use tracing::{error, info, level_filters::LevelFilter, trace, trace_span, warn};
-use windows::Win32::Foundation::WAIT_OBJECT_0;
-use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE};
+use windows::Win32::{
+    Foundation::WAIT_FAILED,
+    System::Threading::{WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE},
+};
+use windows::Win32::{Foundation::WAIT_OBJECT_0, System::Threading::WaitForInputIdle};
 use windows::{
     core::{s, w, Error as WinError},
     Win32::{
@@ -56,28 +59,6 @@ pub fn run_loader(
 
     PID.store(pid, Ordering::Relaxed);
 
-    let process: OwnedHandle = {
-        let process = unsafe {
-            OpenProcess(
-                PROCESS_QUERY_INFORMATION
-                    | PROCESS_VM_OPERATION
-                    | PROCESS_VM_READ
-                    | PROCESS_VM_WRITE,
-                false,
-                pid,
-            )
-        };
-
-        match process {
-            Ok(v) => v.into(),
-            Err(e) => {
-                error!(?e, "failed to open process");
-                warn_popup("Can't open process", format!("Failed to open the game process.\n\nThis could be due to a few reasons:\n1. when the program attempted to open the process, it was already gone\n2. you need admin permissions to open it (try running this as admin)\n\nPress OK to continue; this tool will continue to operate normally.\n\nError: {e}"));
-                return Ok(());
-            }
-        }
-    };
-
     // get loadlibraryw address as fn pointer
     #[allow(non_snake_case)]
     let LoadLibraryW = 'b: {
@@ -105,6 +86,41 @@ pub fn run_loader(
         _ = CACHE.set(f);
         f
     };
+
+    let process: OwnedHandle = {
+        let process = unsafe {
+            OpenProcess(
+                PROCESS_QUERY_INFORMATION
+                    | PROCESS_VM_OPERATION
+                    | PROCESS_VM_READ
+                    | PROCESS_VM_WRITE,
+                false,
+                pid,
+            )
+        };
+
+        match process {
+            Ok(v) => v.into(),
+            Err(e) => {
+                error!(?e, "failed to open process");
+                warn_popup("Can't open process", format!("Failed to open the game process.\n\nThis could be due to a few reasons:\n1. when the program attempted to open the process, it was already gone\n2. you need admin permissions to open it (try running this as admin)\n\nPress OK to continue; this tool will continue to operate normally.\n\nError: {e}"));
+                return Ok(());
+            }
+        }
+    };
+
+    // to help new processes settle into a stable state before trying things
+    let res = unsafe { WaitForInputIdle(process.as_raw_handle(), INFINITE) };
+    if res == WAIT_FAILED.0 {
+        let e = {
+            let e = unsafe { GetLastError() };
+            e.to_hresult()
+        };
+
+        error!(error = %e, "WaitForInputIdle");
+        warn_popup("Can't wait", format!("Failed to WaitForInputIdle.\n\nThis could be due to a few reasons:\n1. when the program attempted to wait for the process, it was already gone\n2. you need admin permissions to open it (try running this as admin)\n\nPress OK to continue; this tool will continue to operate normally.\n\nError: {e}"));
+        return Ok(());
+    }
 
     if dirty_check {
         // checks if process has already had injection done on it
@@ -287,6 +303,7 @@ pub fn run_loader(
 
     if wait_for_init {
         // ignore errors like timeout, etc, they don't matter, just wait
+        // this MAY block for a LONG time
         _ = unsafe { WaitForSingleObject(handle, INFINITE) };
     }
 

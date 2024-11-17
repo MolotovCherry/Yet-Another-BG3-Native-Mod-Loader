@@ -55,10 +55,12 @@ impl Default for Disabled {
 }
 
 impl Disabled {
+    #[inline]
     pub fn is_global_disabled(&self) -> bool {
         matches!(self, Self::Global(true))
     }
 
+    #[inline]
     pub fn is_disabled(&self, name: &str) -> bool {
         match self {
             Disabled::Plugins(plugins) => {
