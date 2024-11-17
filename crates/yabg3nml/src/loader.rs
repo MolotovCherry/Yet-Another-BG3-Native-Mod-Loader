@@ -50,7 +50,7 @@ pub fn run_loader(
     wait_for_init: bool,
 ) -> Result<()> {
     if !config.core.enabled {
-        info!("Plugins are globally disabled. If you want to re-enable them, set [core]disabled in config.toml to false or []");
+        info!("Plugins are globally disabled. If you want to re-enable them, set [core]enabled in config.toml to true");
         return Ok(());
     }
 
