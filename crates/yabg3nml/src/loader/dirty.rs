@@ -81,15 +81,12 @@ pub fn is_dirty(process: &OwnedHandle, loader: &Path) -> Result<bool> {
     );
 
     let mut is_plugin = move |path: &U16Str| -> Result<bool> {
-        let path = path.to_string()?;
+        let mut path = path.to_string()?;
+        path.make_ascii_lowercase();
         let path = Path::new(&path);
 
         // not a dll file
-        if !path.is_file()
-            || path
-                .extension()
-                .is_none_or(|ext| ext.to_ascii_lowercase() != "dll")
-        {
+        if !path.is_file() || path.extension().unwrap_or_default() != "dll" {
             return Ok(false);
         }
 
