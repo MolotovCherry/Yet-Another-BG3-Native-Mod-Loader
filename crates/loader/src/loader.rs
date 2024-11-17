@@ -20,7 +20,7 @@ pub fn load_plugins() -> Result<()> {
     let plugins_dir = get_bg3_plugins_dir()?;
     let config = get_config()?;
 
-    if config.core.disabled.is_global_disabled() {
+    if !config.core.enabled {
         info!("Plugins are globally disabled. If you want to re-enable them, set [core]disabled in config.toml to false or []");
         return Ok(());
     }
@@ -71,6 +71,7 @@ pub fn load_plugins() -> Result<()> {
 
         let name_formatted = {
             let data = native_plugin_lib::get_plugin_data(&path);
+
             match data {
                 Ok(guard) => {
                     let data = guard.data();
@@ -91,9 +92,7 @@ pub fn load_plugins() -> Result<()> {
             }
         };
 
-        let is_disabled = config.core.disabled.is_disabled(name);
-
-        if is_disabled {
+        if config.core.is_plugin_disabled(name) {
             info!("Skipping disabled plugin {name_formatted}");
             continue;
         }

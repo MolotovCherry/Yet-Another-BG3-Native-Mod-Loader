@@ -50,37 +50,31 @@ together, including loader.dll.
 --------------------------
 
 The first time you run a tool, it will:
-   - Generate a config.toml for you
-   - Check the `config.toml` file inside
-     `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
-   - If the game was installed to a non-standard path, you must adjust this path
-     to correct it. It needs to point to the game's root installation directory.
-     E.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3`
-   - If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, they
-     will detect the install root automatically, and install_root in config.toml
-     won't require configuring.
-   - Place any dll plugins you have inside
-     `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
-   - Remember, all NativeModLoader plugins are compatible!
+    - Generate a config.toml for you
+    - Check the `config.toml` file inside
+      `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+    - If the game was installed to a non-standard path, you must adjust this path
+      to correct it. It needs to point to the game's root installation directory.
+      E.g. `C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3`
+    - If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, they
+      will detect the install root automatically, and install_root in config.toml
+      won't require configuring.
+    - Place any dll plugins you have inside
+      `C:\Users\<user>\AppData\Local\Larian Studios\Baldur's Gate 3\Plugins`
+    - Remember, all NativeModLoader plugins are compatible!
 
 Using:
-   1. Run your game as normal. It will automatically be patched.
+    1. Run your game as normal. It will automatically be patched.
 
-The `disabled` key accepts a boolean or array of strings.
-   - The array allows you to disable specific plugins with just the filename (no
-     extension). For example, if you have `FooBar.dll` and `FooBaz.dll` plugins,
-     they can be disabled with:
-       disabled = ["FooBar", "FooBaz"]
+Disabling:
+    To disable a specific plugin, either move/delete the plugin dll, or set the
+    `[core]disabled` key to an array of plugin filenames (no extension). For example,
+    if you have `FooBar.dll` and `FooBaz.dll` plugins, they can be disabled with:
+        disabled = ["FooBar", "FooBaz"]
 
-   - If you want to globally disable plugins, you can use a boolean, or uninstall
-     the autostart tool:
-       disabled = true
-
-If you wish to disable a mod, add an entry without extension to the `disabled` key
-
-   - If you wish to disable all plugins, either uninstall autostart tool, and then start
-     the game normally as you always do, or set the disabled key to:
-     disabled = true
+    To globally disable plugins, set the `[core]enabled` key to false, or uninstall
+    the autostart tool:
+        enabled = false
 
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
 

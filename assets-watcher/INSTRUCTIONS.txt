@@ -49,15 +49,15 @@ Using:
    1. Run the watcher tool
    2. When the game launches, it will auto-patch the game instance
 
-The `disabled` key accepts a boolean or array of strings.
-   - The array allows you to disable specific plugins with just the filename (no
-     extension). For example, if you have `FooBar.dll` and `FooBaz.dll` plugins,
-     they can be disabled with:
-       disabled = ["FooBar", "FooBaz"]
+Disabling:
+    To disable a specific plugin, either move/delete the plugin dll, or set the
+    `[core]disabled` key to an array of plugin filenames (no extension). For example,
+    if you have `FooBar.dll` and `FooBaz.dll` plugins, they can be disabled with:
+        disabled = ["FooBar", "FooBaz"]
 
-   - If you want to globally disable plugins, you can use a boolean, or simply
-     don't start the watcher tool:
-       disabled = true
+    To globally disable plugins, set the `[core]enabled` key to false, or simply
+    don't start the watcher tool:
+        enabled = false
 
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
 
