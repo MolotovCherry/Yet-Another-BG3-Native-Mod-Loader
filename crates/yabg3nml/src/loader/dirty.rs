@@ -68,17 +68,15 @@ pub fn is_dirty(process: &OwnedHandle, loader: &Path) -> Result<bool> {
     let loader = loader.as_os_str().encode_wide().collect::<Vec<_>>();
     let loader = U16Str::from_slice(&loader);
 
-    let plugins_dir = get_bg3_plugins_dir()?;
+    let mut plugins_dir = get_bg3_plugins_dir()?;
+    plugins_dir.as_mut_os_str().make_ascii_lowercase();
 
     let mut cache_id_map = HashMap::new();
 
     trace!(plugins_dir = %plugins_dir.display(), "checking dll path against dirs");
 
     let plugins_dir_id = dir_id(&plugins_dir).ok_or_eyre("failed to get id for plugins_dir")?;
-    cache_id_map.insert(
-        plugins_dir.to_string_lossy().to_lowercase().into(),
-        plugins_dir_id,
-    );
+    cache_id_map.insert(plugins_dir, plugins_dir_id);
 
     let mut is_plugin = move |path: &U16Str| -> Result<bool> {
         let mut path = path.to_string()?;
