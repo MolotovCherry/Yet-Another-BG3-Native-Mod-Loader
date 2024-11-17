@@ -20,10 +20,11 @@ pub struct Core {
     /// The game's root installation directory,
     /// e.g. C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3
     pub install_root: PathBuf,
-    /// Which plugins to disable. Each entry is the plugins filename without extension
+    /// Whether to globally disable or which plugins to disable.
+    /// Each entry is the plugins filename without extension
     /// Except for those in this list, all plugins are enabled by default
     /// e.g. FooBar.dll should have an entry for "FooBar"
-    pub disabled: Vec<String>,
+    pub disabled: Disabled,
     /// Whether to show cli window
     pub cli: bool,
 }
@@ -33,9 +34,22 @@ impl Default for Core {
         Self {
             // the default location for most people
             install_root: r"C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3".into(),
-            disabled: Vec::new(),
+            disabled: Disabled::Global(false),
             cli: false,
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Disabled {
+    Plugins(Vec<String>),
+    Global(bool),
+}
+
+impl Default for Disabled {
+    fn default() -> Self {
+        Self::Global(false)
     }
 }
 

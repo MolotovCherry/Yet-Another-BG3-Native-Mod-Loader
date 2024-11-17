@@ -3,7 +3,7 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
 use shared::{
-    config::get_config,
+    config::{get_config, Disabled},
     paths::get_bg3_plugins_dir,
     popup::warn_popup,
     utils::{tri, SuperLock as _},
@@ -20,6 +20,11 @@ use crate::{Plugin, LOADED_PLUGINS};
 pub fn load_plugins() -> Result<()> {
     let plugins_dir = get_bg3_plugins_dir()?;
     let config = get_config()?;
+
+    if matches!(config.core.disabled, Disabled::Global(true)) {
+        info!("Plugins are globally disabled. If you want to re-enable them, set [core]disabled in config.toml to false or []");
+        return Ok(());
+    }
 
     let read_dir = fs::read_dir(plugins_dir).context("failed to read plugins_dir {plugins_dir}");
     let Ok(read_dir) = read_dir else {
@@ -88,11 +93,13 @@ pub fn load_plugins() -> Result<()> {
             }
         };
 
-        let is_disabled = config
-            .core
-            .disabled
-            .iter()
-            .any(|s| UniCase::new(s) == UniCase::new(name));
+        let is_disabled = match &config.core.disabled {
+            Disabled::Plugins(plugins) => plugins
+                .iter()
+                .any(|s| UniCase::new(s) == UniCase::new(name)),
+
+            Disabled::Global(d) => *d,
+        };
 
         if is_disabled {
             info!("Skipping disabled plugin {name_formatted}");

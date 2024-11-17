@@ -8,7 +8,7 @@ use std::{mem, os::windows::prelude::OsStrExt as _};
 use eyre::{Context, Result};
 use native_plugin_lib::Version;
 use shared::{
-    config::Config,
+    config::{Config, Disabled},
     popup::warn_popup,
     thread_data::{LogData, ThreadData},
     utils::OwnedHandle,
@@ -46,6 +46,11 @@ pub fn run_loader(
     dirty_check: bool,
     wait_for_init: bool,
 ) -> Result<()> {
+    if matches!(config.core.disabled, Disabled::Global(true)) {
+        info!("Plugins are globally disabled. If you want to re-enable them, set [core]disabled in config.toml to false or []");
+        return Ok(());
+    }
+
     let span = trace_span!("loader");
     let _guard = span.enter();
 

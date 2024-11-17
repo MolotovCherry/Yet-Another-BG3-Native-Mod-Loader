@@ -66,12 +66,21 @@ The first time you run a tool, it will:
 Using:
    1. Run your game as normal. It will automatically be patched.
 
+The `disabled` key accepts a boolean or array of strings.
+   - The array allows you to disable specific plugins with just the filename (no
+     extension). For example, if you have `FooBar.dll` and `FooBaz.dll` plugins,
+     they can be disabled with:
+       disabled = ["FooBar", "FooBaz"]
+
+   - If you want to globally disable plugins, you can use a boolean, or uninstall
+     the autostart tool:
+       disabled = true
+
 If you wish to disable a mod, add an entry without extension to the `disabled` key
-   - For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, the entry
-     looks like:
-     disabled = ["FooBar", "FooBaz"]
-   - If you wish to disable all plugins, uninstall autostart tool, and then start
-     the game normally as you always do.
+
+   - If you wish to disable all plugins, either uninstall autostart tool, and then start
+     the game normally as you always do, or set the disabled key to:
+     disabled = true
 
 Source code: https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader
 

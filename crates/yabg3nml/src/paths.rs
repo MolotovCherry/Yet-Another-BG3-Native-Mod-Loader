@@ -99,10 +99,12 @@ impl From<&Path> for Bg3Exe {
         let vulkan = UniCase::new("bg3.exe");
         let dx11 = UniCase::new("bg3_dx11.exe");
 
-        match value {
-            v if v == vulkan => Self::Vulkan,
-            v if v == dx11 => Self::Dx11,
-            _ => Self::None,
+        if value == vulkan {
+            Self::Vulkan
+        } else if value == dx11 {
+            Self::Dx11
+        } else {
+            Self::None
         }
     }
 }
