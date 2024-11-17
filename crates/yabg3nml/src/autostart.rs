@@ -1,8 +1,10 @@
-use std::{env, os::windows::process::CommandExt as _, path::Path, process::Command};
+use std::{
+    collections::VecDeque, env, os::windows::process::CommandExt as _, path::Path, process::Command,
+};
 
 use eyre::Result;
 use shared::popup::fatal_popup;
-use tracing::error;
+use tracing::{error, trace};
 
 use windows::Win32::System::{
     Diagnostics::Debug::DebugActiveProcessStop,
@@ -24,19 +26,22 @@ pub fn autostart() -> Result<()> {
     let _worker_guard = init.worker.take();
 
     // [this_exe_path, bg3_exe_path, ..args]
-    let args = env::args().skip(2);
+    let mut args = env::args().skip(1).collect::<VecDeque<_>>();
 
-    let Some(bg3_exe) = env::args().nth(1) else {
-        fatal_popup(
-            "No direct launch",
-            "This autostart program is not a launcher. Please check instructions for how to use it. (nth(1) missing)",
-        );
+    let bg3_exe = {
+        let Some(mut bg3_exe) = args.pop_front() else {
+            fatal_popup(
+                "No direct launch",
+                "This autostart program is not a launcher. Please check instructions for how to use it. (nth(1) missing)",
+            );
+        };
+
+        bg3_exe.make_ascii_lowercase();
+
+        bg3_exe
     };
 
-    let Some(bg3_exe) = Path::new(&bg3_exe)
-        .file_name()
-        .map(|p| p.to_string_lossy().to_lowercase())
-    else {
+    let Some(bg3_exe) = Path::new(&bg3_exe).file_name() else {
         fatal_popup(
             "No direct launch",
             "This autostart program is not a launcher. Please check instructions for how to use it. (file_name() missing)",
@@ -45,20 +50,18 @@ pub fn autostart() -> Result<()> {
 
     let exes = get_game_binary_paths(init.config);
 
-    // validate it's actually a bg3 executable
-    let is_bg3 = ["bg3.exe", "bg3_dx11.exe"].contains(&&*bg3_exe);
-    if !is_bg3 {
-        fatal_popup(
-            "No direct launch",
-            "This autostart program is not a launcher. Please check instructions for how to use it. (this is not a bg3 exe)",
-        );
-    }
-
-    let bg3_path = match &*bg3_exe {
+    let bg3_path = match &*bg3_exe.to_string_lossy() {
         "bg3.exe" => exes.bg3,
         "bg3_dx11.exe" => exes.bg3_dx11,
-        _ => unreachable!(),
+        // it's not a bg3 executable; or at least, it's not named correctly
+        exe => fatal_popup(
+            "No direct launch",
+            format!("This autostart program is not a launcher. Please check instructions for how to use it. (The target - {exe} - has an incorrect filename)"),
+        )
     };
+
+    trace!(game = ?bg3_exe, ?args, "launching");
+    trace!(env = ?env::vars());
 
     let child = match Command::new(bg3_path)
         .args(args)
