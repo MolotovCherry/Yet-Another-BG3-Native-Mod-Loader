@@ -28,7 +28,7 @@ pub fn GetModuleBaseEx<P: AsRef<Path>>(process: &OwnedHandle, module: P) -> Opti
     let res = EnumProcessModulesExRs(process, |module| {
         let path = GetModuleFileNameExRs(process, Some(module), &mut buf)?;
 
-        trace!(path = %path.to_string_lossy(), "trying");
+        trace!(path = %path.display(), "trying");
 
         if module_name == path {
             entry = Some(module);

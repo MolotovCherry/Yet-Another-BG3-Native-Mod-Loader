@@ -1,6 +1,6 @@
 use std::{
     thread,
-    time::{self, Instant},
+    time::{Duration, Instant},
 };
 
 use eyre::{bail, Result};
@@ -86,7 +86,7 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             // - Missing permissions (try running as admin)
             // - Issues with disk / file(s) corrupt
             if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult() == e.code() {
-                if timer.elapsed() > time::Duration::from_secs(2) {
+                if timer.elapsed() > Duration::from_secs(2) {
                     bail!("EnumProcessModulesExRs: timed out waiting for call to succeed; aborting injection");
                 }
 
@@ -101,7 +101,7 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
                 );
 
                 // give time for EnumProcessModulesEx to stabilize
-                thread::sleep(time::Duration::from_millis(20));
+                thread::sleep(Duration::from_millis(20));
 
                 continue;
             }
