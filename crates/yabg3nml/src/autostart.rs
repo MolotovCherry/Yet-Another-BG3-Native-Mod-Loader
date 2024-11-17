@@ -85,7 +85,7 @@ pub fn autostart() -> Result<()> {
         );
     }
 
-    let res = run_loader(init.config, pid, &init.loader, true);
+    let res = run_loader(init.config, pid, &init.loader, false, true);
     if let Err(e) = res {
         error!(err = %e, "run_loader failed");
         fatal_popup(

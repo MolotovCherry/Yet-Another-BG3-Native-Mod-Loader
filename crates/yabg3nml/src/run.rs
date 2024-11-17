@@ -65,7 +65,7 @@ pub fn run(run_type: RunType) -> Result<()> {
         move |call| match call {
             CallType::Pid(pid) => {
                 trace!(pid, "Received callback for pid, now loading");
-                let res = run_loader(init.config, pid, &init.loader, wait_for_init);
+                let res = run_loader(init.config, pid, &init.loader, true, wait_for_init);
                 if let Err(e) = res {
                     error!(err = %e, "run_loader failed");
                     fatal_popup(

@@ -39,7 +39,13 @@ use crate::{
 use dirty::is_dirty;
 use write::write_in;
 
-pub fn run_loader(config: &Config, pid: Pid, loader: &Loader, wait_for_init: bool) -> Result<()> {
+pub fn run_loader(
+    config: &Config,
+    pid: Pid,
+    loader: &Loader,
+    dirty_check: bool,
+    wait_for_init: bool,
+) -> Result<()> {
     let span = trace_span!("loader");
     let _guard = span.enter();
 
@@ -95,28 +101,30 @@ pub fn run_loader(config: &Config, pid: Pid, loader: &Loader, wait_for_init: boo
         f
     };
 
-    // checks if process has already had injection done on it
-    let is_dirty = match is_dirty(&process, &loader.path) {
-        Ok(v) => v,
-        Err(e) => {
-            error!(?e, "failed dirty check");
+    if dirty_check {
+        // checks if process has already had injection done on it
+        let is_dirty = match is_dirty(&process, &loader.path) {
+            Ok(v) => v,
+            Err(e) => {
+                error!(?e, "failed dirty check");
 
-            warn_popup(
-                "Failed process patch check",
-                format!(
-                    "The process patch detection failed due to winapi failure. This can happen if the process unexpectedly disappeared on us (such as a game crash). Aborting process injection. Please try patching the game again. Press OK to continue; this tool will continue to operate normally.\n\n{e}",
-                ),
-            );
+                warn_popup(
+            "Failed process patch check",
+            format!(
+                "The process patch detection failed due to winapi failure. This can happen if the process unexpectedly disappeared on us (such as a game crash). Aborting process injection. Please try patching the game again. Press OK to continue; this tool will continue to operate normally.\n\n{e}",
+            ),
+        );
 
+                return Ok(());
+            }
+        };
+
+        if is_dirty {
+            // return ok as if nothing happened, however we will log this
+            warn!("Aborting patching since the game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance.");
+            warn_popup("Already patched", "Aborting patching since the game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance. Press OK to continue; this tool will continue to operate normally.");
             return Ok(());
         }
-    };
-
-    if is_dirty {
-        // return ok as if nothing happened, however we will log this
-        warn!("Aborting patching since the game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance.");
-        warn_popup("Already patched", "Aborting patching since the game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance. Press OK to continue; this tool will continue to operate normally.");
-        return Ok(());
     }
 
     let loader_formatted = {
