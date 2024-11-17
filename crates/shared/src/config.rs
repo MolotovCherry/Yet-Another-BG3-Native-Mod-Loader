@@ -27,7 +27,8 @@ pub struct Core {
     /// Each entry is the plugins filename without extension
     /// Except for those in this list, all plugins are enabled by default
     /// e.g. FooBar.dll should have an entry for "FooBar"
-    pub disabled: Vec<String>,
+    #[serde(alias = "disabled")]
+    pub disabled_plugins: Vec<String>,
     /// Whether to show cli window
     pub cli: bool,
 }
@@ -38,7 +39,7 @@ impl Default for Core {
             enabled: true,
             // the default location for most people
             install_root: r"C:\Program Files (x86)\Steam\steamapps\common\Baldurs Gate 3".into(),
-            disabled: Vec::new(),
+            disabled_plugins: Vec::new(),
             cli: false,
         }
     }
@@ -47,7 +48,9 @@ impl Default for Core {
 impl Core {
     pub fn is_plugin_disabled(&self, name: &str) -> bool {
         let name = UniCase::new(name);
-        self.disabled.iter().any(|p| UniCase::new(p) == name)
+        self.disabled_plugins
+            .iter()
+            .any(|p| UniCase::new(p) == name)
     }
 }
 

@@ -51,9 +51,10 @@ Using:
 
 Disabling:
     To disable a specific plugin, either move/delete the plugin dll, or set the
-    `[core]disabled` key to an array of plugin filenames (no extension). For example,
-    if you have `FooBar.dll` and `FooBaz.dll` plugins, they can be disabled with:
-        disabled = ["FooBar", "FooBaz"]
+    `[core]disabled_plugins` key to an array of plugin filenames (no extension).
+    For example, if you have `FooBar.dll` and `FooBaz.dll` plugins, they can be
+    disabled with:
+        disabled_plugins = ["FooBar", "FooBaz"]
 
     To globally disable plugins, set the `[core]enabled` key to false, or simply
     don't start the watcher tool:
