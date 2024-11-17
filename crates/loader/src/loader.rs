@@ -46,13 +46,12 @@ pub fn load_plugins() -> Result<()> {
             continue;
         };
 
-        let path = entry.path();
+        let mut path = entry.path();
+        // lowercase the path for comparisons
+        path.as_mut_os_str().make_ascii_lowercase();
+
         // not a file or dll
-        if !path.is_file()
-            || path
-                .extension()
-                .is_none_or(|e| e.to_ascii_lowercase() != "dll")
-        {
+        if !path.is_file() || path.extension().unwrap_or_default() != "dll" {
             continue;
         }
 
