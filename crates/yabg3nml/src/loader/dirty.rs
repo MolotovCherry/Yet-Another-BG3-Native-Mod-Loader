@@ -93,16 +93,17 @@ pub fn is_dirty(process: &OwnedHandle, loader: &Path) -> Result<bool> {
             return Ok(false);
         };
 
-        let id = if let Some(&id) = cache_id_map.get(parent) {
-            id
-        } else {
-            let Some(path_id) = dir_id(parent) else {
-                return Ok(false);
-            };
+        let id = match cache_id_map.get(parent) {
+            Some(id) => *id,
+            None => {
+                let Some(path_id) = dir_id(parent) else {
+                    return Ok(false);
+                };
 
-            cache_id_map.insert(parent.to_path_buf(), path_id);
+                cache_id_map.insert(parent.to_path_buf(), path_id);
 
-            path_id
+                path_id
+            }
         };
 
         // if plugins dir is the same id as this one, then this is a plugin inside our plugins dir~
