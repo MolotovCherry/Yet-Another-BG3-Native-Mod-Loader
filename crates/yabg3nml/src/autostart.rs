@@ -1,8 +1,12 @@
 use std::{
-    collections::VecDeque, env, os::windows::process::CommandExt as _, path::Path, process::Command,
+    collections::VecDeque,
+    env,
+    os::windows::process::{CommandExt as _, ExitCodeExt as _},
+    path::Path,
+    process::{Command, ExitCode},
 };
 
-use eyre::Result;
+use eyre::{eyre, Result};
 use shared::popup::fatal_popup;
 use tracing::{error, trace};
 
@@ -19,7 +23,7 @@ use crate::{
     single_instance::SingleInstance,
 };
 
-pub fn autostart() -> Result<()> {
+pub fn autostart() -> Result<ExitCode> {
     // This prohibits multiple app instances
     let _singleton = SingleInstance::new();
     let _event = Event::new()?;
@@ -63,7 +67,7 @@ pub fn autostart() -> Result<()> {
         .envs(env::vars())
         .spawn();
 
-    let child = match cmd {
+    let mut child = match cmd {
         Ok(v) => v,
         Err(e) => {
             fatal_popup(
@@ -91,5 +95,21 @@ pub fn autostart() -> Result<()> {
         );
     }
 
-    Ok(())
+    match child.wait() {
+        Ok(status) => {
+            trace!(code = status.code(), "original child exit code");
+
+            let code = status
+                .code()
+                .map(|c| ExitCode::from_raw(c as u32))
+                .unwrap_or(ExitCode::FAILURE);
+
+            Ok(code)
+        }
+
+        Err(error) => {
+            error!(%error, "failed to wait for child");
+            Err(eyre!("{error}"))
+        }
+    }
 }

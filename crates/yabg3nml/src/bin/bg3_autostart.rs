@@ -1,9 +1,16 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use shared::popup::fatal_popup;
+use std::process::ExitCode;
 
-fn main() {
-    if let Err(e) = yabg3nml::autostart() {
-        fatal_popup("autostart failure", e.to_string());
+use shared::popup::{display_popup, MessageBoxIcon};
+
+fn main() -> ExitCode {
+    match yabg3nml::autostart() {
+        Ok(c) => c,
+        Err(e) => {
+            display_popup("Autostart Failure", e.to_string(), MessageBoxIcon::Error);
+            // DO NOT signal failure for the crash handler
+            ExitCode::SUCCESS
+        }
     }
 }

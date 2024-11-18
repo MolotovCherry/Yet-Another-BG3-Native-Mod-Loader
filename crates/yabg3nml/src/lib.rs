@@ -1,3 +1,5 @@
+#![feature(windows_process_exit_code_from)]
+
 mod autostart;
 mod cli;
 mod console;
