@@ -1,4 +1,4 @@
-use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf, thread};
+use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf};
 
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::Version;
@@ -14,9 +14,12 @@ use windows::{
     Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW},
 };
 
-use crate::{Plugin, LOADED_PLUGINS};
+use crate::{utils::ThreadManager, Plugin, LOADED_PLUGINS};
 
-pub fn load_plugins() -> Result<()> {
+/// # Safety
+/// Any spawned threads MUST be joined. This is taken care of by ThreadManager,
+/// but it is still an unsafe requirement that could be circumvented
+pub unsafe fn load_plugins() -> Result<()> {
     let plugins_dir = get_bg3_plugins_dir()?;
     let config = get_config()?;
 
@@ -37,7 +40,7 @@ pub fn load_plugins() -> Result<()> {
         return Ok(());
     };
 
-    let mut threads = Vec::new();
+    let mut m = ThreadManager::new();
 
     for entry in read_dir {
         let Ok(entry) = entry else {
@@ -102,17 +105,10 @@ pub fn load_plugins() -> Result<()> {
         // do not join the handle, or it will panic
         // this is because we use ExitThread which yanks the thread out from
         // underneath rust. it does not expect this
-        let handle = thread::spawn({
+        m.spawn({
             let name = name.to_owned();
             move || load_plugin(name, path)
         });
-
-        threads.push(handle);
-    }
-
-    // wait for all threads to be done
-    for thread in threads {
-        _ = thread.join();
     }
 
     Ok(())
@@ -155,13 +151,15 @@ fn load_plugin(name: String, path: PathBuf) {
             type Init = unsafe extern "C" fn();
 
             // SAFETY: We declared the signature to be `unsafe extern "C" fn()`. Implementer must abide by this
-            let init = unsafe { mem::transmute::<FarProc, Init>(init) };
+            #[allow(non_snake_case)]
+            let Init = unsafe { mem::transmute::<FarProc, Init>(init) };
 
             trace!(%name, "running Init");
 
             // SAFETY: Guaranteed by implementer to not be UB
+            //         Plugin is responsible
             unsafe {
-                init();
+                Init();
             }
 
             trace!(%name, "finished Init");

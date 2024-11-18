@@ -109,7 +109,9 @@ unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
         setup_logging(&data.log).context("failed to setup logging")?;
 
         // blocking call which waits for all plugins to finish DllMain/Init
-        load_plugins()?;
+        unsafe {
+            load_plugins()?;
+        }
 
         Ok::<_, Error>(())
     });

@@ -38,6 +38,9 @@ features = [
     "Win32_System_Pipes",
 ]
 
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
 [profile.dev]
 opt-level = 1
 

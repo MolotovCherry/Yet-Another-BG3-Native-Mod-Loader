@@ -36,6 +36,9 @@ default-features = false
 [build-dependencies]
 winres.workspace = true
 
+[lints]
+workspace = true
+
 [package.metadata.winres]
 FileDescription = "Yet Another BG3 Native Mod Loader"
 LegalCopyright = "Copyright (c) Cherry"

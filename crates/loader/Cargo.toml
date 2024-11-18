@@ -18,6 +18,9 @@ windows.workspace = true
 shared.workspace = true
 native-plugin-lib.workspace = true
 
+[lints]
+workspace = true
+
 [build-dependencies]
 winres.workspace = true
 

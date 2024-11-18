@@ -9,3 +9,6 @@ winreg = "0.52.0"
 
 [build-dependencies]
 winres.workspace = true
+
+[lints]
+workspace = true
