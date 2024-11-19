@@ -4,6 +4,7 @@ use std::{
     os::windows::process::{CommandExt as _, ExitCodeExt as _},
     path::Path,
     process::{Command, ExitCode},
+    thread,
 };
 
 use eyre::{eyre, Result};
@@ -21,6 +22,7 @@ use crate::{
     paths::{get_game_binary_for, Bg3Exe},
     setup::init,
     single_instance::SingleInstance,
+    wapi::event_loop::EventLoop,
 };
 
 pub fn autostart() -> Result<ExitCode> {
@@ -94,6 +96,9 @@ pub fn autostart() -> Result<ExitCode> {
             format!("run_loader unexpectedly failed. You should report this.\n\nError: {e}"),
         );
     }
+
+    // just put something here to stop the needless busy cursor
+    thread::spawn(|| EventLoop::new().run(|_, _| ()));
 
     match child.wait() {
         Ok(status) => {
