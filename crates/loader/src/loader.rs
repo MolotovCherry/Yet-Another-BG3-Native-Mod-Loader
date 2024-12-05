@@ -16,10 +16,12 @@ use windows::{
 
 use crate::{utils::ThreadManager, Plugin, LOADED_PLUGINS};
 
-/// # Safety
-/// Any spawned threads MUST be joined. This is taken care of by ThreadManager,
-/// but it is still an unsafe requirement that could be circumvented
-pub unsafe fn load_plugins() -> Result<()> {
+pub fn load_plugins() -> Result<()> {
+    // # Safety
+    // Any spawned threads MUST be joined. This is taken care of by ThreadManager,
+    // but it is still an unsafe requirement that could be circumvented.
+    // This function is safe because we upheld this requirement
+
     let plugins_dir = get_bg3_plugins_dir()?;
     let config = get_config()?;
 
