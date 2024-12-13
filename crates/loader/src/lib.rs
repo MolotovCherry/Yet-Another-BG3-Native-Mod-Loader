@@ -21,10 +21,14 @@ use shared::{
 };
 use tracing::{error, trace};
 use windows::{
-    core::w,
+    core::{w, PCWSTR},
     Win32::{
-        Foundation::HINSTANCE,
+        Foundation::{HINSTANCE, HMODULE},
         System::{
+            LibraryLoader::{
+                GetModuleHandleExW, GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                GET_MODULE_HANDLE_EX_FLAG_PIN,
+            },
             SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
             Threading::{OpenEventW, SYNCHRONIZATION_SYNCHRONIZE},
         },
@@ -34,7 +38,7 @@ use windows::{
 use client::{TrySend as _, CLIENT};
 use loader::load_plugins;
 use logging::setup_logging;
-use utils::Plugin;
+use utils::{Plugin, ThreadedWrapper};
 
 declare_plugin! {
     "Loader",
@@ -43,10 +47,11 @@ declare_plugin! {
 }
 
 static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(Mutex::default);
+static MODULE: OnceLock<ThreadedWrapper<HINSTANCE>> = OnceLock::new();
 
 #[unsafe(no_mangle)]
 extern "stdcall-unwind" fn DllMain(
-    _module: HINSTANCE,
+    module: HINSTANCE,
     fdw_reason: u32,
     _lpv_reserved: *const c_void,
 ) -> bool {
@@ -58,6 +63,8 @@ extern "stdcall-unwind" fn DllMain(
             // > Consider calling DisableThreadLibraryCalls when receiving DLL_PROCESS_ATTACH, unless your DLL is
             // > linked with static C run-time library (CRT).
             // _ = unsafe { DisableThreadLibraryCalls(module) };
+
+            _ = MODULE.set(unsafe { ThreadedWrapper::new(module) });
 
             if !is_yabg3nml() {
                 unsupported_operation();
@@ -98,6 +105,22 @@ unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
         unsupported_operation();
         return 0;
     }
+
+    // ensure this library cannot be unloaded until process exit
+    let module = {
+        let m = unsafe { MODULE.get().unwrap_unchecked() };
+        (**m).0
+    };
+
+    // Pin this dll loader in place until process exit
+    _ = unsafe {
+        GetModuleHandleExW(
+            GET_MODULE_HANDLE_EX_FLAG_PIN | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+            PCWSTR(module.cast()),
+            // this is a discard value
+            &mut HMODULE::default(),
+        )
+    };
 
     // Set up a custom panic hook so we can log all panics
     panic_hook::set_hook();

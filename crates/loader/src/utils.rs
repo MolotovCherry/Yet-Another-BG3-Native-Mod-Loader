@@ -1,4 +1,7 @@
-use std::thread::{self, JoinHandle};
+use std::{
+    ops::Deref,
+    thread::{self, JoinHandle},
+};
 
 use windows::Win32::Foundation::{FreeLibrary, HMODULE};
 
@@ -22,8 +25,7 @@ impl ThreadManager {
 
     pub fn spawn<F>(&mut self, f: F)
     where
-        F: FnOnce(),
-        F: Send + 'static,
+        F: FnOnce() + Send + 'static,
     {
         let handle = thread::spawn(f);
         self.0.as_mut().unwrap().push(handle);
@@ -36,5 +38,25 @@ impl Drop for ThreadManager {
         for thread in threads {
             _ = thread.join();
         }
+    }
+}
+
+pub struct ThreadedWrapper<T>(T);
+unsafe impl<T> Send for ThreadedWrapper<T> {}
+unsafe impl<T> Sync for ThreadedWrapper<T> {}
+
+impl<T> ThreadedWrapper<T> {
+    /// # Safety
+    /// Caller asserts that T is safe to use in Send+Sync contexts
+    pub unsafe fn new(t: T) -> Self {
+        Self(t)
+    }
+}
+
+impl<T> Deref for ThreadedWrapper<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

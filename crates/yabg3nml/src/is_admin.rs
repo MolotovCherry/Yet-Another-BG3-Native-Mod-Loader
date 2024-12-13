@@ -17,7 +17,6 @@ pub fn is_admin() -> bool {
             OpenProcessToken(process.as_raw_handle(), TOKEN_QUERY, token.as_mut())?;
         }
 
-        let mut _written = 0;
         let mut elevation = TOKEN_ELEVATION::default();
         unsafe {
             GetTokenInformation(
@@ -25,7 +24,7 @@ pub fn is_admin() -> bool {
                 TokenElevation,
                 Some(&raw mut elevation as *mut _),
                 size_of::<TOKEN_ELEVATION>() as _,
-                &mut _written,
+                &mut 0,
             )?;
         }
 
