@@ -15,7 +15,7 @@ use windows::{
 pub struct RemoteThread(HANDLE);
 
 impl RemoteThread {
-    pub fn new(
+    pub fn spawn(
         process: &OwnedHandle,
         addr: LPTHREAD_START_ROUTINE,
         lpparameter: Option<*const c_void>,

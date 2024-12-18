@@ -193,7 +193,7 @@ pub fn run_loader(
 
     // start thread with dll
     // Note that the returned HANDLE is intentionally not closed!
-    let thread = match RemoteThread::new(&process, LoadLibraryW, Some(ptr)) {
+    let thread = match RemoteThread::spawn(&process, LoadLibraryW, Some(ptr)) {
         Ok(h) => h,
         Err(e) => {
             error!(?e, "Failed to create remote thread");
@@ -256,7 +256,7 @@ pub fn run_loader(
 
     let init_fn = unsafe { mem::transmute::<usize, LPTHREAD_START_ROUTINE>(init_addr) };
 
-    let thread = match RemoteThread::new(&process, init_fn, Some(ptr)) {
+    let thread = match RemoteThread::spawn(&process, init_fn, Some(ptr)) {
         Ok(h) => h,
         Err(e) => {
             error!(
