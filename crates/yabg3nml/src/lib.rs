@@ -18,6 +18,7 @@ mod single_instance;
 mod stop_token;
 mod tmp_loader;
 mod tray;
+mod utils;
 mod wapi;
 
 pub use autostart::autostart;

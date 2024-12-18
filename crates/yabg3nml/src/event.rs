@@ -14,6 +14,8 @@ use windows::{
     },
 };
 
+use crate::utils::PSecurityDescriptor;
+
 #[allow(dead_code)]
 pub struct Event(OwnedHandle);
 
@@ -26,19 +28,19 @@ impl Event {
         // http://web.archive.org/web/20151215210112/http://blogs.msdn.com/b/winsdk/archive/2009/11/10/access-denied-on-a-mutex.aspx
         let sec_str = w!("D:(A;;GA;;;WD)(A;;GA;;;AN)S:(ML;;NW;;;S-1-16-0)");
 
-        let mut psec_desc = PSECURITY_DESCRIPTOR::default();
+        let mut psec_desc: PSecurityDescriptor = PSECURITY_DESCRIPTOR::default().into();
         unsafe {
             ConvertStringSecurityDescriptorToSecurityDescriptorW(
                 sec_str,
                 SDDL_REVISION_1,
-                &mut psec_desc,
+                psec_desc.as_mut(),
                 None,
             )?;
         }
 
         let sec_attr = SECURITY_ATTRIBUTES {
             nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
-            lpSecurityDescriptor: psec_desc.0,
+            lpSecurityDescriptor: psec_desc.as_void(),
             bInheritHandle: false.into(),
         };
 
@@ -51,10 +53,6 @@ impl Event {
             )?
             .into()
         };
-
-        unsafe {
-            LocalFree(HLOCAL(psec_desc.0));
-        }
 
         Ok(Self(event))
     }

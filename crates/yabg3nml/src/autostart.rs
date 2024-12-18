@@ -38,14 +38,12 @@ pub fn autostart() -> Result<ExitCode> {
     let mut args = env::args().skip(1).collect::<VecDeque<_>>();
 
     let bg3_exe = {
-        let Some(mut bg3_exe) = args.pop_front() else {
+        let Some(bg3_exe) = args.pop_front() else {
             fatal_popup(
                 "No direct launch",
                 "This autostart program is not a launcher. Please check instructions for how to use it. (nth(1) missing)",
             );
         };
-
-        bg3_exe.make_ascii_lowercase();
 
         bg3_exe
     };
