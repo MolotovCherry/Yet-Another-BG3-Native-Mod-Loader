@@ -3,7 +3,6 @@ use shared::utils::OwnedHandle;
 use windows::{
     core::w,
     Win32::{
-        Foundation::{LocalFree, HLOCAL},
         Security::{
             Authorization::{
                 ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,

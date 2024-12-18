@@ -11,6 +11,7 @@ mod panic;
 mod paths;
 mod privileges;
 mod process_watcher;
+mod remote_thread;
 mod run;
 mod server;
 mod setup;

@@ -14,11 +14,11 @@ use shared::{
     utils::OwnedHandle,
 };
 use tracing::{error, info, level_filters::LevelFilter, trace, trace_span, warn};
+use windows::Win32::System::Threading::WaitForInputIdle;
 use windows::Win32::{
     Foundation::WAIT_FAILED,
-    System::Threading::{WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE},
+    System::Threading::{INFINITE, LPTHREAD_START_ROUTINE},
 };
-use windows::Win32::{Foundation::WAIT_OBJECT_0, System::Threading::WaitForInputIdle};
 use windows::{
     core::{s, w, Error as WinError},
     Win32::{
@@ -26,13 +26,14 @@ use windows::{
         System::{
             LibraryLoader::{GetModuleHandleW, GetProcAddress},
             Threading::{
-                CreateRemoteThread, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION,
-                PROCESS_VM_READ, PROCESS_VM_WRITE,
+                OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION, PROCESS_VM_READ,
+                PROCESS_VM_WRITE,
             },
         },
     },
 };
 
+use crate::remote_thread::RemoteThread;
 use crate::{
     process_watcher::Pid,
     server::{AUTH, PID},
@@ -63,7 +64,7 @@ pub fn run_loader(
     #[allow(non_snake_case)]
     let LoadLibraryW = 'b: {
         type FarProc = unsafe extern "system" fn() -> isize;
-        type ThreadStartRoutine = unsafe extern "system" fn(*mut c_void) -> u32;
+        type ThreadStartRoutine = Option<unsafe extern "system" fn(*mut c_void) -> u32>;
 
         static CACHE: OnceLock<ThreadStartRoutine> = OnceLock::new();
 
@@ -186,24 +187,13 @@ pub fn run_loader(
     let loader_path_len = loader_v.len() * size_of::<u16>();
 
     let Ok(ptr) = write_in(&process, loader_v.as_ptr(), loader_path_len) else {
+        error!("failed to write loader path into process");
         return Ok(());
     };
 
     // start thread with dll
     // Note that the returned HANDLE is intentionally not closed!
-    let res = unsafe {
-        CreateRemoteThread(
-            process.as_raw_handle(),
-            None,
-            0,
-            Some(LoadLibraryW),
-            Some(ptr),
-            0,
-            None,
-        )
-    };
-
-    let handle = match res {
+    let thread = match RemoteThread::new(&process, LoadLibraryW, Some(ptr)) {
         Ok(h) => h,
         Err(e) => {
             error!(?e, "Failed to create remote thread");
@@ -217,11 +207,7 @@ pub fn run_loader(
     };
 
     // wait for it to be done starting
-    let res = unsafe { WaitForSingleObject(handle, INFINITE) };
-    if res != WAIT_OBJECT_0 {
-        let err = unsafe { GetLastError() };
-        error!(?res, ?err, "object in wrong state");
-
+    if let Err(err) = thread.wait() {
         warn_popup(
             "Process injection failure",
             format!("Failed to wait for remote thread. Patching has been aborted on this process.\n\nThis is a rare occurence. This can happen if the process unexpectedly disappeared on us (such as a game crash). Press OK to continue; this tool will continue to operate normally. If this specific error keeps happening, please report it. If not, this warning is safe to ignore.\n\nError: {err:?}"),
@@ -264,24 +250,13 @@ pub fn run_loader(
     };
 
     let Ok(ptr) = write_in(&process, &thread_data, size_of::<ThreadData>()) else {
+        error!("failed to write ThreadData into process");
         return Ok(());
     };
 
     let init_fn = unsafe { mem::transmute::<usize, LPTHREAD_START_ROUTINE>(init_addr) };
 
-    let res = unsafe {
-        CreateRemoteThread(
-            process.as_raw_handle(),
-            None,
-            0,
-            init_fn,
-            Some(ptr),
-            0,
-            None,
-        )
-    };
-
-    let handle = match res {
+    let thread = match RemoteThread::new(&process, init_fn, Some(ptr)) {
         Ok(h) => h,
         Err(e) => {
             error!(
@@ -304,7 +279,7 @@ pub fn run_loader(
     if wait_for_init {
         // ignore errors like timeout, etc, they don't matter, just wait
         // this MAY block for a LONG time
-        _ = unsafe { WaitForSingleObject(handle, INFINITE) };
+        _ = thread.wait();
     }
 
     Ok(())
