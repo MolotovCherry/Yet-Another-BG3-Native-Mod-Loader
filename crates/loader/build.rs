@@ -1,6 +1,6 @@
 use std::error::Error;
-use std::path::Path;
-use std::{env, fs};
+
+static MANIFEST: &str = include_str!("manifest.xml");
 
 fn main() -> Result<(), Box<dyn Error>> {
     if !cfg!(target_os = "windows") {
@@ -9,10 +9,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut res = winres::WindowsResource::new();
 
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let dir = Path::new(&manifest_dir);
-    let manifest = fs::read_to_string(dir.join("manifest.xml"))?;
-    res.set_manifest(&manifest);
+    res.set_manifest(MANIFEST);
 
     res.compile()?;
 
