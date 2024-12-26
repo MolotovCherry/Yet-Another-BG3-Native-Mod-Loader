@@ -214,6 +214,8 @@ impl Server {
 
         let fut = async {
             loop {
+                // this lint is returning a false positive?
+                #[allow(clippy::multiple_unsafe_ops_per_block)]
                 unsafe {
                     self.connect(&mut sa, &mut process_cmd).await?;
                 }
