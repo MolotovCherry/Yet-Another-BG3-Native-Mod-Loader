@@ -13,7 +13,7 @@ eyre = "0.6.12"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
 shared = { path = "crates/shared" }
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
-unicase = "2.8.0"
+unicase = "2.8.1"
 winres = "0.1.12"
 
 [workspace.dependencies.windows]
