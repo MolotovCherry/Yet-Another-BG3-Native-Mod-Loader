@@ -72,10 +72,24 @@ impl Default for Log {
     }
 }
 
-pub fn get_config() -> Result<&'static Config> {
-    static CONFIG: LazyLock<Result<Config>> = LazyLock::new(|| {
+pub enum ConfigState {
+    Exists(Config),
+    New(Config),
+}
+
+impl ConfigState {
+    pub fn get(&self) -> &Config {
+        match self {
+            Self::Exists(config) | Self::New(config) => config,
+        }
+    }
+}
+
+pub fn get_config() -> Result<&'static ConfigState> {
+    static CONFIG: LazyLock<Result<ConfigState>> = LazyLock::new(|| {
         let path = get_bg3_plugins_dir()?.join("config.toml");
 
+        let mut new = false;
         if !path.exists() {
             let json = toml::to_string_pretty(&Config::default())?;
 
@@ -83,6 +97,8 @@ pub fn get_config() -> Result<&'static Config> {
                 error!("failed to save config: {e}");
                 return Err(e.into());
             }
+
+            new = true;
         }
 
         let config = match fs::read_to_string(path) {
@@ -94,7 +110,16 @@ pub fn get_config() -> Result<&'static Config> {
         };
 
         match toml::from_str::<Config>(&config) {
-            Ok(v) => Ok(v),
+            Ok(v) => {
+                let state = if new {
+                    ConfigState::New(v)
+                } else {
+                    ConfigState::Exists(v)
+                };
+
+                Ok(state)
+            }
+
             Err(e) => {
                 error!("failed to deserialize config: {e}");
                 Err(e.into())

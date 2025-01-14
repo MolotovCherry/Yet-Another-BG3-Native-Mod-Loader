@@ -23,7 +23,7 @@ pub fn load_plugins() -> Result<()> {
     // This function is safe because we upheld this requirement
 
     let plugins_dir = get_bg3_plugins_dir()?;
-    let config = get_config()?;
+    let config = get_config()?.get();
 
     if !config.core.enabled {
         info!("Plugins are globally disabled. If you want to re-enable them, set [core]enabled in config.toml to true");

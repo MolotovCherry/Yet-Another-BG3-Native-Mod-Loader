@@ -2,7 +2,7 @@ use std::{process, thread};
 
 use eyre::{Context as _, Result};
 use shared::{
-    config::{get_config, Config},
+    config::{get_config, Config, ConfigState},
     paths::{get_bg3_local_dir, get_bg3_plugins_dir},
     popup::{display_popup, fatal_popup, MessageBoxIcon},
 };
@@ -58,7 +58,31 @@ pub fn init() -> Result<InitData> {
 
     // get/create config
     let config = match get_config() {
-        Ok(v) => v,
+        Ok(ConfigState::Exists(c)) => c,
+
+        Ok(ConfigState::New(_)) if first_time => {
+            display_popup(
+                "Finish Setup",
+                format!(
+                    "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. install_root in the config likely needs to be adjusted to the correct path. If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, the tools will automatically detect the correct root path and do not require install_root to be configured, otherwise you need to configure install_root",
+                    plugins_dir.display()
+                ),
+                MessageBoxIcon::Info,
+            );
+
+            process::exit(0);
+        }
+
+        Ok(ConfigState::New(_)) => {
+            display_popup(
+                "Recreated Config",
+                "`config.toml` was recreated from scratch because it was missing. Please double-check it to ensure the configuration is correct.",
+                MessageBoxIcon::Info,
+            );
+
+            process::exit(0);
+        }
+
         Err(e) => {
             fatal_popup("Error reading config", format!("Failed to get config file. Most likely either it failed to read the file, or your config file is malformed.\n\nError: {e}"));
         }
@@ -66,19 +90,6 @@ pub fn init() -> Result<InitData> {
 
     // start logger
     let worker_guard = setup_logs(config, &plugins_dir).context("Failed to set up logs")?;
-
-    if first_time {
-        display_popup(
-            "Finish Setup",
-            format!(
-                "The plugins folder was just created at\n{}\n\nTo install plugins, place the plugin dll files inside the plugins folder.\n\nPlease also double-check `config.toml` in the plugins folder. install_root in the config likely needs to be adjusted to the correct path. If the tools are placed in <bg3_root>/bin or <bg3_root>/bin/subfolder, the tools will automatically detect the correct root path and do not require install_root to be configured, otherwise you need to configure install_root",
-                plugins_dir.display()
-            ),
-            MessageBoxIcon::Info,
-        );
-
-        process::exit(0);
-    }
 
     let loader = init_loader()?;
 
