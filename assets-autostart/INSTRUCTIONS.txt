@@ -14,9 +14,8 @@ together, including loader.dll.
     Just like Native Mod Loader, it is seamless. This does however require extra
     registry edits to accomplish.
 
-    The benefit of this tool is that it doesn't require manual starting. The
-    downside is it requires installation, and it is more work to disable it if
-    you don't want plugins running (since that requires you to uninstall it).
+    The benefit of this tool is that it doesn't require manual starting. It can
+    be disabled without uninstalling through the config (see below in steps).
 
     To install this tool, run install.bat, and to uninstall run uninstall.bat.
 
