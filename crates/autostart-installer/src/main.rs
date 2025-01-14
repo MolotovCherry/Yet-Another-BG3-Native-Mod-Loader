@@ -61,13 +61,9 @@ const R_BG3: &str = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Ex
 const R_BG3_DX11: &str = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\bg3_dx11.exe";
 
 fn install() -> io::Result<()> {
-    let (bg3_key, _) = HKLM.create_subkey(R_BG3)?;
-    let (bg3_dx11_key, _) = HKLM.create_subkey(R_BG3_DX11)?;
-
     let cur_exe = {
         let mut c = env::current_exe()?;
         c.pop();
-
         c.join("bg3_autostart.exe")
     };
 
@@ -77,6 +73,9 @@ fn install() -> io::Result<()> {
             "Couldn't find bg3_autostart.exe. Please make sure it's in the same folder as autostart-installer.exe",
         );
     }
+
+    let (bg3_key, _) = HKLM.create_subkey(R_BG3)?;
+    let (bg3_dx11_key, _) = HKLM.create_subkey(R_BG3_DX11)?;
 
     bg3_key.set_value("debugger", &&*cur_exe.to_string_lossy())?;
     bg3_dx11_key.set_value("debugger", &&*cur_exe.to_string_lossy())?;
