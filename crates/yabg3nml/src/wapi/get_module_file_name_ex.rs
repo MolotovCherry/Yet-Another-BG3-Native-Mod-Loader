@@ -21,7 +21,8 @@ pub fn GetModuleFileNameExRs<'a>(
     let module = module.unwrap_or_default();
 
     let len = loop {
-        let len = unsafe { GetModuleFileNameExW(process.as_raw_handle(), module, buf) };
+        let len =
+            unsafe { GetModuleFileNameExW(process.as_raw_handle().into(), module.into(), buf) };
 
         // If the size of the file name is larger than the value of the nSize parameter, the function succeeds but the
         // file name is truncated and null-terminated.

@@ -57,7 +57,7 @@ pub fn EnumWindowsRs(cb: impl FnMut(HWND) -> Result<()> + Send + Sync) {
         CB.set_cb(Box::new(cb));
     }
 
-    _ = unsafe { EnumWindows(Some(enum_cb), None) };
+    _ = unsafe { EnumWindows(Some(enum_cb), LPARAM(0)) };
 
     CB.drop();
 }

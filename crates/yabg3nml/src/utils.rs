@@ -28,7 +28,7 @@ impl From<PSECURITY_DESCRIPTOR> for PSecurityDescriptor {
 impl Drop for PSecurityDescriptor {
     fn drop(&mut self) {
         if !self.0.is_invalid() {
-            let res = unsafe { LocalFree(HLOCAL(self.0 .0)) };
+            let res = unsafe { LocalFree(HLOCAL(self.0 .0).into()) };
             if !res.is_invalid() {
                 let err = unsafe { GetLastError() };
                 error!(hlocal = ?res, ?err, "failed to free hlocal");

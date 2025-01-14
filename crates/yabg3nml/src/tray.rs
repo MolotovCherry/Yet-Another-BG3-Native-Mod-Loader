@@ -103,7 +103,9 @@ impl AppTray {
                             // looking for any open dialog box
                             if buf == class {
                                 // close the window
-                                _ = unsafe { PostMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)) };
+                                _ = unsafe {
+                                    PostMessageW(hwnd.into(), WM_CLOSE, WPARAM(0), LPARAM(0))
+                                };
                             }
 
                             Ok(())
