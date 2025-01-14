@@ -85,29 +85,19 @@ fn install() -> io::Result<()> {
 }
 
 fn uninstall() {
-    let (mut error_bg3, mut error_bg3_dx11) = (Ok(()), Ok(()));
+    let try_delete_value = |key| {
+        let err = HKLM
+            .open_subkey_with_flags(key, KEY_SET_VALUE)
+            .and_then(|k| k.delete_value("debugger"));
 
-    let try_delete_value = |key, error: &mut io::Result<()>| {
-        match HKLM.open_subkey_with_flags(key, KEY_SET_VALUE) {
-            Ok(k) => {
-                if let Err(e) = k.delete_value("debugger") {
-                    if e.kind() != ErrorKind::NotFound {
-                        *error = Err(e);
-                    }
-                }
-            }
-
-            Err(e) => {
-                // it's ok if it doesn't exist
-                if e.kind() != ErrorKind::NotFound {
-                    *error = Err(e);
-                }
-            }
+        match err {
+            Err(e) if e.kind() != ErrorKind::NotFound => Err(e),
+            _ => Ok(()),
         }
     };
 
-    try_delete_value(R_BG3, &mut error_bg3);
-    try_delete_value(R_BG3_DX11, &mut error_bg3_dx11);
+    let error_bg3 = try_delete_value(R_BG3);
+    let error_bg3_dx11 = try_delete_value(R_BG3_DX11);
 
     if error_bg3.is_err() || error_bg3_dx11.is_err() {
         let bg3_ok = error_bg3.is_ok();
