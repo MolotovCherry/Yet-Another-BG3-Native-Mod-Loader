@@ -24,7 +24,7 @@ tray-icon = "0.19.2"
 tracing-appender = "0.2.3"
 pelite = "0.10.0"
 widestring = "1.1.0"
-rand = "0.8.5"
+rand = "0.9.0"
 
 [dependencies.argh]
 git = "https://github.com/google/argh"
