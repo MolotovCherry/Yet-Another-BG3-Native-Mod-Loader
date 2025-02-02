@@ -79,6 +79,10 @@ extern "system" fn enum_cb(param0: HWND, _: LPARAM) -> BOOL {
         }
 
         // panic
-        Err(_) => false.into(),
+        Err(e) => {
+            // so it never panics
+            mem::forget(e);
+            false.into()
+        }
     }
 }

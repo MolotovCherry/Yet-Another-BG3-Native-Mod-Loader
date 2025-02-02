@@ -6,7 +6,7 @@ mod utils;
 
 use std::{
     ffi::c_void,
-    panic,
+    mem, panic,
     sync::{LazyLock, Mutex, Once, OnceLock},
     thread,
 };
@@ -139,8 +139,12 @@ unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
 
     // If there was no panic, but error was bubbled up, then log the error
     // Panic is already logged in the hook, so we can ignore that
-    if let Ok(Err(e)) = result {
-        error!("{e}");
+    match result {
+        Ok(Ok(_)) => (),
+        Ok(Err(e)) => error!("{e}"),
+        // the payload may panic, so forget it
+        // also, custom panic hook already handled this
+        Err(e) => mem::forget(e),
     }
 
     0
