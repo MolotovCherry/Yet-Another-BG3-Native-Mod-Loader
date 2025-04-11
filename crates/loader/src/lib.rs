@@ -23,7 +23,7 @@ use tracing::{error, trace};
 use windows::{
     core::{w, PCWSTR},
     Win32::{
-        Foundation::{HINSTANCE, HMODULE},
+        Foundation::{BOOL, HINSTANCE, HMODULE, TRUE},
         System::{
             LibraryLoader::{
                 GetModuleHandleExW, GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
@@ -54,7 +54,7 @@ extern "stdcall-unwind" fn DllMain(
     module: HINSTANCE,
     fdw_reason: u32,
     _lpv_reserved: *const c_void,
-) -> bool {
+) -> BOOL {
     match fdw_reason {
         DLL_PROCESS_ATTACH => {
             // not using these anyways
@@ -82,7 +82,7 @@ extern "stdcall-unwind" fn DllMain(
         _ => (),
     }
 
-    true
+    TRUE
 }
 
 /// # Safety
