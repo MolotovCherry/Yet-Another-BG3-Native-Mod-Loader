@@ -21,21 +21,21 @@ use shared::{
 };
 use tracing::{error, trace};
 use windows::{
-    core::{w, PCWSTR},
     Win32::{
-        Foundation::{BOOL, HINSTANCE, HMODULE, TRUE},
+        Foundation::{HINSTANCE, HMODULE, TRUE},
         System::{
             LibraryLoader::{
-                GetModuleHandleExW, GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-                GET_MODULE_HANDLE_EX_FLAG_PIN,
+                GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, GET_MODULE_HANDLE_EX_FLAG_PIN,
+                GetModuleHandleExW,
             },
             SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
             Threading::{OpenEventW, SYNCHRONIZATION_SYNCHRONIZE},
         },
     },
+    core::{BOOL, PCWSTR, w},
 };
 
-use client::{TrySend as _, CLIENT};
+use client::{CLIENT, TrySend as _};
 use loader::load_plugins;
 use logging::setup_logging;
 use utils::{Plugin, ThreadedWrapper};

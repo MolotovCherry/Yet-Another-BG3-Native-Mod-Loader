@@ -7,9 +7,12 @@ use std::{
 use eyre::Result;
 use shared::utils::SuperLock;
 use tracing::{error, trace_span};
-use windows::Win32::{
-    Foundation::{BOOL, HWND, LPARAM},
-    UI::WindowsAndMessaging::EnumWindows,
+use windows::{
+    Win32::{
+        Foundation::{HWND, LPARAM},
+        UI::WindowsAndMessaging::EnumWindows,
+    },
+    core::BOOL,
 };
 
 type UserCallback<'a> = Box<dyn FnMut(HWND) -> Result<()> + Send + Sync + 'a>;
