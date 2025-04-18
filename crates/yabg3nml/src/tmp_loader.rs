@@ -82,11 +82,11 @@ pub fn init_loader() -> Result<Loader> {
 fn get_init_rva(data: &[u8]) -> Result<Rva> {
     let loader = PeFile::from_bytes(&data)?;
     let rva = loader
-        .get_export("Init")?
+        .get_export("InitLoader")?
         .symbol()
         .ok_or(pelite::Error::Null)?;
 
-    trace!(rva = %format!("0x{rva:x}"), "Found loader.dll Init rva");
+    trace!(rva = %format!("0x{rva:x}"), "Found loader.dll InitLoader rva");
 
     Ok(rva)
 }

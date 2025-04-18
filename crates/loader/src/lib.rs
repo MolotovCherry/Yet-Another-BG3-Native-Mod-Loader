@@ -64,7 +64,10 @@ extern "stdcall-unwind" fn DllMain(
             // > linked with static C run-time library (CRT).
             // _ = unsafe { DisableThreadLibraryCalls(module) };
 
-            _ = MODULE.set(unsafe { ThreadedWrapper::new(module) });
+            static INIT: Once = Once::new();
+            INIT.call_once(|| {
+                _ = MODULE.set(unsafe { ThreadedWrapper::new(module) });
+            });
 
             if !is_yabg3nml() {
                 unsupported_operation();
@@ -87,15 +90,18 @@ extern "stdcall-unwind" fn DllMain(
 
 /// # Safety
 ///
-/// the param is a `*mut c_void`. The transmute is safe if T is known.
-/// It is never null (since I provided a param to it), and it's not a DST.
+/// The param is a `*mut c_void` and will be accessed as ThreadData.
+/// ThreadData must not be DST, and the ptr must not be null.
 /// It points to foreign mem provenance-wise.
 ///
 /// We do a compile time DST check to make sure it's pointer sized
 ///
-/// This is unsafe since the type is manually verified
+/// This is unsafe since the passed in type must be correct.
+///
+/// We do however do the best effort to prevent accidental callings of this.
+/// As such it is not named `Init` so it isn't accidentally called
 #[unsafe(no_mangle)]
-unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
+unsafe extern "system-unwind" fn InitLoader(data: *mut c_void) -> u32 {
     // compile time check it's not fat
     const {
         assert!(size_of::<&ThreadData>() == size_of::<usize>());
@@ -105,6 +111,8 @@ unsafe extern "system-unwind" fn Init(data: &ThreadData) -> u32 {
         unsupported_operation();
         return 0;
     }
+
+    let data = unsafe { &*data.cast::<ThreadData>() };
 
     // ensure this library cannot be unloaded until process exit
     let module = {

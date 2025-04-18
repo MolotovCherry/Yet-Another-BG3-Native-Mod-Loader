@@ -20,7 +20,6 @@ use windows::Win32::{
     System::Threading::{INFINITE, LPTHREAD_START_ROUTINE},
 };
 use windows::{
-    core::{s, w, Error as WinError},
     Win32::{
         Foundation::GetLastError,
         System::{
@@ -31,6 +30,7 @@ use windows::{
             },
         },
     },
+    core::{Error as WinError, s, w},
 };
 
 use crate::remote_thread::RemoteThread;
@@ -51,7 +51,9 @@ pub fn run_loader(
     wait_for_init: bool,
 ) -> Result<()> {
     if !config.core.enabled {
-        info!("Plugins are globally disabled. If you want to re-enable them, set [core]enabled in config.toml to true");
+        info!(
+            "Plugins are globally disabled. If you want to re-enable them, set [core]enabled in config.toml to true"
+        );
         return Ok(());
     }
 
@@ -104,7 +106,12 @@ pub fn run_loader(
             Ok(v) => v.into(),
             Err(e) => {
                 error!(?e, "failed to open process");
-                warn_popup("Can't open process", format!("Failed to open the game process.\n\nThis could be due to a few reasons:\n1. when the program attempted to open the process, it was already gone\n2. you need admin permissions to open it (try running this as admin)\n\nPress OK to continue; this tool will continue to operate normally.\n\nError: {e}"));
+                warn_popup(
+                    "Can't open process",
+                    format!(
+                        "Failed to open the game process.\n\nThis could be due to a few reasons:\n1. when the program attempted to open the process, it was already gone\n2. you need admin permissions to open it (try running this as admin)\n\nPress OK to continue; this tool will continue to operate normally.\n\nError: {e}"
+                    ),
+                );
                 return Ok(());
             }
         }
@@ -119,7 +126,12 @@ pub fn run_loader(
         };
 
         error!(error = %e, "WaitForInputIdle");
-        warn_popup("Can't wait", format!("Failed to WaitForInputIdle.\n\nThis could be due to a few reasons:\n1. when the program attempted to wait for the process, it was already gone\n2. you need admin permissions to open it (try running this as admin)\n\nPress OK to continue; this tool will continue to operate normally.\n\nError: {e}"));
+        warn_popup(
+            "Can't wait",
+            format!(
+                "Failed to WaitForInputIdle.\n\nThis could be due to a few reasons:\n1. when the program attempted to wait for the process, it was already gone\n2. you need admin permissions to open it (try running this as admin)\n\nPress OK to continue; this tool will continue to operate normally.\n\nError: {e}"
+            ),
+        );
         return Ok(());
     }
 
@@ -131,11 +143,11 @@ pub fn run_loader(
                 error!(?e, "failed dirty check");
 
                 warn_popup(
-            "Failed process patch check",
-            format!(
-                "The process patch detection failed due to winapi failure. This can happen if the process unexpectedly disappeared on us (such as a game crash). Aborting process injection. Please try patching the game again. Press OK to continue; this tool will continue to operate normally.\n\n{e}",
-            ),
-        );
+                    "Failed process patch check",
+                    format!(
+                        "The process patch detection failed due to winapi failure. This can happen if the process unexpectedly disappeared on us (such as a game crash). Aborting process injection. Please try patching the game again. Press OK to continue; this tool will continue to operate normally.\n\n{e}",
+                    ),
+                );
 
                 return Ok(());
             }
@@ -143,8 +155,13 @@ pub fn run_loader(
 
         if is_dirty {
             // return ok as if nothing happened, however we will log this
-            warn!("Aborting patching since the game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance.");
-            warn_popup("Already patched", "Aborting patching since the game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance. Press OK to continue; this tool will continue to operate normally.");
+            warn!(
+                "Aborting patching since the game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance."
+            );
+            warn_popup(
+                "Already patched",
+                "Aborting patching since the game process is already patched. If you'd like to patch it again, please restart the game and patch a fresh instance. Press OK to continue; this tool will continue to operate normally.",
+            );
             return Ok(());
         }
     }
@@ -199,7 +216,9 @@ pub fn run_loader(
             error!(?e, "Failed to create remote thread");
             warn_popup(
                 "Process injection failure",
-                format!("Failed to create process remote thread. Patching has been aborted on this process.\n\nThis could be due to multiple reasons, but in any case, winapi returned an error. This can happen if the process unexpectedly disappeared on us (such as a game crash). Please restart the game and try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"),
+                format!(
+                    "Failed to create process remote thread. Patching has been aborted on this process.\n\nThis could be due to multiple reasons, but in any case, winapi returned an error. This can happen if the process unexpectedly disappeared on us (such as a game crash). Please restart the game and try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"
+                ),
             );
 
             return Ok(());
@@ -210,13 +229,15 @@ pub fn run_loader(
     if let Err(err) = thread.wait() {
         warn_popup(
             "Process injection failure",
-            format!("Failed to wait for remote thread. Patching has been aborted on this process.\n\nThis is a rare occurence. This can happen if the process unexpectedly disappeared on us (such as a game crash). Press OK to continue; this tool will continue to operate normally. If this specific error keeps happening, please report it. If not, this warning is safe to ignore.\n\nError: {err:?}"),
+            format!(
+                "Failed to wait for remote thread. Patching has been aborted on this process.\n\nThis is a rare occurence. This can happen if the process unexpectedly disappeared on us (such as a game crash). Press OK to continue; this tool will continue to operate normally. If this specific error keeps happening, please report it. If not, this warning is safe to ignore.\n\nError: {err:?}"
+            ),
         );
 
         return Ok(());
     }
 
-    // now call Init
+    // now call InitLoader
     let Some(module) = GetModuleBaseEx(&process, &loader.path) else {
         warn_popup(
             "Where is the module?",
@@ -233,7 +254,7 @@ pub fn run_loader(
         base = %format!("0x{base:x}"),
         rva = %format!("0x{:x}", loader.rva),
         addr = %format!("0x{init_addr:x}"),
-        "found loader.dll Init addr"
+        "found loader.dll InitLoader addr"
     );
 
     let auth_code = rand::random::<u64>();
@@ -264,12 +285,14 @@ pub fn run_loader(
                 base = %format!("0x{base:x}"),
                 rva = %format!("0x{:x}", loader.rva),
                 addr = %format!("0x{init_addr:x}"),
-                "Failed to create remote thread for init fn"
+                "Failed to create remote thread for InitLoader fn"
             );
 
             warn_popup(
-                "Process injection failure for init fn",
-                format!("Failed to create process remote thread. Patching has been aborted on this process.\n\nThis could be due to multiple reasons, but in any case, winapi returned an error. This can happen if the process unexpectedly disappeared on us (such as a game crash). Please restart the game and try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"),
+                "Process injection failure for InitLoader fn",
+                format!(
+                    "Failed to create process remote thread. Patching has been aborted on this process.\n\nThis could be due to multiple reasons, but in any case, winapi returned an error. This can happen if the process unexpectedly disappeared on us (such as a game crash). Please restart the game and try again. Press OK to continue; this tool will continue to operate normally.\n\nError: {e}"
+                ),
             );
 
             return Ok(());
