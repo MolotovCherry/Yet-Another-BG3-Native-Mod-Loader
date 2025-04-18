@@ -40,6 +40,11 @@ use loader::load_plugins;
 use logging::setup_logging;
 use utils::{Plugin, ThreadedWrapper};
 
+/// Marker to identify this as a special non-plugin dll for detection later
+/// This way we can noop the plugin loading
+#[unsafe(no_mangle)]
+static __NOT_A_PLUGIN_DO_NOT_LOAD_OR_YOU_WILL_BE_FIRED: bool = true;
+
 declare_plugin! {
     "Loader",
     "Cherry",

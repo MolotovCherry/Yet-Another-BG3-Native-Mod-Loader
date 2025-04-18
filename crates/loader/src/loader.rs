@@ -141,7 +141,7 @@ fn load_plugin(name: String, path: PathBuf) {
             .collect::<Vec<_>>();
 
         // SAFETY: Standard function, and our string is formatted properly
-        let main_module = {
+        let module = {
             let path = PCWSTR::from_raw(plugin_path.as_ptr());
             let res = unsafe { LoadLibraryW(path) };
 
@@ -151,14 +151,23 @@ fn load_plugin(name: String, path: PathBuf) {
             }
         };
 
+        let plugin = Plugin(module);
+
+        // noop plugin load if it was detected it loaded loader.dll
+        let is_loader = unsafe { GetProcAddress(module, s!("__NOT_A_PLUGIN_DO_NOT_LOAD_OR_YOU_WILL_BE_FIRED")) };
+        if is_loader.is_some() {
+            trace!("Tried to load loader.dll; this is not a plugin, so nooping the load");
+            return Ok(());
+        }
+
         // so plugin can be unloaded on dll exit
         {
             let mut plugins = LOADED_PLUGINS.super_lock();
-            plugins.push(Plugin(main_module));
+            plugins.push(plugin);
         }
 
         // SAFETY: Standard function, and again proper args
-        let init = unsafe { GetProcAddress(main_module, s!("Init")) };
+        let init = unsafe { GetProcAddress(module, s!("Init")) };
         if let Some(init) = init {
             type FarProc = unsafe extern "system" fn() -> isize;
             type Init = unsafe extern "C" fn();
