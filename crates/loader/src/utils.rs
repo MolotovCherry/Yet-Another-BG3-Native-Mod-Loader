@@ -1,4 +1,5 @@
 use std::{
+    mem,
     ops::Deref,
     thread::{self, JoinHandle},
 };
@@ -16,11 +17,11 @@ impl Drop for Plugin {
     }
 }
 
-pub struct ThreadManager(Option<Vec<JoinHandle<()>>>);
+pub struct ThreadManager(Vec<JoinHandle<()>>);
 
 impl ThreadManager {
     pub fn new() -> Self {
-        Self(Some(Vec::new()))
+        Self(Vec::new())
     }
 
     pub fn spawn<F>(&mut self, f: F)
@@ -28,13 +29,13 @@ impl ThreadManager {
         F: FnOnce() + Send + 'static,
     {
         let handle = thread::spawn(f);
-        self.0.as_mut().unwrap().push(handle);
+        self.0.push(handle);
     }
 }
 
 impl Drop for ThreadManager {
     fn drop(&mut self) {
-        let threads = self.0.take().unwrap();
+        let threads = mem::take(&mut self.0);
         for thread in threads {
             _ = thread.join();
         }
