@@ -1,20 +1,20 @@
 use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf};
 
 use eyre::{Context as _, Report, Result};
-use native_plugin_lib::Version;
+use native_plugin_lib::{PluginError, Version};
 use shared::{
     config::get_config,
     paths::get_bg3_plugins_dir,
     popup::warn_popup,
-    utils::{tri, SuperLock as _},
+    utils::{SuperLock as _, tri},
 };
 use tracing::{error, info, trace, warn};
 use windows::{
-    core::{s, PCWSTR},
     Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW},
+    core::{PCWSTR, s},
 };
 
-use crate::{utils::ThreadManager, Plugin, LOADED_PLUGINS};
+use crate::{LOADED_PLUGINS, Plugin, utils::ThreadManager};
 
 pub fn load_plugins() -> Result<()> {
     // # Safety
@@ -26,7 +26,9 @@ pub fn load_plugins() -> Result<()> {
     let config = get_config()?.get();
 
     if !config.core.enabled {
-        info!("Plugins are globally disabled. If you want to re-enable them, set [core]enabled in config.toml to true");
+        info!(
+            "Plugins are globally disabled. If you want to re-enable them, set [core]enabled in config.toml to true"
+        );
         return Ok(());
     }
 
@@ -67,11 +69,7 @@ pub fn load_plugins() -> Result<()> {
                 .to_str()
                 .unwrap_or_default();
 
-            if name.is_empty() {
-                "<unknown>"
-            } else {
-                name
-            }
+            if name.is_empty() { "<unknown>" } else { name }
         };
 
         let name_formatted = {
@@ -93,7 +91,20 @@ pub fn load_plugins() -> Result<()> {
                     format!("{p_name} by {author} v{major}.{minor}.{patch} ({name}.dll)")
                 }
 
-                Err(_) => format!("{name}.dll"),
+                Err(e) => {
+                    match e {
+                        PluginError::Report(_)
+                        | PluginError::Io(_)
+                        | PluginError::Pelite(_)
+                        | PluginError::SliceErr(_)
+                        | PluginError::DataVer(_) => error!("{e}"),
+
+                        // not finding it is not a problem
+                        PluginError::SymbolNotFound => (),
+                    }
+
+                    format!("{name}.dll")
+                }
             }
         };
 
