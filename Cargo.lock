@@ -917,7 +917,7 @@ dependencies = [
 
 [[package]]
 name = "loader"
-version = "0.1.0"
+version = "0.3.2"
 dependencies = [
  "eyre",
  "native-plugin-lib",
@@ -2192,7 +2192,7 @@ dependencies = [
 
 [[package]]
 name = "yabg3nml"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "argh",
  "eyre",

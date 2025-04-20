@@ -1,6 +1,6 @@
 [package]
 name = "yabg3nml"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2024"
 authors = ["Cherry"]
 homepage = "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader"
