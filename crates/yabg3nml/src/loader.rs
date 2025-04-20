@@ -175,7 +175,7 @@ pub fn run_loader(
             .to_string_lossy();
 
         if let Ok(guard) = data {
-            let data = guard.data();
+            let data = guard.plugin();
 
             let Version {
                 major,

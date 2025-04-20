@@ -77,7 +77,7 @@ pub fn load_plugins() -> Result<()> {
 
             match data {
                 Ok(guard) => {
-                    let data = guard.data();
+                    let data = guard.plugin();
 
                     let Version {
                         major,
@@ -93,14 +93,9 @@ pub fn load_plugins() -> Result<()> {
 
                 Err(e) => {
                     match e {
-                        PluginError::Report(_)
-                        | PluginError::Io(_)
-                        | PluginError::Pelite(_)
-                        | PluginError::SliceErr(_)
-                        | PluginError::DataVer(_) => error!("{e}"),
-
                         // not finding it is not a problem
                         PluginError::SymbolNotFound => (),
+                        _ => error!("{e}"),
                     }
 
                     format!("{name}.dll")
