@@ -6,7 +6,7 @@ use std::{iter, sync::atomic::Ordering};
 use std::{mem, os::windows::prelude::OsStrExt as _};
 
 use eyre::{Context, Result};
-use native_plugin_lib::Version;
+use native_plugin_lib::{PluginData, Version};
 use shared::{
     config::Config,
     popup::warn_popup,
@@ -167,7 +167,7 @@ pub fn run_loader(
     }
 
     let loader_formatted = {
-        let data = native_plugin_lib::get_plugin_data(&loader.path);
+        let data = PluginData::new(&loader.path);
         let dll_name = loader
             .path
             .file_name()

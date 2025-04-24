@@ -1,7 +1,7 @@
 use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf};
 
 use eyre::{Context as _, Report, Result};
-use native_plugin_lib::{PluginError, Version};
+use native_plugin_lib::{PluginData, PluginError, Version};
 use shared::{
     config::get_config,
     paths::get_bg3_plugins_dir,
@@ -73,7 +73,7 @@ pub fn load_plugins() -> Result<()> {
         };
 
         let name_formatted = {
-            let data = native_plugin_lib::get_plugin_data(&path);
+            let data = PluginData::new(&path);
 
             match data {
                 Ok(guard) => {
