@@ -149,8 +149,7 @@ fn load_plugin(name: String, path: PathBuf) {
         let plugin = Plugin(module);
 
         // noop plugin load if it was detected it loaded loader.dll
-        let is_loader = unsafe { GetProcAddress(module, s!("__NOT_A_PLUGIN_DO_NOT_LOAD_OR_YOU_WILL_BE_FIRED")) };
-        if is_loader.is_some() {
+        if !plugin.should_load() {
             trace!("Aborting load because this is not a plugin");
             return Ok(());
         }

@@ -4,16 +4,34 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use windows::Win32::Foundation::{FreeLibrary, HMODULE};
+use windows::{
+    Win32::{Foundation::HMODULE, System::LibraryLoader::GetProcAddress},
+    core::{Free, s},
+};
 
 /// Container for a loaded plugin. Frees itself on drop
 #[derive(Default)]
 pub struct Plugin(pub HMODULE);
 unsafe impl Send for Plugin {}
 
+impl Plugin {
+    pub fn should_load(&self) -> bool {
+        !self.0.is_invalid()
+            && unsafe {
+                GetProcAddress(
+                    self.0,
+                    s!("__NOT_A_PLUGIN_DO_NOT_LOAD_OR_YOU_WILL_BE_FIRED"),
+                )
+                .is_none()
+            }
+    }
+}
+
 impl Drop for Plugin {
     fn drop(&mut self) {
-        _ = unsafe { FreeLibrary(self.0) };
+        unsafe {
+            self.0.free();
+        }
     }
 }
 
