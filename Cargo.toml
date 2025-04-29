@@ -45,7 +45,6 @@ features = [
 ]
 
 [workspace.lints.rust]
-unsafe_op_in_unsafe_fn = "warn"
 
 [workspace.lints.clippy]
 multiple_unsafe_ops_per_block = "warn"
