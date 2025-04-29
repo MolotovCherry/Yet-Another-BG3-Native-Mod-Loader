@@ -1,10 +1,10 @@
 [package]
 name = "yabg3nml"
-version = "0.3.2"
+version.workspace = true
 edition = "2024"
-authors = ["Cherry"]
-homepage = "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader"
-license = "MIT"
+authors.workspace = true
+homepage.workspace = true
+license.workspace = true
 
 [features]
 test-injection = []
@@ -26,8 +26,7 @@ widestring = "1.2.0"
 rand = "0.9.0"
 
 [dependencies.argh]
-git = "https://github.com/google/argh"
-rev = "f02f6b44444b340a553ff2db298744721ebc77a7"
+version = "0.1.13"
 default-features = false
 
 [build-dependencies]

@@ -1,5 +1,11 @@
+[workspace.package]
+version = "0.3.2"
+authors = ["Cherry"]
+homepage = "https://github.com/MolotovCherry/Yet-Another-BG3-Native-Mod-Loader"
+license = "MIT"
+
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "crates/autostart-installer",
     "crates/loader",

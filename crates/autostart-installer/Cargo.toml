@@ -1,7 +1,10 @@
 [package]
 name = "autostart-installer"
-version = "0.3.2"
+version.workspace = true
 edition = "2024"
+authors.workspace = true
+homepage.workspace = true
+license.workspace = true
 
 [dependencies]
 shared.workspace = true

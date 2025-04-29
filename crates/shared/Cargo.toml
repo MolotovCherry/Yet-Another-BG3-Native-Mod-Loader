@@ -1,7 +1,10 @@
 [package]
 name = "shared"
-version = "0.1.0"
+version.workspace = true
 edition = "2024"
+authors.workspace = true
+homepage.workspace = true
+license.workspace = true
 
 [dependencies]
 eyre.workspace = true

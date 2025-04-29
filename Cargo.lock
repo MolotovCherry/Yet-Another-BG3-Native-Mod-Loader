@@ -78,8 +78,9 @@ dependencies = [
 
 [[package]]
 name = "argh"
-version = "0.1.12"
-source = "git+https://github.com/google/argh?rev=f02f6b44444b340a553ff2db298744721ebc77a7#f02f6b44444b340a553ff2db298744721ebc77a7"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34ff18325c8a36b82f992e533ece1ec9f9a9db446bd1c14d4f936bac88fcd240"
 dependencies = [
  "argh_derive",
  "argh_shared",
@@ -88,8 +89,9 @@ dependencies = [
 
 [[package]]
 name = "argh_derive"
-version = "0.1.12"
-source = "git+https://github.com/google/argh?rev=f02f6b44444b340a553ff2db298744721ebc77a7#f02f6b44444b340a553ff2db298744721ebc77a7"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adb7b2b83a50d329d5d8ccc620f5c7064028828538bdf5646acd60dc1f767803"
 dependencies = [
  "argh_shared",
  "proc-macro2",
@@ -99,8 +101,9 @@ dependencies = [
 
 [[package]]
 name = "argh_shared"
-version = "0.1.12"
-source = "git+https://github.com/google/argh?rev=f02f6b44444b340a553ff2db298744721ebc77a7#f02f6b44444b340a553ff2db298744721ebc77a7"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a464143cc82dedcdc3928737445362466b7674b5db4e2eb8e869846d6d84f4f6"
 
 [[package]]
 name = "async-trait"
@@ -1486,7 +1489,7 @@ dependencies = [
 
 [[package]]
 name = "shared"
-version = "0.1.0"
+version = "0.3.2"
 dependencies = [
  "backtrace",
  "directories",
