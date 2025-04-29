@@ -77,6 +77,15 @@ pub fn load_plugins() -> Result<()> {
 
             match data {
                 Ok(guard) => {
+                    let no_load = !guard
+                        .dll()
+                        .is_symbol("__NOT_A_PLUGIN_DO_NOT_LOAD_OR_YOU_WILL_BE_FIRED");
+
+                    if no_load {
+                        trace!("Aborting load because this is not a plugin");
+                        continue;
+                    }
+
                     let data = guard.plugin();
 
                     let Version {
@@ -146,18 +155,10 @@ fn load_plugin(name: String, path: PathBuf) {
             }
         };
 
-        let plugin = Plugin(module);
-
-        // noop plugin load if it was detected it loaded loader.dll
-        if !plugin.should_load() {
-            trace!("Aborting load because this is not a plugin");
-            return Ok(());
-        }
-
         // so plugin can be unloaded on dll exit
         {
             let mut plugins = LOADED_PLUGINS.super_lock();
-            plugins.push(plugin);
+            plugins.push(Plugin(module));
         }
 
         // SAFETY: Standard function, and again proper args
