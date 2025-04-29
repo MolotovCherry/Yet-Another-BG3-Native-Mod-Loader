@@ -1,7 +1,7 @@
 use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf};
 
 use eyre::{Context as _, Report, Result};
-use native_plugin_lib::{PluginData, PluginError, Version};
+use native_plugin_lib::{Dll, PluginData, PluginError, Version};
 use shared::{
     config::get_config,
     paths::get_bg3_plugins_dir,
@@ -17,7 +17,7 @@ use windows::{
 use crate::{LOADED_PLUGINS, Plugin, utils::ThreadManager};
 
 pub fn load_plugins() -> Result<()> {
-    // # Safety
+    // SAFETY:
     // Any spawned threads MUST be joined. This is taken care of by ThreadManager,
     // but it is still an unsafe requirement that could be circumvented.
     // This function is safe because we upheld this requirement
@@ -57,7 +57,12 @@ pub fn load_plugins() -> Result<()> {
         path.as_mut_os_str().make_ascii_lowercase();
 
         // not a file or dll
-        if !path.is_file() || path.extension().unwrap_or_default() != "dll" {
+        if !path.is_file()
+            || !path
+                .extension()
+                .unwrap_or_default()
+                .eq_ignore_ascii_case("dll")
+        {
             continue;
         }
 
@@ -72,21 +77,27 @@ pub fn load_plugins() -> Result<()> {
             if name.is_empty() { "<unknown>" } else { name }
         };
 
+        let dll = match Dll::new(&path) {
+            Ok(dll) => dll,
+            Err(e) => {
+                error!(plugin = %name, ?e, "failed to open dll");
+                continue;
+            }
+        };
+
+        let not_a_plugin = dll.symbol_exists("__NOT_A_PLUGIN_DO_NOT_LOAD_OR_YOU_WILL_BE_FIRED");
+
+        if not_a_plugin {
+            trace!(plugin = %name, "aborting load because this is not a plugin");
+            continue;
+        }
+
         let name_formatted = {
-            let data = PluginData::new(&path);
+            let data = PluginData::from_dll(dll);
 
             match data {
-                Ok(guard) => {
-                    let no_load = !guard
-                        .dll()
-                        .is_symbol("__NOT_A_PLUGIN_DO_NOT_LOAD_OR_YOU_WILL_BE_FIRED");
-
-                    if no_load {
-                        trace!("Aborting load because this is not a plugin");
-                        continue;
-                    }
-
-                    let data = guard.plugin();
+                Ok(data) => {
+                    let data = data.plugin();
 
                     let Version {
                         major,
@@ -104,7 +115,7 @@ pub fn load_plugins() -> Result<()> {
                     match e {
                         // not finding it is not an error
                         PluginError::SymbolNotFound => (),
-                        _ => error!("{e}"),
+                        _ => trace!(plugin = %name, ?e),
                     }
 
                     format!("{name}.dll")
@@ -151,7 +162,9 @@ fn load_plugin(name: String, path: PathBuf) {
 
             match res {
                 Ok(v) => v,
-                Err(e) => return Err(e).context("failed to load library")
+                Err(e) => {
+                    error!(plugin = %name, err = ?e, "failed to load library");
+                    return Err(e).context("failed to load library")}
             }
         };
 
@@ -171,7 +184,7 @@ fn load_plugin(name: String, path: PathBuf) {
             #[allow(non_snake_case)]
             let Init = unsafe { mem::transmute::<FarProc, Init>(init) };
 
-            trace!(%name, "running Init");
+            trace!(plugin = %name, "running Init");
 
             // SAFETY: Guaranteed by implementer to not be UB
             //         Plugin is responsible
@@ -179,15 +192,15 @@ fn load_plugin(name: String, path: PathBuf) {
                 Init();
             }
 
-            trace!(%name, "finished Init");
+            trace!(plugin = %name, "finished Init");
         }
 
         Ok::<_, Report>(())
     };
 
     if let Err(e) = result {
-        error!(%name, path = %path.display(), %e, "load_plugin failed");
+        error!(plugin = %name, path = %path.display(), %e, "load_plugin failed");
     }
 
-    trace!(%name, "exit load plugin");
+    trace!(plugin = %name, "exit load plugin");
 }
