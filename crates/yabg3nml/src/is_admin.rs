@@ -1,5 +1,6 @@
 use eyre::Error;
 use shared::utils::{OwnedHandle, tri};
+use tracing::trace;
 use windows::Win32::{
     Security::{GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation},
     System::Threading::{GetCurrentProcess, OpenProcessToken},
@@ -29,5 +30,17 @@ pub fn is_admin() -> bool {
         Ok::<_, Error>(elevated)
     };
 
-    res.unwrap_or(false)
+    let admin = res.unwrap_or(false);
+
+    trace!(
+        "we are {}running as admin.{}",
+        if !admin { "not " } else { "" },
+        if !admin {
+            " with watcher/injector, it's possible the bg3 process may get missed. if this happens, run this tool as admin"
+        } else {
+            ""
+        }
+    );
+
+    admin
 }

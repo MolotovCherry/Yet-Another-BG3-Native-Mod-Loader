@@ -30,11 +30,6 @@ pub fn init() -> Result<InitData> {
     let span = trace_span!("setup");
     let _guard = span.enter();
 
-    // enable unfettered access through debug privilege if we have admin access
-    if is_admin() {
-        set_privilege(SE_DEBUG_NAME, true)?;
-    }
-
     // Nicely print any panic messages to the user
     set_hook();
 
@@ -95,6 +90,11 @@ pub fn init() -> Result<InitData> {
 
     // start logger
     let worker_guard = setup_logs(config, &plugins_dir).context("Failed to set up logs")?;
+
+    // enable unfettered access through debug privilege if we have admin access
+    if is_admin() {
+        set_privilege(SE_DEBUG_NAME, true)?;
+    }
 
     let loader = init_loader()?;
 
