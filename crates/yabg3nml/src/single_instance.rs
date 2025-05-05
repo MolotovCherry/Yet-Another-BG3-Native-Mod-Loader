@@ -1,10 +1,10 @@
 use shared::{popup::fatal_popup, utils::OwnedHandle};
 use windows::{
-    core::w,
     Win32::{
-        Foundation::{GetLastError, ERROR_ALREADY_EXISTS},
+        Foundation::{ERROR_ALREADY_EXISTS, GetLastError},
         System::Threading::CreateMutexW,
     },
+    core::w,
 };
 
 #[allow(unused)]
@@ -16,8 +16,8 @@ impl SingleInstance {
     pub fn new() -> Self {
         let mutex = unsafe { CreateMutexW(None, true, w!(r"yet-another-bg3-native-mod-loader")) };
 
-        let handle: OwnedHandle = match mutex {
-            Ok(h) => h.into(),
+        let handle = match mutex {
+            Ok(h) => unsafe { OwnedHandle::new(h) },
             Err(e) => {
                 fatal_popup(
                     "Yet Another BG3 Native Mod Loader",

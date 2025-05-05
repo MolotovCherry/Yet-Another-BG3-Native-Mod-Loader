@@ -1,7 +1,6 @@
 use eyre::Result;
 use shared::utils::OwnedHandle;
 use windows::{
-    core::w,
     Win32::{
         Security::{
             Authorization::{
@@ -11,6 +10,7 @@ use windows::{
         },
         System::Threading::CreateEventW,
     },
+    core::w,
 };
 
 use crate::utils::PSecurityDescriptor;
@@ -43,15 +43,16 @@ impl Event {
             bInheritHandle: false.into(),
         };
 
-        let event: OwnedHandle = unsafe {
+        let event = unsafe {
             CreateEventW(
                 Some(&sec_attr),
                 false,
                 false,
                 w!(r"Global\yet-another-bg3-native-mod-loader"),
             )?
-            .into()
         };
+
+        let event = unsafe { OwnedHandle::new(event) };
 
         Ok(Self(event))
     }

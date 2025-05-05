@@ -1,26 +1,23 @@
 use eyre::Error;
-use shared::utils::{tri, OwnedHandle};
+use shared::utils::{OwnedHandle, tri};
 use windows::Win32::{
-    Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY},
+    Security::{GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation},
     System::Threading::{GetCurrentProcess, OpenProcessToken},
 };
 
 pub fn is_admin() -> bool {
     let res = tri! {
-        let process: OwnedHandle = {
-            let process = unsafe { GetCurrentProcess() };
-            process.into()
-        };
+        let process = unsafe { GetCurrentProcess() };
 
-        let mut token: OwnedHandle = OwnedHandle::default();
+        let mut token = OwnedHandle::default();
         unsafe {
-            OpenProcessToken(process.as_raw_handle(), TOKEN_QUERY, token.as_mut())?;
+            OpenProcessToken(process, TOKEN_QUERY, &mut *token)?;
         }
 
         let mut elevation = TOKEN_ELEVATION::default();
         unsafe {
             GetTokenInformation(
-                token.as_raw_handle(),
+                *token,
                 TokenElevation,
                 Some(&raw mut elevation as *mut _),
                 size_of::<TOKEN_ELEVATION>() as _,

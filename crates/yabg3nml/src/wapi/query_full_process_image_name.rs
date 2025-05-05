@@ -1,13 +1,13 @@
-use eyre::{bail, Result};
+use eyre::{Result, bail};
 use shared::utils::{OwnedHandle, SuperLock as _};
 use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::{
-    core::PWSTR,
     Win32::{
         Foundation::{ERROR_INSUFFICIENT_BUFFER, MAX_PATH},
-        System::Threading::{QueryFullProcessImageNameW, PROCESS_NAME_WIN32},
+        System::Threading::{PROCESS_NAME_WIN32, QueryFullProcessImageNameW},
     },
+    core::PWSTR,
 };
 
 use crate::process_watcher::CURRENT_PID;
@@ -25,7 +25,7 @@ pub fn QueryFullProcessImageNameRs<'a>(
 
         let res = unsafe {
             QueryFullProcessImageNameW(
-                process.as_raw_handle(),
+                **process,
                 PROCESS_NAME_WIN32,
                 PWSTR(buf.as_mut_ptr()),
                 &mut size,

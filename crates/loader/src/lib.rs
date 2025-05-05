@@ -177,7 +177,7 @@ fn is_yabg3nml() -> bool {
             )
         };
 
-        let event = event.map(OwnedHandle::new);
+        let event = event.map(|h| unsafe { OwnedHandle::new(h) });
 
         event.is_ok()
     })

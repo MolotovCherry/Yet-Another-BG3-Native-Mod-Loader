@@ -1,10 +1,11 @@
 use eyre::Result;
 use windows::{
-    core::PCWSTR,
     Win32::System::Console::{
-        AllocConsole, GetStdHandle, SetConsoleMode, SetConsoleTitleW, ENABLE_PROCESSED_OUTPUT,
-        ENABLE_VIRTUAL_TERMINAL_PROCESSING, ENABLE_WRAP_AT_EOL_OUTPUT, STD_OUTPUT_HANDLE,
+        AllocConsole, ENABLE_PROCESSED_OUTPUT, ENABLE_VIRTUAL_TERMINAL_PROCESSING,
+        ENABLE_WRAP_AT_EOL_OUTPUT, GetStdHandle, STD_OUTPUT_HANDLE, SetConsoleMode,
+        SetConsoleTitleW,
     },
+    core::PCWSTR,
 };
 
 #[allow(dead_code)]

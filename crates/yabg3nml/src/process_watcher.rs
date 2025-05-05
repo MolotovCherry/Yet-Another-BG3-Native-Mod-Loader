@@ -1,16 +1,16 @@
 use std::{
     collections::HashSet,
     sync::{
-        atomic::{AtomicBool, Ordering},
-        mpsc::{channel, RecvTimeoutError},
         Arc, LazyLock, Mutex,
+        atomic::{AtomicBool, Ordering},
+        mpsc::{RecvTimeoutError, channel},
     },
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
 
 use shared::utils::{OwnedHandle, SuperLock};
-use tracing::{trace, trace_span, Span};
+use tracing::{Span, trace, trace_span};
 use unicase::UniCase;
 use windows::Win32::{
     Foundation::MAX_PATH,
@@ -96,19 +96,21 @@ impl ProcessWatcher {
             let timed_out = timed_out.clone();
             let sender = sender.clone();
 
-            thread::spawn(move || loop {
-                let signal = tt_recv.recv_timeout(Duration::from_secs(1));
-                if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
-                    break;
-                }
+            thread::spawn(move || {
+                loop {
+                    let signal = tt_recv.recv_timeout(Duration::from_secs(1));
+                    if matches!(signal, Ok(_) | Err(RecvTimeoutError::Disconnected)) {
+                        break;
+                    }
 
-                // handle timeout
-                if now.elapsed() >= end {
-                    trace!("detected a timeout");
+                    // handle timeout
+                    if now.elapsed() >= end {
+                        trace!("detected a timeout");
 
-                    timed_out.store(true, Ordering::Relaxed);
-                    _ = sender.send(());
-                    break;
+                        timed_out.store(true, Ordering::Relaxed);
+                        _ = sender.send(());
+                        break;
+                    }
                 }
             });
 
@@ -140,7 +142,7 @@ impl ProcessWatcher {
                         let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };
 
                         match res {
-                            Ok(v) => OwnedHandle::new(v),
+                            Ok(v) => unsafe { OwnedHandle::new(v) },
                             Err(e) => {
                                 // failed to open process; probably we don't have correct perms to open it
                                 // there is a risk here that we don't have permission to open the game process, so it's skipped

@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use eyre::{bail, Result};
+use eyre::{Result, bail};
 use shared::utils::{OwnedHandle, SuperLock as _};
 use tracing::{error, trace, trace_span};
 use windows::Win32::{
@@ -41,7 +41,7 @@ pub fn EnumProcessModulesExRs(
 
 fn is_alive(process: &OwnedHandle) -> bool {
     let mut code = 0;
-    let res = unsafe { GetExitCodeProcess(process.as_raw_handle(), &mut code) };
+    let res = unsafe { GetExitCodeProcess(**process, &mut code) };
 
     match res {
         Ok(_) => code == STILL_ACTIVE.0 as u32,
@@ -62,7 +62,7 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
 
         let res = unsafe {
             EnumProcessModulesEx(
-                process.as_raw_handle(),
+                **process,
                 modules.as_mut_ptr(),
                 size as u32,
                 &mut lpcbneeded,
@@ -87,7 +87,9 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             // - Issues with disk / file(s) corrupt
             if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult() == e.code() {
                 if timer.elapsed() > Duration::from_secs(2) {
-                    bail!("EnumProcessModulesExRs: timed out waiting for call to succeed; aborting injection");
+                    bail!(
+                        "EnumProcessModulesExRs: timed out waiting for call to succeed; aborting injection"
+                    );
                 }
 
                 // retry again because it must've been a simple error

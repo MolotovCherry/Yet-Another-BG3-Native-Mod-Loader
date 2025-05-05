@@ -90,7 +90,7 @@ pub fn run_loader(
         f
     };
 
-    let process: OwnedHandle = {
+    let process = {
         let process = unsafe {
             OpenProcess(
                 PROCESS_QUERY_INFORMATION
@@ -103,7 +103,7 @@ pub fn run_loader(
         };
 
         match process {
-            Ok(v) => v.into(),
+            Ok(v) => unsafe { OwnedHandle::new(v) },
             Err(e) => {
                 error!(?e, "failed to open process");
                 warn_popup(
@@ -118,7 +118,7 @@ pub fn run_loader(
     };
 
     // to help new processes settle into a stable state before trying things
-    let res = unsafe { WaitForInputIdle(process.as_raw_handle(), INFINITE) };
+    let res = unsafe { WaitForInputIdle(*process, INFINITE) };
     if res == WAIT_FAILED.0 {
         let e = {
             let e = unsafe { GetLastError() };

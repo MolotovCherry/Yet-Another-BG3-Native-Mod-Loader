@@ -6,11 +6,12 @@ use eyre::{OptionExt as _, Result};
 use shared::{paths::get_bg3_plugins_dir, utils::OwnedHandle};
 use tracing::{trace, trace_span};
 use widestring::U16Str;
+use windows::Win32::Foundation::HANDLE;
 use windows::Win32::{
     Foundation::MAX_PATH,
     Storage::FileSystem::{
-        FileIdInfo, GetFileInformationByHandleEx, FILE_FLAG_BACKUP_SEMANTICS, FILE_ID_INFO,
-        FILE_SHARE_READ,
+        FILE_FLAG_BACKUP_SEMANTICS, FILE_ID_INFO, FILE_SHARE_READ, FileIdInfo,
+        GetFileInformationByHandleEx,
     },
 };
 
@@ -40,12 +41,12 @@ fn dir_id(path: &Path) -> Option<Id> {
         .open(path)
         .ok()?;
 
-    let handle: OwnedHandle = dir.into_raw_handle().into();
+    let handle: OwnedHandle = unsafe { OwnedHandle::new(HANDLE(dir.into_raw_handle())) };
 
     let mut info = FILE_ID_INFO::default();
     unsafe {
         GetFileInformationByHandleEx(
-            handle.as_raw_handle(),
+            *handle,
             FileIdInfo,
             &raw mut info as *mut _,
             size_of::<FILE_ID_INFO>() as u32,

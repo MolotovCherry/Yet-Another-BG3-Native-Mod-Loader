@@ -1,7 +1,6 @@
 use eyre::Result;
 use shared::utils::OwnedHandle;
 use windows::{
-    core::PCWSTR,
     Win32::{
         Foundation::LUID,
         Security::{
@@ -10,21 +9,15 @@ use windows::{
         },
         System::Threading::{GetCurrentProcess, OpenProcessToken},
     },
+    core::PCWSTR,
 };
 
 pub fn set_privilege(name: PCWSTR, state: bool) -> Result<()> {
-    let process: OwnedHandle = {
-        let process = unsafe { GetCurrentProcess() };
-        process.into()
-    };
+    let process = unsafe { GetCurrentProcess() };
 
     let mut token: OwnedHandle = OwnedHandle::default();
     unsafe {
-        OpenProcessToken(
-            process.as_raw_handle(),
-            TOKEN_ADJUST_PRIVILEGES,
-            token.as_mut(),
-        )?;
+        OpenProcessToken(process, TOKEN_ADJUST_PRIVILEGES, &mut *token)?;
     }
 
     let mut luid = LUID::default();
@@ -45,7 +38,7 @@ pub fn set_privilege(name: PCWSTR, state: bool) -> Result<()> {
     };
 
     unsafe {
-        AdjustTokenPrivileges(token.as_raw_handle(), false, Some(&tp), 0, None, None)?;
+        AdjustTokenPrivileges(*token, false, Some(&tp), 0, None, None)?;
     }
 
     Ok(())

@@ -3,13 +3,13 @@ use std::ffi::c_void;
 use shared::utils::OwnedHandle;
 use tracing::error;
 use windows::{
-    core::Error,
     Win32::{
         Foundation::{GetLastError, HANDLE, WAIT_OBJECT_0, WIN32_ERROR},
         System::Threading::{
-            CreateRemoteThread, WaitForSingleObject, INFINITE, LPTHREAD_START_ROUTINE,
+            CreateRemoteThread, INFINITE, LPTHREAD_START_ROUTINE, WaitForSingleObject,
         },
     },
+    core::Error,
 };
 
 pub struct RemoteThread(HANDLE);
@@ -20,9 +20,7 @@ impl RemoteThread {
         addr: LPTHREAD_START_ROUTINE,
         lpparameter: Option<*const c_void>,
     ) -> Result<Self, Error> {
-        let res = unsafe {
-            CreateRemoteThread(process.as_raw_handle(), None, 0, addr, lpparameter, 0, None)
-        };
+        let res = unsafe { CreateRemoteThread(**process, None, 0, addr, lpparameter, 0, None) };
 
         res.map(Self)
     }
