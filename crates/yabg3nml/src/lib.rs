@@ -23,4 +23,4 @@ mod utils;
 mod wapi;
 
 pub use autostart::autostart;
-pub use run::{run, RunType};
+pub use run::{RunType, run};

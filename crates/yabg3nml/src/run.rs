@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use eyre::Result;
-use shared::popup::{display_popup, fatal_popup, MessageBoxIcon};
+use shared::popup::{MessageBoxIcon, display_popup, fatal_popup};
 use tracing::{error, trace};
 
 #[allow(unused_imports)]
@@ -36,7 +36,7 @@ pub fn run(run_type: RunType) -> Result<()> {
 
     #[cfg(not(feature = "test-injection"))]
     let processes = {
-        use paths::{get_game_binary_paths, Bg3Exes};
+        use paths::{Bg3Exes, get_game_binary_paths};
         let Bg3Exes { bg3, bg3_dx11 } = get_game_binary_paths(init.config);
         &[bg3, bg3_dx11]
     };

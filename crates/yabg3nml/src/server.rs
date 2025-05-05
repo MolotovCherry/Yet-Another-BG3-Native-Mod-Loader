@@ -5,8 +5,8 @@ use std::{
 };
 
 use shared::pipe::{
-    commands::{Level, Receive},
     Server,
+    commands::{Level, Receive},
 };
 use tracing::{debug, error, info, trace, trace_span, warn};
 

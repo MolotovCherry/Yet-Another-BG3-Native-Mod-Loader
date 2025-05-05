@@ -2,9 +2,9 @@ use std::{process, thread};
 
 use eyre::{Context as _, Result};
 use shared::{
-    config::{get_config, Config, ConfigState},
+    config::{Config, ConfigState, get_config},
     paths::{get_bg3_local_dir, get_bg3_plugins_dir},
-    popup::{display_popup, fatal_popup, MessageBoxIcon},
+    popup::{MessageBoxIcon, display_popup, fatal_popup},
 };
 use tracing::{error, trace, trace_span};
 use tracing_appender::non_blocking::WorkerGuard;
@@ -16,7 +16,7 @@ use crate::{
     panic::set_hook,
     privileges::set_privilege,
     server::server,
-    tmp_loader::{init_loader, Loader},
+    tmp_loader::{Loader, init_loader},
 };
 
 pub struct InitData {
@@ -84,7 +84,12 @@ pub fn init() -> Result<InitData> {
         }
 
         Err(e) => {
-            fatal_popup("Error reading config", format!("Failed to get config file. Most likely either it failed to read the file, or your config file is malformed.\n\nError: {e}"));
+            fatal_popup(
+                "Error reading config",
+                format!(
+                    "Failed to get config file. Most likely either it failed to read the file, or your config file is malformed.\n\nError: {e}"
+                ),
+            );
         }
     };
 

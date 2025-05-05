@@ -7,7 +7,7 @@ use std::{
     thread,
 };
 
-use eyre::{eyre, Result};
+use eyre::{Result, eyre};
 use shared::popup::fatal_popup;
 use tracing::{error, trace};
 
@@ -19,7 +19,7 @@ use windows::Win32::System::{
 use crate::{
     event::Event,
     loader::run_loader,
-    paths::{get_game_binary_for, Bg3Exe},
+    paths::{Bg3Exe, get_game_binary_for},
     setup::init,
     single_instance::SingleInstance,
     wapi::event_loop::EventLoop,
@@ -53,7 +53,9 @@ pub fn autostart() -> Result<ExitCode> {
         // it's not a bg3 executable; or at least, it's not named correctly
         fatal_popup(
             "No direct launch",
-            format!("This autostart program is not a launcher. Please check instructions for how to use it. (The target - {bg3_exe} - has an incorrect filename)"),
+            format!(
+                "This autostart program is not a launcher. Please check instructions for how to use it. (The target - {bg3_exe} - has an incorrect filename)"
+            ),
         )
     };
 

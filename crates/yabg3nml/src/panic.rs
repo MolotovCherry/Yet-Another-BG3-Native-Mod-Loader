@@ -3,7 +3,7 @@ use std::{panic, path::Path};
 use human_panic::metadata;
 use shared::{
     backtrace::CaptureBacktrace,
-    popup::{display_popup, MessageBoxIcon},
+    popup::{MessageBoxIcon, display_popup},
 };
 use tracing::error;
 

@@ -1,8 +1,8 @@
 use windows::{
-    core::{HSTRING, PCWSTR},
     Win32::UI::WindowsAndMessaging::{
-        MessageBoxW, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MESSAGEBOX_STYLE,
+        MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MESSAGEBOX_STYLE, MessageBoxW,
     },
+    core::{HSTRING, PCWSTR},
 };
 
 pub enum MessageBoxIcon {

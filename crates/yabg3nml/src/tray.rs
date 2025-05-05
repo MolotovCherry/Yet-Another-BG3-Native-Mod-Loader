@@ -1,8 +1,8 @@
 use std::thread::{self, JoinHandle};
 
 use tray_icon::{
-    menu::{AboutMetadata, Menu, MenuEvent, MenuItem, PredefinedMenuItem},
     Icon, TrayIconBuilder,
+    menu::{AboutMetadata, Menu, MenuEvent, MenuItem, PredefinedMenuItem},
 };
 use windows::Win32::{
     Foundation::{LPARAM, WPARAM},
@@ -10,9 +10,9 @@ use windows::Win32::{
 };
 
 use crate::{
+    RunType,
     stop_token::StopToken,
     wapi::{enum_windows::EnumWindowsRs, event_loop::EventLoop},
-    RunType,
 };
 
 pub struct AppTray;

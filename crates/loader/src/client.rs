@@ -1,6 +1,6 @@
 use std::{io, sync::LazyLock};
 
-use shared::pipe::{commands::Command, Client};
+use shared::pipe::{Client, commands::Command};
 
 pub static CLIENT: LazyLock<Result<Client, io::Error>> = LazyLock::new(Client::new);
 

@@ -2,7 +2,7 @@ use shared::utils::SuperLock as _;
 use tracing::{error, trace, trace_span};
 use windows::Win32::System::ProcessStatus::EnumProcesses;
 
-use crate::process_watcher::{Pid, CURRENT_PID};
+use crate::process_watcher::{CURRENT_PID, Pid};
 
 #[allow(non_snake_case)]
 pub fn EnumProcessesRs(buf: &mut Vec<Pid>) -> &[Pid] {
@@ -23,9 +23,7 @@ pub fn EnumProcessesRs(buf: &mut Vec<Pid>) -> &[Pid] {
 
             trace!(
                 lpcbneeded,
-                size,
-                new_len,
-                "lpcbneeded == cb; pid_buffer not large enough; increasing size",
+                size, new_len, "lpcbneeded == cb; pid_buffer not large enough; increasing size",
             );
 
             buf.resize(new_len, 0);

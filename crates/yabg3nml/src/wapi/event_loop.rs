@@ -1,5 +1,5 @@
 use windows::Win32::UI::WindowsAndMessaging::{
-    DispatchMessageW, GetMessageW, PostQuitMessage, TranslateMessage, MSG,
+    DispatchMessageW, GetMessageW, MSG, PostQuitMessage, TranslateMessage,
 };
 
 pub struct EventLoop;

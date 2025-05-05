@@ -2,7 +2,7 @@ use std::ffi::c_void;
 
 use tracing::error;
 use windows::Win32::{
-    Foundation::{GetLastError, LocalFree, HLOCAL},
+    Foundation::{GetLastError, HLOCAL, LocalFree},
     Security::PSECURITY_DESCRIPTOR,
 };
 
@@ -15,7 +15,7 @@ impl PSecurityDescriptor {
     }
 
     pub fn as_void(&self) -> *mut c_void {
-        self.0 .0
+        self.0.0
     }
 }
 
@@ -28,7 +28,7 @@ impl From<PSECURITY_DESCRIPTOR> for PSecurityDescriptor {
 impl Drop for PSecurityDescriptor {
     fn drop(&mut self) {
         if !self.0.is_invalid() {
-            let res = unsafe { LocalFree(HLOCAL(self.0 .0).into()) };
+            let res = unsafe { LocalFree(HLOCAL(self.0.0).into()) };
             if !res.is_invalid() {
                 let err = unsafe { GetLastError() };
                 error!(hlocal = ?res, ?err, "failed to free hlocal");

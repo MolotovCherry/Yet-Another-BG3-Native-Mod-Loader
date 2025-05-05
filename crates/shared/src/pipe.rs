@@ -23,8 +23,8 @@ use tracing::{error, trace, trace_span};
 use windows::Win32::{
     Foundation::HANDLE,
     Security::{
-        InitializeSecurityDescriptor, SetSecurityDescriptorDacl, PSECURITY_DESCRIPTOR,
-        SECURITY_ATTRIBUTES, SECURITY_DESCRIPTOR,
+        InitializeSecurityDescriptor, PSECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES,
+        SECURITY_DESCRIPTOR, SetSecurityDescriptorDacl,
     },
     System::{Pipes::GetNamedPipeClientProcessId, SystemServices::SECURITY_DESCRIPTOR_REVISION1},
 };

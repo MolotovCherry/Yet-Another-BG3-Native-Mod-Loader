@@ -2,7 +2,7 @@
 
 use std::process::ExitCode;
 
-use shared::popup::{display_popup, MessageBoxIcon};
+use shared::popup::{MessageBoxIcon, display_popup};
 
 fn main() -> ExitCode {
     match yabg3nml::autostart() {

@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf, sync::OnceLock};
 
 use directories::BaseDirs;
-use eyre::{bail, eyre, Result};
+use eyre::{Result, bail, eyre};
 use tracing::{info, trace};
 
 pub fn get_larian_local_dir() -> Result<PathBuf> {
