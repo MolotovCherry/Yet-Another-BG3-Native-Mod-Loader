@@ -23,7 +23,7 @@ unicase = "2.8.1"
 winres = "0.1.12"
 
 [workspace.dependencies.windows]
-version = "0.61.1"
+version = "0.61.3"
 features = [
     "Win32_Foundation",
     "Win32_System_ApplicationInstallationAndServicing",
