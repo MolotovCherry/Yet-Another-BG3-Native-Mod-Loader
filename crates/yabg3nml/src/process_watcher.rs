@@ -1,7 +1,7 @@
 use std::{
     collections::HashSet,
     sync::{
-        Arc, LazyLock, Mutex,
+        Arc, LazyLock,
         atomic::{AtomicBool, Ordering},
         mpsc::{RecvTimeoutError, channel},
     },
@@ -9,7 +9,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use shared::utils::{OwnedHandle, SuperLock};
+use sayuri::sync::Mutex;
+use shared::utils::OwnedHandle;
 use tracing::{Span, trace, trace_span};
 use unicase::UniCase;
 use windows::Win32::{
@@ -136,7 +137,7 @@ impl ProcessWatcher {
                     let span_pid_loop = trace_span!("pid_loop", pid = pid);
                     let _guard = span_pid_loop.enter();
 
-                    *CURRENT_PID.super_lock() = span_pid_loop.clone();
+                    *CURRENT_PID.lock() = span_pid_loop.clone();
 
                     let process = {
                         let res = unsafe { OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) };

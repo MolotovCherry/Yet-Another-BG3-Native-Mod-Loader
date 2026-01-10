@@ -1,11 +1,10 @@
 use std::{
     mem,
     panic::{self, AssertUnwindSafe},
-    sync::Mutex,
 };
 
 use eyre::Result;
-use shared::utils::SuperLock;
+use sayuri::sync::Mutex;
 use tracing::{error, trace_span};
 use windows::{
     Win32::{
@@ -31,13 +30,13 @@ impl StaticFfiCbMethods for Mutex<Option<FfiCb>> {
     ///     this is because closure may have captures, this is !'static
     unsafe fn set_cb(&self, cb: UserCallback) {
         let _static = unsafe { mem::transmute::<UserCallback, UserCallback<'static>>(cb) };
-        *self.super_lock() = Some(FfiCb(_static));
+        *self.lock() = Some(FfiCb(_static));
     }
 
     /// SAFETY:
     /// This must be called in scope where closure captures are still valid
     unsafe fn call(&self, hwnd: HWND) -> Result<()> {
-        if let Some(cb) = &mut *self.super_lock() {
+        if let Some(cb) = &mut *self.lock() {
             cb.0(hwnd)
         } else {
             Ok(())
@@ -45,7 +44,7 @@ impl StaticFfiCbMethods for Mutex<Option<FfiCb>> {
     }
 
     fn drop(&self) {
-        *self.super_lock() = None;
+        *self.lock() = None;
     }
 }
 

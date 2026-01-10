@@ -73,44 +73,44 @@ impl AppTray {
             );
 
             EventLoop::new().run(move |event_loop, _| {
-                if let Ok(event) = MenuEvent::receiver().try_recv() {
-                    if event.id == quit_i.id() {
-                        if let Some(token) = timeout_token.as_ref() {
-                            token.stop();
+                if let Ok(event) = MenuEvent::receiver().try_recv()
+                    && event.id == quit_i.id()
+                {
+                    if let Some(token) = timeout_token.as_ref() {
+                        token.stop();
+                    }
+
+                    watcher_token.stop();
+                    event_loop.exit();
+
+                    tray_icon.take();
+
+                    // this will close dialog popup window in injector mode so it doesn't hang process watcher
+                    // when we try to quit. Would work for anything else hanging a thread too
+
+                    // "#32770" - this lets us avoid string conversions
+                    let class = [35u16, 51, 50, 55, 55, 48];
+
+                    let mut buf = [0u16; 7];
+                    EnumWindowsRs(|hwnd| {
+                        let len = unsafe { GetClassNameW(hwnd, &mut buf) };
+                        if len == 0 {
+                            // fn call failed, but it doesn't matter
+                            return Ok(());
                         }
 
-                        watcher_token.stop();
-                        event_loop.exit();
+                        let buf = &buf[..len as usize];
 
-                        tray_icon.take();
+                        // looking for any open dialog box
+                        if buf == class {
+                            // close the window
+                            _ = unsafe {
+                                PostMessageW(hwnd.into(), WM_CLOSE, WPARAM(0), LPARAM(0))
+                            };
+                        }
 
-                        // this will close dialog popup window in injector mode so it doesn't hang process watcher
-                        // when we try to quit. Would work for anything else hanging a thread too
-
-                        // "#32770" - this lets us avoid string conversions
-                        let class = [35u16, 51, 50, 55, 55, 48];
-
-                        let mut buf = [0u16; 7];
-                        EnumWindowsRs(|hwnd| {
-                            let len = unsafe { GetClassNameW(hwnd, &mut buf) };
-                            if len == 0 {
-                                // fn call failed, but it doesn't matter
-                                return Ok(());
-                            }
-
-                            let buf = &buf[..len as usize];
-
-                            // looking for any open dialog box
-                            if buf == class {
-                                // close the window
-                                _ = unsafe {
-                                    PostMessageW(hwnd.into(), WM_CLOSE, WPARAM(0), LPARAM(0))
-                                };
-                            }
-
-                            Ok(())
-                        });
-                    }
+                        Ok(())
+                    });
                 }
             });
         })

@@ -4,7 +4,7 @@ use std::{
 };
 
 use eyre::{Result, bail};
-use shared::utils::{OwnedHandle, SuperLock as _};
+use shared::utils::OwnedHandle;
 use tracing::{error, trace, trace_span};
 use windows::Win32::{
     Foundation::{ERROR_PARTIAL_COPY, HMODULE, STILL_ACTIVE},
@@ -24,7 +24,7 @@ pub fn EnumProcessModulesExRs(
     process: &OwnedHandle,
     mut cb: impl FnMut(HMODULE) -> Result<bool>,
 ) -> Result<()> {
-    let span = trace_span!(parent: CURRENT_PID.super_lock().clone(), "EnumProcessModulesExRs");
+    let span = trace_span!(parent: CURRENT_PID.lock().clone(), "EnumProcessModulesExRs");
     let _guard = span.enter();
 
     let mut modules: Vec<HMODULE> = vec![HMODULE::default(); 1024];
@@ -85,7 +85,7 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             // - Process was terminated
             // - Missing permissions (try running as admin)
             // - Issues with disk / file(s) corrupt
-            if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult() == e.code() {
+            if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult().0 == e.code().0 {
                 if timer.elapsed() > Duration::from_secs(2) {
                     bail!(
                         "EnumProcessModulesExRs: timed out waiting for call to succeed; aborting injection"

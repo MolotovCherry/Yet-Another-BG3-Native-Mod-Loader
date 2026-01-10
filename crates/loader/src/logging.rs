@@ -1,12 +1,8 @@
-use std::{
-    io::{self, ErrorKind, Write},
-    sync::{Mutex, MutexGuard},
-};
+use std::io::{self, ErrorKind, Write};
 
 use eyre::Result;
-use shared::{
-    pipe::commands::Receive, popup::warn_popup, thread_data::LogData, utils::SuperLock as _,
-};
+use sayuri::sync::{Mutex, MutexGuard};
+use shared::{pipe::commands::Receive, popup::warn_popup, thread_data::LogData};
 use tracing_subscriber::{fmt::MakeWriter, util::SubscriberInitExt};
 
 use crate::client::{CLIENT, TrySend};
@@ -66,7 +62,7 @@ impl Write for PipeWriter<'_> {
             return Ok(buf.len());
         }
 
-        let mut v = self.buf.super_lock();
+        let mut v = self.buf.lock();
         v.extend(buf);
         Ok(buf.len())
     }
@@ -77,7 +73,7 @@ impl Write for PipeWriter<'_> {
             return Ok(());
         }
 
-        let v = BufClear(self.buf.super_lock());
+        let v = BufClear(self.buf.lock());
 
         let data = match v.0.as_slice().try_into() {
             Ok(v) => v,

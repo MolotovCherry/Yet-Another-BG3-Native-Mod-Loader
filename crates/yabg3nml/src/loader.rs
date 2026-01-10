@@ -14,19 +14,14 @@ use shared::{
     utils::OwnedHandle,
 };
 use tracing::{error, info, level_filters::LevelFilter, trace, trace_span, warn};
-use windows::Win32::System::Threading::WaitForInputIdle;
-use windows::Win32::{
-    Foundation::WAIT_FAILED,
-    System::Threading::{INFINITE, LPTHREAD_START_ROUTINE},
-};
 use windows::{
     Win32::{
-        Foundation::GetLastError,
+        Foundation::{GetLastError, WAIT_FAILED},
         System::{
             LibraryLoader::{GetModuleHandleW, GetProcAddress},
             Threading::{
-                OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION, PROCESS_VM_READ,
-                PROCESS_VM_WRITE,
+                INFINITE, LPTHREAD_START_ROUTINE, OpenProcess, PROCESS_QUERY_INFORMATION,
+                PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE, WaitForInputIdle,
             },
         },
     },
@@ -82,7 +77,7 @@ pub fn run_loader(
         let addr = unsafe { GetProcAddress(handle, s!("LoadLibraryW")) };
 
         let addr = addr
-            .ok_or(WinError::from_win32())
+            .ok_or_else(WinError::from_thread)
             .context("failed to get LoadLibraryW proc address")?;
 
         let f = unsafe { mem::transmute::<FarProc, ThreadStartRoutine>(addr) };

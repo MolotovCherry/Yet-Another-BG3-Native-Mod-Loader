@@ -14,16 +14,17 @@ members = [
 ]
 
 [workspace.dependencies]
-tracing = "0.1.41"
+tracing = "0.1.44"
 eyre = "0.6.12"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
+tracing-subscriber = { version = "0.3.22", features = ["env-filter", "json"] }
 shared = { path = "crates/shared" }
 native-plugin-lib = { git = "https://github.com/MolotovCherry/Native-Plugin-Lib" }
-unicase = "2.8.1"
+unicase = "2.9.0"
 winres = "0.1.12"
+sayuri = "0.1.4"
 
 [workspace.dependencies.windows]
-version = "0.61.1"
+version = "0.62.2"
 features = [
     "Win32_Foundation",
     "Win32_System_ApplicationInstallationAndServicing",

@@ -1,6 +1,6 @@
 use std::{os::windows::prelude::OsStrExt as _, path::Path};
 
-use shared::utils::{OwnedHandle, SuperLock as _};
+use shared::utils::OwnedHandle;
 use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::Win32::Foundation::HMODULE;
@@ -14,7 +14,7 @@ use super::{
 /// Note: This matches based on FULL path, not just the filename
 #[allow(non_snake_case)]
 pub fn GetModuleBaseEx<P: AsRef<Path>>(process: &OwnedHandle, module: P) -> Option<HMODULE> {
-    let span = trace_span!(parent: CURRENT_PID.super_lock().clone(), "GetModuleBaseEx");
+    let span = trace_span!(parent: CURRENT_PID.lock().clone(), "GetModuleBaseEx");
     let _guard = span.enter();
 
     let module = module.as_ref();

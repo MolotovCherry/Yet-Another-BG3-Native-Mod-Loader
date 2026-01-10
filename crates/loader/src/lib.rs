@@ -7,17 +7,15 @@ mod utils;
 use std::{
     ffi::c_void,
     mem, panic,
-    sync::{LazyLock, Mutex, Once, OnceLock},
+    sync::{LazyLock, Once, OnceLock},
     thread,
 };
 
 use eyre::{Context as _, Error};
 use native_plugin_lib::declare_plugin;
+use sayuri::sync::Mutex;
 use shared::{
-    pipe::commands::Request,
-    popup::warn_popup,
-    thread_data::ThreadData,
-    utils::{OwnedHandle, SuperLock as _},
+    pipe::commands::Request, popup::warn_popup, thread_data::ThreadData, utils::OwnedHandle,
 };
 use tracing::{error, trace};
 use windows::{
@@ -55,7 +53,7 @@ static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(Mutex::defau
 static MODULE: OnceLock<ThreadedWrapper<HINSTANCE>> = OnceLock::new();
 
 #[unsafe(no_mangle)]
-extern "stdcall-unwind" fn DllMain(
+extern "system-unwind" fn DllMain(
     module: HINSTANCE,
     fdw_reason: u32,
     _lpv_reserved: *const c_void,
@@ -82,7 +80,7 @@ extern "stdcall-unwind" fn DllMain(
         DLL_PROCESS_DETACH => {
             trace!("detaching plugins");
 
-            let mut plugins = LOADED_PLUGINS.super_lock();
+            let mut plugins = LOADED_PLUGINS.lock();
             // drop all modules if we can
             plugins.clear();
         }

@@ -1,5 +1,5 @@
 use eyre::{Result, bail};
-use shared::utils::{OwnedHandle, SuperLock as _};
+use shared::utils::OwnedHandle;
 use tracing::{error, trace, trace_span};
 use widestring::U16Str;
 use windows::Win32::{
@@ -15,7 +15,7 @@ pub fn GetModuleFileNameExRs<'a>(
     module: Option<HMODULE>,
     buf: &'a mut Vec<u16>,
 ) -> Result<&'a U16Str> {
-    let span = trace_span!(parent: CURRENT_PID.super_lock().clone(), "GetModuleFileNameExRs");
+    let span = trace_span!(parent: CURRENT_PID.lock().clone(), "GetModuleFileNameExRs");
     let _guard = span.enter();
 
     let module = module.unwrap_or_default();

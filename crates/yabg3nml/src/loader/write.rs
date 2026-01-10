@@ -48,7 +48,7 @@ pub fn write_in<T>(process: &OwnedHandle, data: *const T, size: usize) -> Result
     };
 
     debug_assert!(
-        alloc_addr as usize % align_of::<T>() == 0,
+        (alloc_addr as usize).is_multiple_of(align_of::<T>()),
         "alloc @ {alloc_addr:?} has insufficient alignment for align {}",
         align_of::<T>()
     );

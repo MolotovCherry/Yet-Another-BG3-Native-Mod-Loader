@@ -16,6 +16,7 @@ eyre.workspace = true
 windows.workspace = true
 shared.workspace = true
 native-plugin-lib.workspace = true
+sayuri.workspace = true
 
 [lints]
 workspace = true

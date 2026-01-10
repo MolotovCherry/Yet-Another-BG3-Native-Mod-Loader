@@ -2,12 +2,7 @@ use std::{fs, iter, mem, os::windows::ffi::OsStrExt, path::PathBuf};
 
 use eyre::{Context as _, Report, Result};
 use native_plugin_lib::{Dll, PluginData, PluginError, Version};
-use shared::{
-    config::get_config,
-    paths::get_bg3_plugins_dir,
-    popup::warn_popup,
-    utils::{SuperLock as _, tri},
-};
+use shared::{config::get_config, paths::get_bg3_plugins_dir, popup::warn_popup, utils::tri};
 use tracing::{error, info, trace, warn};
 use windows::{
     Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW},
@@ -170,7 +165,7 @@ fn load_plugin(name: String, path: PathBuf) {
 
         // so plugin can be unloaded on dll exit
         {
-            let mut plugins = LOADED_PLUGINS.super_lock();
+            let mut plugins = LOADED_PLUGINS.lock();
             plugins.push(Plugin(module));
         }
 
