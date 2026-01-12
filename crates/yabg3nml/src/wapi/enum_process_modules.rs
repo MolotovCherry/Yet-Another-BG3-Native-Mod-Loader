@@ -85,7 +85,7 @@ fn inner_enum_modules(process: &OwnedHandle, modules: &mut Vec<HMODULE>) -> Resu
             // - Process was terminated
             // - Missing permissions (try running as admin)
             // - Issues with disk / file(s) corrupt
-            if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult().0 == e.code().0 {
+            if is_alive(process) && ERROR_PARTIAL_COPY.to_hresult() == e.code() {
                 if timer.elapsed() > Duration::from_secs(2) {
                     bail!(
                         "EnumProcessModulesExRs: timed out waiting for call to succeed; aborting injection"
