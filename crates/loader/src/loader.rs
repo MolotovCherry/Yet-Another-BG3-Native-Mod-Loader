@@ -80,9 +80,7 @@ pub fn load_plugins() -> Result<()> {
             }
         };
 
-        let not_a_plugin = dll.symbol_exists("__NOT_A_PLUGIN_DO_NOT_LOAD_OR_YOU_WILL_BE_FIRED");
-
-        if not_a_plugin {
+        if dll.symbol_exists("__NOT_A_PLUGIN_DO_NOT_LOAD_OR_YOU_WILL_BE_FIRED") {
             trace!(plugin = %name, "aborting load because this is not a plugin");
             continue;
         }
