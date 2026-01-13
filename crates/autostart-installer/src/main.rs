@@ -7,10 +7,7 @@ use std::{
 };
 
 use shared::popup::{MessageBoxIcon, display_popup, fatal_popup};
-use winreg::{
-    RegKey,
-    enums::{HKEY_LOCAL_MACHINE, KEY_SET_VALUE},
-};
+use winreg::{RegKey, enums::HKEY_LOCAL_MACHINE};
 
 fn main() -> ExitCode {
     let install = || {
@@ -94,19 +91,13 @@ fn install() -> io::Result<()> {
 }
 
 fn uninstall() {
-    let try_delete_value = |key| {
-        let err = HKLM
-            .open_subkey_with_flags(key, KEY_SET_VALUE)
-            .and_then(|k| k.delete_value("debugger"));
-
-        match err {
-            Err(e) if e.kind() != ErrorKind::NotFound => Err(e),
-            _ => Ok(()),
-        }
+    let try_delete_key = |key| match HKLM.delete_subkey_all(key) {
+        Err(e) if e.kind() != ErrorKind::NotFound => Err(e),
+        _ => Ok(()),
     };
 
-    let error_bg3 = try_delete_value(R_BG3);
-    let error_bg3_dx11 = try_delete_value(R_BG3_DX11);
+    let error_bg3 = try_delete_key(R_BG3);
+    let error_bg3_dx11 = try_delete_key(R_BG3_DX11);
 
     if error_bg3.is_err() || error_bg3_dx11.is_err() {
         let bg3_ok = error_bg3.is_ok();
@@ -116,7 +107,6 @@ fn uninstall() {
         if let Err(e) = error_bg3 {
             errors.push_str(&format!("\nErrors (bg3 key)\n{e}\n"));
         }
-
         if let Err(e) = error_bg3_dx11 {
             errors.push_str(&format!("\nErrors (bg3_dx11 key)\n{e}\n"));
         }
@@ -124,11 +114,9 @@ fn uninstall() {
         fatal_popup(
             "uninstall failed",
             format!(
-                r#"If you'd like to try manually uninstalling, delete the `debugger` value from both:
+                r#"If you'd like to manually uninstall, delete the following keys:
 (uninstalled: {bg3_ok}) HKLM\{R_BG3}
 (uninstalled: {bg3_dx11_ok}) HKLM\{R_BG3_DX11}
-
-If the `debugger` value is missing, it is already uninstalled on that key.
 {errors}"#
             ),
         );
