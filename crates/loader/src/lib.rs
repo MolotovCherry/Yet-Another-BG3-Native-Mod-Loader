@@ -12,11 +12,9 @@ use std::{
 };
 
 use eyre::{Context as _, Error};
-use native_plugin_lib::declare_plugin;
+use native_plugin_lib::{declare_plugin, is_yabg3nml};
 use sayuri::sync::Mutex;
-use shared::{
-    pipe::commands::Request, popup::warn_popup, thread_data::ThreadData, utils::OwnedHandle,
-};
+use shared::{pipe::commands::Request, popup::warn_popup, thread_data::ThreadData};
 use tracing::{error, trace};
 use windows::{
     Win32::{
@@ -27,10 +25,9 @@ use windows::{
                 GetModuleHandleExW,
             },
             SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
-            Threading::{OpenEventW, SYNCHRONIZATION_SYNCHRONIZE},
         },
     },
-    core::{BOOL, PCWSTR, w},
+    core::{BOOL, PCWSTR},
 };
 
 use client::{CLIENT, TrySend as _};
@@ -53,7 +50,7 @@ static LOADED_PLUGINS: LazyLock<Mutex<Vec<Plugin>>> = LazyLock::new(Mutex::defau
 static MODULE: OnceLock<ThreadedWrapper<HINSTANCE>> = OnceLock::new();
 
 #[unsafe(no_mangle)]
-extern "system-unwind" fn DllMain(
+extern "system" fn DllMain(
     module: HINSTANCE,
     fdw_reason: u32,
     _lpv_reserved: *const c_void,
@@ -67,10 +64,7 @@ extern "system-unwind" fn DllMain(
             // > linked with static C run-time library (CRT).
             // _ = unsafe { DisableThreadLibraryCalls(module) };
 
-            static INIT: Once = Once::new();
-            INIT.call_once(|| {
-                _ = MODULE.set(unsafe { ThreadedWrapper::new(module) });
-            });
+            _ = MODULE.set(unsafe { ThreadedWrapper::new(module) });
 
             if !is_yabg3nml() {
                 unsupported_operation();
@@ -104,12 +98,7 @@ extern "system-unwind" fn DllMain(
 /// We do however do the best effort to prevent accidental callings of this.
 /// As such it is not named `Init` so it isn't accidentally called
 #[unsafe(no_mangle)]
-unsafe extern "system-unwind" fn InitLoader(data: *mut c_void) -> u32 {
-    // compile time check it's not fat
-    const {
-        assert!(size_of::<&ThreadData>() == size_of::<usize>());
-    }
-
+unsafe extern "system" fn InitLoader(data: *mut c_void) -> u32 {
     if !is_yabg3nml() {
         unsupported_operation();
         return 0;
@@ -118,16 +107,19 @@ unsafe extern "system-unwind" fn InitLoader(data: *mut c_void) -> u32 {
     let data = unsafe { &*data.cast::<ThreadData>() };
 
     // ensure this library cannot be unloaded until process exit
-    let module = {
-        let m = unsafe { MODULE.get().unwrap_unchecked() };
-        (**m).0
+    let Some(module) = MODULE.get() else {
+        warn_popup(
+            "MODULE not set",
+            "loader.dll failed to set MODULE. That's odd. Please report this ASAP",
+        );
+        return 0;
     };
 
     // Pin this dll loader in place until process exit
     _ = unsafe {
         GetModuleHandleExW(
             GET_MODULE_HANDLE_EX_FLAG_PIN | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-            PCWSTR(module.cast()),
+            PCWSTR(module.0.cast()),
             // this is a discard value
             &mut HMODULE::default(),
         )
@@ -159,26 +151,6 @@ unsafe extern "system-unwind" fn InitLoader(data: *mut c_void) -> u32 {
     }
 
     0
-}
-
-/// Detects if yabg3nml injected this dll.
-/// This is safe to use from DllMain
-fn is_yabg3nml() -> bool {
-    static CACHE: OnceLock<bool> = OnceLock::new();
-
-    *CACHE.get_or_init(|| {
-        let event = unsafe {
-            OpenEventW(
-                SYNCHRONIZATION_SYNCHRONIZE,
-                false,
-                w!(r"Global\yet-another-bg3-native-mod-loader"),
-            )
-        };
-
-        let event = event.map(|h| unsafe { OwnedHandle::new(h) });
-
-        event.is_ok()
-    })
 }
 
 fn unsupported_operation() {
