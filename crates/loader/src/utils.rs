@@ -1,6 +1,5 @@
 use std::{
     mem,
-    ops::Deref,
     thread::{self, JoinHandle},
 };
 
@@ -41,25 +40,5 @@ impl Drop for ThreadManager {
         for thread in threads {
             _ = thread.join();
         }
-    }
-}
-
-pub struct ThreadedWrapper<T>(T);
-unsafe impl<T> Send for ThreadedWrapper<T> {}
-unsafe impl<T> Sync for ThreadedWrapper<T> {}
-
-impl<T> ThreadedWrapper<T> {
-    /// # Safety
-    /// Caller asserts that T is safe to use in Send+Sync contexts
-    pub unsafe fn new(t: T) -> Self {
-        Self(t)
-    }
-}
-
-impl<T> Deref for ThreadedWrapper<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }

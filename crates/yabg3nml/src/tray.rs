@@ -90,13 +90,14 @@ impl AppTray {
 
                     // "#32770" - this lets us avoid string conversions
                     let class = [35u16, 51, 50, 55, 55, 48];
-
                     let mut buf = [0u16; 7];
-                    EnumWindowsRs(|hwnd| {
-                        let len = unsafe { GetClassNameW(hwnd, &mut buf) };
+
+                    let handles = EnumWindowsRs();
+                    for handle in handles {
+                        let len = unsafe { GetClassNameW(handle, &mut buf) };
                         if len == 0 {
                             // fn call failed, but it doesn't matter
-                            return Ok(());
+                            continue;
                         }
 
                         let buf = &buf[..len as usize];
@@ -105,12 +106,10 @@ impl AppTray {
                         if buf == class {
                             // close the window
                             _ = unsafe {
-                                PostMessageW(hwnd.into(), WM_CLOSE, WPARAM(0), LPARAM(0))
+                                PostMessageW(handle.into(), WM_CLOSE, WPARAM(0), LPARAM(0))
                             };
                         }
-
-                        Ok(())
-                    });
+                    }
                 }
             });
         })

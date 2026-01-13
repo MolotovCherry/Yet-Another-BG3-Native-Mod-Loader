@@ -1,11 +1,7 @@
-use std::{
-    mem,
-    panic::{self, AssertUnwindSafe},
-    ptr,
-};
+use std::{mem, sync::LazyLock};
 
-use eyre::Result;
-use tracing::{error, trace_span};
+use sayuri::sync::Mutex;
+use shared::utils::ThreadedWrapper;
 use windows::{
     Win32::{
         Foundation::{HWND, LPARAM},
@@ -14,48 +10,19 @@ use windows::{
     core::BOOL,
 };
 
-type UserCallback<'a> = Box<dyn FnMut(HWND) -> Result<()> + Send + Sync + 'a>;
+static HANDLES: LazyLock<Mutex<Vec<ThreadedWrapper<HWND>>>> = LazyLock::new(Mutex::default);
 
 #[allow(non_snake_case)]
-pub fn EnumWindowsRs(cb: impl FnMut(HWND) -> Result<()> + Send + Sync) {
-    let span = trace_span!("EnumWindowsRs");
-    let _guard = span.enter();
+pub fn EnumWindowsRs() -> Vec<HWND> {
+    _ = unsafe { EnumWindows(Some(enum_cb), LPARAM(0)) };
 
-    let mut cb: UserCallback = Box::new(cb);
-    _ = unsafe {
-        EnumWindows(
-            Some(enum_cb),
-            LPARAM((&raw mut cb).expose_provenance() as _),
-        )
-    };
+    mem::take(&mut *HANDLES.lock())
+        .into_iter()
+        .map(ThreadedWrapper::into_inner)
+        .collect()
 }
 
-extern "system" fn enum_cb(param0: HWND, cb: LPARAM) -> BOOL {
-    let span = trace_span!("enum_cb");
-    let _guard = span.enter();
-
-    let cb_raw: *mut UserCallback = ptr::with_exposed_provenance_mut(cb.0 as _);
-    let cb = unsafe { &mut *cb_raw };
-
-    let result = panic::catch_unwind(AssertUnwindSafe(|| cb(param0)));
-
-    let res = match result {
-        // no panic and cb returned Ok
-        Ok(Ok(_)) => true,
-
-        // no panic and callback returned Err
-        Ok(Err(err)) => {
-            error!("{err}");
-            false
-        }
-
-        // panic
-        Err(e) => {
-            // so it never panics
-            mem::forget(e);
-            false
-        }
-    };
-
-    res.into()
+extern "system" fn enum_cb(param0: HWND, _: LPARAM) -> BOOL {
+    HANDLES.lock().push(unsafe { ThreadedWrapper::new(param0) });
+    true.into()
 }

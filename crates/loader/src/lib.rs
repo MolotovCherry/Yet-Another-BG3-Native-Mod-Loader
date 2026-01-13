@@ -33,7 +33,8 @@ use windows::{
 use client::{CLIENT, TrySend as _};
 use loader::load_plugins;
 use logging::setup_logging;
-use utils::{Plugin, ThreadedWrapper};
+use shared::utils::ThreadedWrapper;
+use utils::Plugin;
 
 /// Marker to identify this as a special non-plugin dll for detection later
 /// This way we can noop the plugin loading
