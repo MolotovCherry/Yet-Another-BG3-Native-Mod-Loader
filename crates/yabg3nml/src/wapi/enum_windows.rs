@@ -1,7 +1,5 @@
-use std::{mem, sync::LazyLock};
+use std::ptr;
 
-use sayuri::sync::Mutex;
-use shared::utils::ThreadedWrapper;
 use windows::{
     Win32::{
         Foundation::{HWND, LPARAM},
@@ -10,19 +8,28 @@ use windows::{
     core::BOOL,
 };
 
-static HANDLES: LazyLock<Mutex<Vec<ThreadedWrapper<HWND>>>> = LazyLock::new(Mutex::default);
+type Handles = Vec<HWND>;
 
 #[allow(non_snake_case)]
-pub fn EnumWindowsRs() -> Vec<HWND> {
-    _ = unsafe { EnumWindows(Some(enum_cb), LPARAM(0)) };
+pub fn EnumWindowsRs() -> Handles {
+    let mut v = Handles::new();
 
-    mem::take(&mut *HANDLES.lock())
-        .into_iter()
-        .map(ThreadedWrapper::into_inner)
-        .collect()
+    #[rustfmt::skip]
+    let _ = unsafe {
+        EnumWindows(
+            Some(enum_cb),
+            LPARAM(
+                (&raw mut v).expose_provenance() as _
+            )
+        )
+    };
+
+    v
 }
 
-extern "system" fn enum_cb(param0: HWND, _: LPARAM) -> BOOL {
-    HANDLES.lock().push(unsafe { ThreadedWrapper::new(param0) });
+extern "system" fn enum_cb(param0: HWND, v: LPARAM) -> BOOL {
+    let v = ptr::with_exposed_provenance_mut::<Handles>(v.0 as _);
+    let handles = unsafe { &mut *v };
+    handles.push(param0);
     true.into()
 }
