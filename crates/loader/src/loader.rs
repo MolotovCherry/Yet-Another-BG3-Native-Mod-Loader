@@ -157,7 +157,8 @@ fn load_plugin(name: String, path: PathBuf) {
                 Ok(v) => v,
                 Err(e) => {
                     error!(plugin = %name, err = ?e, "failed to load library");
-                    return Err(e).context("failed to load library")}
+                    return Err(e).context("failed to load library")
+                }
             }
         };
 
